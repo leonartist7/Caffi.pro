@@ -51,9 +51,17 @@ Project Ref: ugppbaavzevmdkblniim
 
 ### Option B: Via CLI (Advanced)
 
+**Note:** Supabase CLI no longer supports `npm install -g`. Install using:
+
 ```bash
-# Install Supabase CLI
-npm install -g supabase
+# Install Supabase CLI (Linux)
+curl -L https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+tar -xzf /tmp/supabase.tar.gz -C /tmp
+sudo mv /tmp/supabase /usr/local/bin/supabase
+chmod +x /usr/local/bin/supabase
+
+# Or use npx (no installation):
+# npx supabase <command>
 
 # Login
 supabase login
