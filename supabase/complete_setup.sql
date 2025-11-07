@@ -278,6 +278,8 @@ CREATE TABLE menu_items (
     is_featured BOOLEAN DEFAULT false,
     available_at_locations UUID[] DEFAULT ARRAY[]::UUID[],
     
+    -- Status
+    is_active BOOLEAN DEFAULT true,
     display_order INTEGER DEFAULT 0,
     
     created_at TIMESTAMPTZ DEFAULT NOW(),
