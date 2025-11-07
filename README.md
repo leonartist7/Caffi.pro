@@ -1,176 +1,183 @@
-# Caffi.pro - White-Label Coffee Shop SaaS Platform
+# Supabase CLI
 
-> **"Shopify for coffee loyalty apps"** - One platform, multiple café brands, each with their unique app.
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-## 🎯 Overview
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-Caffi.pro gives independent coffee shops their own branded mobile apps with:
-- **Loyalty Programs** - Points, tiers, and rewards
-- **Mobile Ordering** - Browse menu, order, and pay in-app
-- **Push Notifications** - Marketing campaigns and order updates
-- **Real-time Dashboard** - Manage menu, orders, and customers
+This repository contains all the functionality for Supabase CLI.
 
-### Business Model
-- Setup Fee: €500 per café (one-time)
-- Monthly Subscription: €200/month per café
-- Optional Add-on: €200/month for social media management
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-## 🏗️ Tech Stack
+## Getting started
 
-**Backend:**
-- Supabase (PostgreSQL + Auth + Storage + Realtime + Edge Functions)
-- Multi-tenant architecture with Row-Level Security (RLS)
+### Install the CLI
 
-**Admin & Client Dashboards:**
-- Next.js 14 (App Router) + TypeScript
-- Tailwind CSS + Shadcn/ui
-- React Query
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
-**Mobile Apps:**
-- FlutterFlow (visual app builder)
-- Firebase Cloud Messaging (push notifications)
-
-**Deployment:**
-- Supabase Cloud (backend)
-- Vercel (dashboards)
-- FlutterFlow Cloud Build (mobile apps)
-
-## 📁 Project Structure
-
-```
-caffi-pro/
-├── supabase/              # Database, auth, and edge functions
-│   ├── migrations/        # Database schema migrations
-│   ├── functions/         # Edge functions (API)
-│   └── seed/              # Test data
-├── admin-dashboard/       # Super admin dashboard (Next.js)
-├── client-dashboard/      # Café owner dashboard (Next.js)
-├── mobile/                # FlutterFlow project files
-└── docs/                  # Documentation
+```bash
+npm i supabase --save-dev
 ```
 
-## 🚀 Quick Start
+To install the beta release channel:
 
-### Prerequisites
-- Node.js 18+
-- Supabase CLI
-- Git
+```bash
+npm i supabase@beta --save-dev
+```
 
-### Setup
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
 
-1. **Clone the repository**
-   ```bash
-   git clone <repo-url>
-   cd caffi-pro
-   ```
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
+```
 
-2. **Set up Supabase**
-   ```bash
-   cd supabase
-   supabase init
-   supabase start
-   supabase db push
-   ```
+> **Note**
+For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
 
-3. **Seed test data**
-   ```bash
-   supabase db seed
-   ```
+<details>
+  <summary><b>macOS</b></summary>
 
-4. **Set up Admin Dashboard**
-   ```bash
-   cd admin-dashboard
-   npm install
-   cp .env.example .env.local
-   # Add your Supabase credentials
-   npm run dev
-   ```
+  Available via [Homebrew](https://brew.sh). To install:
 
-5. **Set up Client Dashboard**
-   ```bash
-   cd client-dashboard
-   npm install
-   cp .env.example .env.local
-   # Add your Supabase credentials
-   npm run dev
-   ```
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-## 📋 Development Phases
+  To install the beta release channel:
+  
+  ```sh
+  brew install supabase/tap/supabase-beta
+  brew link --overwrite supabase-beta
+  ```
+  
+  To upgrade:
 
-- [x] **MODULE 1:** Database & Supabase Setup (Week 1)
-- [ ] **MODULE 2:** Authentication System (Week 1-2)
-- [ ] **MODULE 3:** Super Admin Dashboard (Week 2-3)
-- [ ] **MODULE 4:** Client Dashboard (Week 3-4)
-- [ ] **MODULE 5:** API Layer - Edge Functions (Week 4)
-- [ ] **MODULE 6:** Mobile App - FlutterFlow (Week 5-7)
-- [ ] **MODULE 7:** White-Label Deployment System (Week 7-8)
-- [ ] **MODULE 8:** Push Notifications & Final Integration (Week 8)
+  ```sh
+  brew upgrade supabase
+  ```
+</details>
 
-## 🗄️ Database Schema
+<details>
+  <summary><b>Windows</b></summary>
 
-The system uses 13 tables with multi-tenant isolation:
+  Available via [Scoop](https://scoop.sh). To install:
 
-**Core Tables:**
-- `tenants` - Café business information
-- `tenant_manifests` - Design tokens for white-labeling
-- `users` - Customers
-- `locations` - Physical café locations
-- `categories` - Menu categories
-- `menu_items` - Products
-- `orders` - Customer orders
-- `order_items` - Items within orders
-- `loyalty_transactions` - Point history
-- `rewards_catalog` - Redeemable rewards
-- `coupons` - Discount codes
-- `coupon_usage` - Redemption tracking
-- `push_campaigns` - Marketing notifications
+  ```powershell
+  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+  scoop install supabase
+  ```
 
-All tables have Row-Level Security (RLS) enabled with tenant isolation.
+  To upgrade:
 
-## 🔐 Authentication
+  ```powershell
+  scoop update supabase
+  ```
+</details>
 
-**Three authentication systems:**
-1. **Super Admin** - Email + password (for Caffi.pro team)
-2. **Café Owners** - Email + password (for client dashboard)
-3. **Customers** - Phone OTP or email magic link (for mobile app)
+<details>
+  <summary><b>Linux</b></summary>
 
-## 🎨 White-Label System
+  Available via [Homebrew](https://brew.sh) and Linux packages.
 
-Each café gets their own:
-- Unique app name and logo
-- Custom color scheme
-- Unique bundle ID (e.g., `com.bluebottle.app`)
-- Separate App Store listing
+  #### via Homebrew
 
-Design tokens are stored in the `tenant_manifests` table and loaded dynamically.
+  To install:
 
-## 📚 Documentation
+  ```sh
+  brew install supabase/tap/supabase
+  ```
 
-- [Complete Project Specification](./docs/SPECIFICATION.md)
-- [Database Schema](./docs/DATABASE.md)
-- [API Reference](./docs/API.md)
-- [Deployment Guide](./docs/DEPLOYMENT.md)
+  To upgrade:
 
-## 🎯 Success Metrics
+  ```sh
+  brew upgrade supabase
+  ```
 
-**Technical KPIs:**
-- API uptime: > 99.5%
-- API response time: < 200ms (p95)
-- App crash rate: < 1%
+  #### via Linux packages
 
-**Business KPIs:**
-- Target: 50 cafés in Year 1
-- MRR Goal: €10,000/month
-- Customer Churn: < 5% per month
+  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
 
-## 📝 License
+  ```sh
+  sudo apk add --allow-untrusted <...>.apk
+  ```
 
-Proprietary - All rights reserved
+  ```sh
+  sudo dpkg -i <...>.deb
+  ```
 
-## 👥 Team
+  ```sh
+  sudo rpm -i <...>.rpm
+  ```
 
-Built by [Your Team Name]
+  ```sh
+  sudo pacman -U <...>.pkg.tar.zst
+  ```
+</details>
 
----
+<details>
+  <summary><b>Other Platforms</b></summary>
 
-**Let's build something amazing! 🚀**
+  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+  ```sh
+  go install github.com/supabase/cli@latest
+  ```
+
+  Add a symlink to the binary in `$PATH` for easier access:
+
+  ```sh
+  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+  ```
+
+  This works on other non-standard Linux distros.
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+  To install in your working directory:
+
+  ```bash
+  pkgx install supabase
+  ```
+
+  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
+</details>
+
+### Run the CLI
+
+```bash
+supabase bootstrap
+```
+
+Or using npx:
+
+```bash
+npx supabase bootstrap
+```
+
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
+
+## Docs
+
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+
+## Breaking changes
+
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+
+## Developing
+
+To run from source:
+
+```sh
+# Go >= 1.22
+go run . help
+```
