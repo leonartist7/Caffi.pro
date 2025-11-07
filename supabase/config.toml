@@ -1,0 +1,109 @@
+# =====================================================
+# CAFFI.PRO - SUPABASE CONFIGURATION
+# =====================================================
+
+# Project ID (will be set after creating Supabase project)
+project_id = "your-project-id"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+port = 54329
+pool_mode = "transaction"
+default_pool_size = 20
+max_client_conn = 100
+
+[realtime]
+enabled = true
+ip_version = "ipv4"
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+# Additional redirect URLs for different dashboards
+additional_redirect_urls = [
+  "http://localhost:3001", # Admin dashboard
+  "http://localhost:3002", # Client dashboard
+  "https://admin.caffi.pro",
+  "https://dashboard.caffi.pro"
+]
+
+# JWT expiry times
+jwt_expiry = 3600 # 1 hour
+refresh_token_rotation_enabled = true
+security_refresh_token_reuse_interval = 10
+
+# Enable phone auth for mobile app
+enable_signup = true
+enable_anonymous_sign_ins = false
+
+# Auth providers
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false # Set to true in production
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+template = "Your OTP code is {{ .Code }}"
+max_frequency = "1m"
+
+[auth.external.google]
+enabled = false
+client_id = ""
+secret = ""
+
+[auth.external.apple]
+enabled = false
+client_id = ""
+secret = ""
+
+# Custom claims hook
+[auth.hook.custom_access_token]
+enabled = true
+uri = "pg-functions://postgres/public/custom_access_token_hook"
+
+# Edge Functions
+[edge-runtime]
+enabled = true
+port = 54328
+
+# Analytics (PostgREST)
+[analytics]
+enabled = false
+
+# Experimental features
+[experimental]
+orioledb_version = ""
+s3_host = "localhost"
+s3_region = "us-east-1"
+s3_access_key = ""
+s3_secret_key = ""
