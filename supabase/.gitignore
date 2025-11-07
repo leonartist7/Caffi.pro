@@ -1,0 +1,9 @@
+# Supabase local development
+.branches
+.temp
+.tempdb
+
+# Local database
+supabase/.branches
+supabase/.temp
+supabase/.tempdb
