@@ -420,9 +420,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Install Supabase CLI
+        run: |
+          curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+          cd /tmp && tar -xzf supabase.tar.gz
+          sudo mv supabase /usr/local/bin/supabase
+          supabase --version
+      
       - name: Run migrations
         run: |
-          npm install -g supabase
           supabase db push
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

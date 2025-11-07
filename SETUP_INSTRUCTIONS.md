@@ -51,9 +51,16 @@ Project Ref: ugppbaavzevmdkblniim
 
 ### Option B: Via CLI (Advanced)
 
+**Note:** npm global installation is no longer supported. Use the official installer:
+
 ```bash
-# Install Supabase CLI
-npm install -g supabase
+# Install Supabase CLI (Linux/macOS)
+curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+cd /tmp && tar -xzf supabase.tar.gz
+sudo mv supabase /usr/local/bin/supabase
+
+# Verify installation
+supabase --version
 
 # Login
 supabase login
@@ -65,6 +72,8 @@ supabase link --project-ref ugppbaavzevmdkblniim
 # Apply migrations
 supabase db push
 ```
+
+**For Windows:** Download from [Supabase CLI Releases](https://github.com/supabase/cli/releases)
 
 ---
 
