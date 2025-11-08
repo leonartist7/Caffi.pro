@@ -33,3 +33,29 @@ body {
   color: rgb(var(--theme-text));
   transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Text selection colors - prevent white on white */
+::selection {
+  background-color: rgba(111, 78, 55, 0.3); /* Coffee brown with transparency */
+  color: inherit; /* Keep the original text color */
+}
+
+::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: inherit;
+}
+
+/* Ensure input fields have proper selection colors */
+input::selection,
+textarea::selection,
+button::selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important; /* Force dark text on selection */
+}
+
+input::-moz-selection,
+textarea::-moz-selection,
+button::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important;
+}

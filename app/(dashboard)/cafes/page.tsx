@@ -57,23 +57,50 @@ export default function CafesListPage() {
 
   const createCafe = async () => {
     try {
-      if (!supabaseAdmin || !newCafeName || !newCafeSlug || !newCafeEmail) {
-        alert('Please fill in all required fields')
+      // Trim all inputs
+      const trimmedName = newCafeName.trim()
+      const trimmedSlug = newCafeSlug.trim()
+      const trimmedEmail = newCafeEmail.trim()
+
+      // Validate required fields
+      if (!trimmedName) {
+        alert('Please enter a business name')
+        return
+      }
+      if (!trimmedSlug) {
+        alert('Please enter a slug (URL)')
+        return
+      }
+      if (!trimmedEmail) {
+        alert('Please enter an owner email')
+        return
+      }
+
+      if (!supabaseAdmin) {
+        alert('Database connection error. Please refresh the page.')
         return
       }
 
       const { error } = await supabaseAdmin
         .from('tenants')
         .insert({
-          business_name: newCafeName,
-          slug: newCafeSlug,
-          owner_email: newCafeEmail,
-          owner_phone: newCafePhone,
+          business_name: trimmedName,
+          slug: trimmedSlug,
+          owner_email: trimmedEmail,
+          owner_phone: newCafePhone.trim(),
           subscription_tier: newCafeTier,
           setup_status: 'pending',
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Database error:', error)
+        if (error.code === '23505') {
+          alert('A café with this slug already exists. Please use a different slug.')
+        } else {
+          throw error
+        }
+        return
+      }
 
       // Reset form
       setNewCafeName('')
@@ -85,6 +112,7 @@ export default function CafesListPage() {
 
       // Refresh list
       fetchCafes()
+      alert('Café created successfully!')
     } catch (error) {
       console.error('Error creating cafe:', error)
       alert('Failed to create café. Please try again.')

@@ -288,7 +288,7 @@ export default function TenantDetailPage() {
             <h2 className="text-2xl font-semibold text-gray-800">Locations</h2>
             <button
               onClick={handleAddLocation}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition [&::selection]:bg-white/30 [&::selection]:text-white"
             >
               Add Location
             </button>
@@ -363,7 +363,7 @@ export default function TenantDetailPage() {
             <h2 className="text-2xl font-semibold text-gray-800">Categories</h2>
             <button
               onClick={handleAddCategory}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition [&::selection]:bg-white/30 [&::selection]:text-white"
             >
               Add Category
             </button>
@@ -423,7 +423,7 @@ export default function TenantDetailPage() {
             <h2 className="text-2xl font-semibold text-gray-800">Menu Items</h2>
             <button
               onClick={handleAddMenuItem}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition [&::selection]:bg-white/30 [&::selection]:text-white"
             >
               Add Menu Item
             </button>
