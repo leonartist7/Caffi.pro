@@ -580,8 +580,14 @@ video {
 .left-0 {
   left: 0px;
 }
+.right-6 {
+  right: 1.5rem;
+}
 .top-0 {
   top: 0px;
+}
+.top-6 {
+  top: 1.5rem;
 }
 .z-50 {
   z-index: 50;
@@ -1257,6 +1263,10 @@ video {
 .text-white\/80 {
   color: rgb(255 255 255 / 0.8);
 }
+.text-yellow-500 {
+  --tw-text-opacity: 1;
+  color: rgb(234 179 8 / var(--tw-text-opacity, 1));
+}
 .text-yellow-600 {
   --tw-text-opacity: 1;
   color: rgb(202 138 4 / var(--tw-text-opacity, 1));
@@ -1347,13 +1357,70 @@ video {
   --color-surface-alt: 245 241 237;
 }
 
+/* Light theme - Light Orange */
+:root[data-theme="light"],
+:root {
+  --theme-bg: 254 216 177; /* #FED8B1 */
+  --theme-text: 62 39 35;
+  --theme-border: 241 186 137;
+}
+
+/* Dark theme - Rust */
+:root[data-theme="dark"] {
+  --theme-bg: 141 64 4; /* #8D4004 */
+  --theme-text: 255 255 255;
+  --theme-border: 111 51 3;
+}
+
 body {
-  background-color: rgb(var(--color-background));
+  background-color: rgb(var(--theme-bg));
+  color: rgb(var(--theme-text));
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Text selection colors - prevent white on white */
+::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3); /* Coffee brown with transparency */
+  color: inherit; /* Keep the original text color */
+}
+::selection {
+  background-color: rgba(111, 78, 55, 0.3); /* Coffee brown with transparency */
+  color: inherit; /* Keep the original text color */
+}
+
+::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: inherit;
+}
+
+/* Ensure input fields have proper selection colors */
+input::-moz-selection, textarea::-moz-selection, button::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important; /* Force dark text on selection */
+}
+input::selection,
+textarea::selection,
+button::selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important; /* Force dark text on selection */
+}
+
+input::-moz-selection,
+textarea::-moz-selection,
+button::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important;
 }
 
 .hover\:scale-105:hover {
   --tw-scale-x: 1.05;
   --tw-scale-y: 1.05;
+  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+}
+
+.hover\:scale-110:hover {
+  --tw-scale-x: 1.1;
+  --tw-scale-y: 1.1;
   transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
 }
 
@@ -1601,5 +1668,41 @@ body {
   .lg\:grid-cols-4 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+.\[\&\:\:selection\]\:bg-white\/30::-moz-selection {
+  background-color: rgb(255 255 255 / 0.3);
+}
+
+.\[\&\:\:selection\]\:bg-white\/30::selection {
+  background-color: rgb(255 255 255 / 0.3);
+}
+
+.\[\&\:\:selection\]\:text-white::-moz-selection {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.\[\&\:\:selection\]\:text-white::selection {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.\[\&_\*\:\:selection\]\:bg-white\/30 *::-moz-selection {
+  background-color: rgb(255 255 255 / 0.3);
+}
+
+.\[\&_\*\:\:selection\]\:bg-white\/30 *::selection {
+  background-color: rgb(255 255 255 / 0.3);
+}
+
+.\[\&_\*\:\:selection\]\:text-white *::-moz-selection {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+
+.\[\&_\*\:\:selection\]\:text-white *::selection {
+  --tw-text-opacity: 1;
+  color: rgb(255 255 255 / var(--tw-text-opacity, 1));
 }
 
