@@ -402,7 +402,7 @@ export default function MenuManagementPage() {
                     key={category.category_id}
                     className={`p-3 rounded-xl cursor-pointer transition-all group ${
                       selectedCategory === category.category_id
-                        ? 'bg-primary text-white'
+                        ? 'bg-primary text-white [&::selection]:bg-white/30 [&::selection]:text-white [&_*::selection]:bg-white/30 [&_*::selection]:text-white'
                         : 'bg-surface-alt hover:bg-gray-200 text-gray-900'
                     }`}
                     onClick={() => setSelectedCategory(category.category_id)}

@@ -359,7 +359,7 @@ export default function AnalyticsPage() {
               onClick={() => setDateRange(range)}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                 dateRange === range
-                  ? 'bg-primary text-white'
+                  ? 'bg-primary text-white [&::selection]:bg-white/30 [&::selection]:text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >

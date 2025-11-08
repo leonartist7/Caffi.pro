@@ -48,7 +48,7 @@ export default function Sidebar() {
               className={`
                 flex items-center gap-3 px-4 py-3 rounded-xl transition-all
                 ${isActive
-                  ? 'bg-primary text-white shadow-md'
+                  ? 'bg-primary text-white shadow-md [&::selection]:bg-white/30 [&::selection]:text-white [&_*::selection]:bg-white/30 [&_*::selection]:text-white'
                   : 'text-gray-700 hover:bg-surface-alt'
                 }
               `}
