@@ -33,14 +33,14 @@ DROP TYPE IF EXISTS subscription_status CASCADE;
 
 -- Drop functions
 DROP FUNCTION IF EXISTS update_updated_at_column() CASCADE;
-DROP FUNCTION IF EXISTS auth.user_tenant_id() CASCADE;
-DROP FUNCTION IF EXISTS auth.user_role() CASCADE;
-DROP FUNCTION IF EXISTS auth.is_authenticated() CASCADE;
-DROP FUNCTION IF EXISTS calculate_loyalty_points(DECIMAL, UUID) CASCADE;
-DROP FUNCTION IF EXISTS generate_order_number(UUID) CASCADE;
-DROP FUNCTION IF EXISTS validate_coupon(UUID, TEXT, DECIMAL, UUID) CASCADE;
-DROP FUNCTION IF EXISTS get_tenant_analytics(UUID, TIMESTAMPTZ, TIMESTAMPTZ) CASCADE;
-DROP FUNCTION IF EXISTS custom_access_token_hook(JSONB) CASCADE;
+DROP FUNCTION IF EXISTS public.user_tenant_id() CASCADE;
+DROP FUNCTION IF EXISTS public.is_super_admin() CASCADE;
+DROP FUNCTION IF EXISTS public.is_authenticated() CASCADE;
+DROP FUNCTION IF EXISTS public.calculate_loyalty_points(DECIMAL, UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.generate_order_number(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.validate_coupon(UUID, TEXT, DECIMAL, UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.get_tenant_analytics(UUID, TIMESTAMPTZ, TIMESTAMPTZ) CASCADE;
+DROP FUNCTION IF EXISTS public.custom_access_token_hook(JSONB) CASCADE;
 
 -- Success message
 DO $$ 

@@ -39,7 +39,40 @@ You should now see: ✅ **Success**
 
 ---
 
-## Issue 2: "npm install -g supabase" fails
+## Issue 2: "permission denied for schema auth"
+
+### Problem
+When running the RLS policies migration, you get:
+```
+Error: Failed to run sql query: ERROR: 42501: permission denied for schema auth
+```
+
+### Root Cause
+The migration tried to create helper functions in the `auth` schema, but regular users don't have permission to create functions there.
+
+### Solution ✅ (FIXED)
+This has been fixed in the migration files. The helper functions now use the `public` schema instead.
+
+If you already ran the failed migration:
+
+#### Step 1: Clean up
+```sql
+-- Try to drop any partially created functions
+DROP FUNCTION IF EXISTS auth.user_tenant_id() CASCADE;
+DROP FUNCTION IF EXISTS auth.is_super_admin() CASCADE;
+DROP FUNCTION IF EXISTS auth.is_authenticated() CASCADE;
+```
+
+#### Step 2: Re-run the Fixed Migration
+- Copy contents of `/workspace/supabase/migrations/20250107000002_rls_policies.sql`
+- Paste into SQL Editor
+- Click **"Run"**
+
+You should now see: ✅ **Success**
+
+---
+
+## Issue 3: "npm install -g supabase" fails
 
 ### Problem
 Running `npm install -g supabase` shows error:
@@ -71,7 +104,7 @@ supabase --version
 
 ---
 
-## Issue 3: Migration partially applied
+## Issue 4: Migration partially applied
 
 ### Problem
 You started applying a migration but it failed halfway, now you have partial tables.
@@ -95,7 +128,7 @@ supabase db push
 
 ---
 
-## Issue 4: RLS blocking queries
+## Issue 5: RLS blocking queries
 
 ### Problem
 You can't read data even though tables exist.
@@ -132,7 +165,7 @@ await supabase.auth.signInWithPassword({
 
 ---
 
-## Issue 5: Tables not visible in Table Editor
+## Issue 6: Tables not visible in Table Editor
 
 ### Problem
 Ran migration successfully but don't see tables in Supabase Dashboard.
@@ -152,7 +185,7 @@ Should return 14 tables.
 
 ---
 
-## Issue 6: Seed data fails
+## Issue 7: Seed data fails
 
 ### Problem
 Can't insert seed data, getting foreign key errors.
@@ -170,7 +203,7 @@ Apply migrations in correct order:
 
 ---
 
-## Issue 7: Phone OTP not sending
+## Issue 8: Phone OTP not sending
 
 ### Problem
 Can't receive phone OTP for customer authentication.
@@ -194,7 +227,7 @@ Configure Twilio:
 
 ---
 
-## Issue 8: JWT custom claims not working
+## Issue 9: JWT custom claims not working
 
 ### Problem
 User tokens don't contain `tenant_id` or `role` claims.
@@ -221,7 +254,7 @@ User must log out and log back in for new token format.
 
 ---
 
-## Issue 9: Can't connect to Supabase
+## Issue 10: Can't connect to Supabase
 
 ### Problem
 Client can't connect, timeout errors.
@@ -251,7 +284,7 @@ console.log('Connection test:', { data, error })
 
 ---
 
-## Issue 10: Supabase CLI not found
+## Issue 11: Supabase CLI not found
 
 ### Problem
 ```
