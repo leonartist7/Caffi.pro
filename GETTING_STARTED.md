@@ -26,9 +26,13 @@
 
 ### Step 2: Install Supabase CLI (2 minutes)
 
+**Note:** npm global installation is no longer supported. Use the official installer:
+
 ```bash
-# Install globally
-npm install -g supabase
+# Install on Linux/macOS
+curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+cd /tmp && tar -xzf supabase.tar.gz
+sudo mv supabase /usr/local/bin/supabase
 
 # Verify installation
 supabase --version
@@ -36,6 +40,8 @@ supabase --version
 # Login to Supabase
 supabase login
 ```
+
+**For Windows:** Download the Windows installer from [Supabase CLI Releases](https://github.com/supabase/cli/releases)
 
 Follow the prompts to authenticate.
 
