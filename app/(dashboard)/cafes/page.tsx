@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 interface Cafe {
   tenant_id: string
@@ -36,12 +36,9 @@ export default function CafesListPage() {
 
   const fetchCafes = async () => {
     try {
-      if (!supabaseAdmin) {
-        console.error('Supabase admin client not initialized')
-        return
-      }
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tenants')
         .select('*')
         .order('created_at', { ascending: false })
@@ -76,12 +73,9 @@ export default function CafesListPage() {
         return
       }
 
-      if (!supabaseAdmin) {
-        alert('Database connection error. Please refresh the page.')
-        return
-      }
+      const supabase = createClient()
 
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('tenants')
         .insert({
           business_name: trimmedName,
@@ -308,9 +302,9 @@ export default function CafesListPage() {
 
       {/* Add Café Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-8 z-50">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
-            <div className="p-6 border-b border-gray-200">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full my-8 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
               <h2 className="text-2xl font-bold text-gray-900">Add New Café</h2>
             </div>
 
@@ -387,7 +381,7 @@ export default function CafesListPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3 sticky bottom-0 bg-white rounded-b-2xl z-10">
               <button
                 onClick={() => {
                   setShowAddModal(false)
@@ -397,13 +391,13 @@ export default function CafesListPage() {
                   setNewCafePhone('')
                   setNewCafeTier('starter')
                 }}
-                className="px-6 py-3 rounded-xl text-gray-700 hover:bg-gray-100 transition-all"
+                className="px-6 py-3 rounded-xl text-gray-700 hover:bg-gray-100 transition-all font-semibold"
               >
                 Cancel
               </button>
               <button
                 onClick={createCafe}
-                className="bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-xl transition-all"
+                className="bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-xl transition-all shadow-md hover:shadow-lg"
               >
                 Create Café
               </button>
