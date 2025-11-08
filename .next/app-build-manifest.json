@@ -1,9 +1,9 @@
 {
   "pages": {
-    "/(dashboard)/cafes/page": [
+    "/(dashboard)/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/cafes/page.js"
+      "static/chunks/app/(dashboard)/dashboard/page.js"
     ],
     "/(dashboard)/layout": [
       "static/chunks/webpack.js",
@@ -16,20 +16,25 @@
       "static/css/app/layout.css",
       "static/chunks/app/layout.js"
     ],
-    "/page": [
+    "/(dashboard)/cafes/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/page.js"
+      "static/chunks/app/(dashboard)/cafes/page.js"
     ],
-    "/login/page": [
+    "/(dashboard)/orders/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
+      "static/chunks/app/(dashboard)/orders/page.js"
     ],
-    "/(dashboard)/dashboard/page": [
+    "/(dashboard)/notifications/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/(dashboard)/dashboard/page.js"
+      "static/chunks/app/(dashboard)/notifications/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }

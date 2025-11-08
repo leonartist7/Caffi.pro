@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 
 interface Category {
@@ -72,9 +72,9 @@ export default function MenuManagementPage() {
 
   const fetchCafe = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tenants')
         .select('tenant_id, slug, business_name')
         .eq('slug', slug)
@@ -89,10 +89,12 @@ export default function MenuManagementPage() {
 
   const fetchCategories = async () => {
     try {
-      if (!supabaseAdmin || !slug) return
+      if (!slug) return
+
+      const supabase = createClient()
 
       // Get tenant_id first
-      const { data: tenant } = await supabaseAdmin
+      const { data: tenant } = await supabase
         .from('tenants')
         .select('tenant_id')
         .eq('slug', slug)
@@ -100,7 +102,7 @@ export default function MenuManagementPage() {
 
       if (!tenant) return
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('categories')
         .select('*')
         .eq('tenant_id', tenant.tenant_id)
@@ -117,9 +119,11 @@ export default function MenuManagementPage() {
 
   const fetchMenuItems = async () => {
     try {
-      if (!supabaseAdmin || !slug) return
+      if (!slug) return
 
-      const { data: tenant } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { data: tenant } = await supabase
         .from('tenants')
         .select('tenant_id')
         .eq('slug', slug)
@@ -127,7 +131,7 @@ export default function MenuManagementPage() {
 
       if (!tenant) return
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('menu_items')
         .select('*')
         .eq('tenant_id', tenant.tenant_id)
@@ -142,9 +146,11 @@ export default function MenuManagementPage() {
 
   const createCategory = async () => {
     try {
-      if (!supabaseAdmin || !cafe || !categoryName) return
+      if (!cafe || !categoryName) return
 
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('categories')
         .insert({
           tenant_id: cafe.tenant_id,
@@ -166,9 +172,11 @@ export default function MenuManagementPage() {
 
   const updateCategory = async () => {
     try {
-      if (!supabaseAdmin || !editingCategory || !categoryName) return
+      if (!editingCategory || !categoryName) return
 
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('categories')
         .update({ name: categoryName })
         .eq('category_id', editingCategory.category_id)
@@ -189,9 +197,9 @@ export default function MenuManagementPage() {
     if (!confirm('Are you sure you want to delete this category?')) return
 
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('categories')
         .delete()
         .eq('category_id', categoryId)
@@ -206,12 +214,14 @@ export default function MenuManagementPage() {
 
   const createMenuItem = async () => {
     try {
-      if (!supabaseAdmin || !cafe || !itemName || !itemPrice || !itemCategory) {
+      if (!cafe || !itemName || !itemPrice || !itemCategory) {
         alert('Please fill in all required fields')
         return
       }
 
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('menu_items')
         .insert({
           tenant_id: cafe.tenant_id,
@@ -237,9 +247,11 @@ export default function MenuManagementPage() {
 
   const updateMenuItem = async () => {
     try {
-      if (!supabaseAdmin || !editingItem || !itemName || !itemPrice) return
+      if (!editingItem || !itemName || !itemPrice) return
 
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('menu_items')
         .update({
           name: itemName,
@@ -264,9 +276,9 @@ export default function MenuManagementPage() {
 
   const toggleItemAvailability = async (item: MenuItem) => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('menu_items')
         .update({ is_active: !item.is_active })
         .eq('item_id', item.item_id)
@@ -282,9 +294,9 @@ export default function MenuManagementPage() {
     if (!confirm('Are you sure you want to delete this item?')) return
 
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('menu_items')
         .delete()
         .eq('item_id', itemId)
