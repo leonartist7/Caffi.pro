@@ -21,6 +21,14 @@ export default function CafesListPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [showAddModal, setShowAddModal] = useState(false)
+
+  // Form state for adding new café
+  const [newCafeName, setNewCafeName] = useState('')
+  const [newCafeSlug, setNewCafeSlug] = useState('')
+  const [newCafeEmail, setNewCafeEmail] = useState('')
+  const [newCafePhone, setNewCafePhone] = useState('')
+  const [newCafeTier, setNewCafeTier] = useState('starter')
 
   useEffect(() => {
     fetchCafes()
@@ -44,6 +52,42 @@ export default function CafesListPage() {
       console.error('Error fetching cafes:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const createCafe = async () => {
+    try {
+      if (!supabaseAdmin || !newCafeName || !newCafeSlug || !newCafeEmail) {
+        alert('Please fill in all required fields')
+        return
+      }
+
+      const { error } = await supabaseAdmin
+        .from('tenants')
+        .insert({
+          business_name: newCafeName,
+          slug: newCafeSlug,
+          owner_email: newCafeEmail,
+          owner_phone: newCafePhone,
+          subscription_tier: newCafeTier,
+          setup_status: 'pending',
+        })
+
+      if (error) throw error
+
+      // Reset form
+      setNewCafeName('')
+      setNewCafeSlug('')
+      setNewCafeEmail('')
+      setNewCafePhone('')
+      setNewCafeTier('starter')
+      setShowAddModal(false)
+
+      // Refresh list
+      fetchCafes()
+    } catch (error) {
+      console.error('Error creating cafe:', error)
+      alert('Failed to create café. Please try again.')
     }
   }
 
@@ -100,7 +144,10 @@ export default function CafesListPage() {
           <h1 className="text-3xl font-bold text-gray-900">Cafés</h1>
           <p className="text-gray-600 mt-2">Manage all your café clients</p>
         </div>
-        <button className="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all hover:shadow-xl">
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition-all hover:shadow-xl"
+        >
           + Add New Café
         </button>
       </div>
@@ -230,6 +277,112 @@ export default function CafesListPage() {
           </div>
         </div>
       </div>
+
+      {/* Add Café Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-8 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Add New Café</h2>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Business Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={newCafeName}
+                    onChange={(e) => setNewCafeName(e.target.value)}
+                    placeholder="e.g., Blue Bottle Coffee"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Slug (URL) *
+                  </label>
+                  <input
+                    type="text"
+                    value={newCafeSlug}
+                    onChange={(e) => setNewCafeSlug(e.target.value.toLowerCase().replace(/\s+/g, '-'))}
+                    placeholder="e.g., blue-bottle-coffee"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Owner Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={newCafeEmail}
+                    onChange={(e) => setNewCafeEmail(e.target.value)}
+                    placeholder="owner@cafe.com"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={newCafePhone}
+                    onChange={(e) => setNewCafePhone(e.target.value)}
+                    placeholder="+33 1 23 45 67 89"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Subscription Tier
+                </label>
+                <select
+                  value={newCafeTier}
+                  onChange={(e) => setNewCafeTier(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
+                >
+                  <option value="starter">Starter</option>
+                  <option value="pro">Pro</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowAddModal(false)
+                  setNewCafeName('')
+                  setNewCafeSlug('')
+                  setNewCafeEmail('')
+                  setNewCafePhone('')
+                  setNewCafeTier('starter')
+                }}
+                className="px-6 py-3 rounded-xl text-gray-700 hover:bg-gray-100 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={createCafe}
+                className="bg-primary hover:bg-primary-dark text-white font-semibold px-6 py-3 rounded-xl transition-all"
+              >
+                Create Café
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
