@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabaseAdmin } from '@/lib/supabase'
+import OrderCard, { OrderStatus } from '@/components/OrderCard'
 
 interface Order {
   order_id: string
@@ -96,59 +97,6 @@ export default function OrdersPage() {
     return orders.filter(order => order.status === status)
   }
 
-  const getStatusColor = (status: Order['status']) => {
-    const colors: Record<Order['status'], string> = {
-      pending: 'border-yellow-500 bg-yellow-50',
-      preparing: 'border-blue-500 bg-blue-50',
-      ready: 'border-green-500 bg-green-50',
-      completed: 'border-gray-500 bg-gray-50',
-      cancelled: 'border-red-500 bg-red-50',
-    }
-    return colors[status] || 'border-gray-300 bg-white'
-  }
-
-  const OrderCard = ({ order }: { order: Order }) => (
-    <div className={`p-4 rounded-xl border-l-4 bg-white shadow-sm mb-3 ${getStatusColor(order.status)}`}>
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <p className="font-mono font-bold text-gray-900">{order.order_number}</p>
-          <p className="text-sm font-serif italic text-gray-700">
-            {order.tenants?.business_name || 'Unknown Café'}
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="font-mono font-bold text-gray-900">€{order.total_amount.toFixed(2)}</p>
-          <p className="text-xs text-gray-500">
-            {new Date(order.created_at).toLocaleTimeString()}
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-3">
-        <p className="text-sm text-gray-600">
-          Customer: {order.users?.full_name || 'Guest'}
-        </p>
-        {order.users?.phone && (
-          <p className="text-xs text-gray-500">{order.users.phone}</p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <select
-          value={order.status}
-          onChange={(e) => updateOrderStatus(order.order_id, e.target.value as Order['status'])}
-          className="text-xs px-3 py-1 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
-        >
-          <option value="pending">Pending</option>
-          <option value="preparing">Preparing</option>
-          <option value="ready">Ready</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-      </div>
-    </div>
-  )
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -221,7 +169,17 @@ export default function OrdersPage() {
                   </div>
                 ) : (
                   columnOrders.map((order) => (
-                    <OrderCard key={order.order_id} order={order} />
+                    <OrderCard
+                      key={order.order_id}
+                      orderNumber={order.order_number}
+                      cafeName={order.tenants?.business_name || 'Unknown Café'}
+                      customerName={order.users?.full_name || 'Guest'}
+                      customerPhone={order.users?.phone}
+                      totalAmount={order.total_amount}
+                      status={order.status as OrderStatus}
+                      createdAt={order.created_at}
+                      onStatusChange={(newStatus) => updateOrderStatus(order.order_id, newStatus)}
+                    />
                   ))
                 )}
               </div>
