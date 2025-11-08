@@ -166,3 +166,4 @@ SELECT
   (SELECT SUM(total) FROM orders WHERE status = 'completed') as total_revenue;
 
 
+
