@@ -1,0 +1,28 @@
+{
+  "name": "caffi-pro",
+  "version": "1.0.0",
+  "description": "Multi-tenant SaaS platform for coffee shop mobile apps",
+  "type": "module",
+  "scripts": {
+    "verify": "node verify-setup.js",
+    "test:connection": "node test-connection.js",
+    "test": "npm run verify"
+  },
+  "keywords": [
+    "supabase",
+    "multi-tenant",
+    "coffee-shop",
+    "mobile-app",
+    "saas"
+  ],
+  "author": "Caffi.pro Team",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.3"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
