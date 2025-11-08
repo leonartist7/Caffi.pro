@@ -8,6 +8,8 @@ import {
   ShoppingBagIcon,
   BellIcon,
   ClipboardDocumentListIcon,
+  ChartBarIcon,
+  CogIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/react/24/outline'
 
@@ -17,6 +19,8 @@ const navigation = [
   { name: 'Orders', href: '/orders', icon: ShoppingBagIcon },
   { name: 'Notifications', href: '/notifications', icon: BellIcon },
   { name: 'Activity Log', href: '/activity', icon: ClipboardDocumentListIcon },
+  { name: 'Analytics', href: '/analytics', icon: ChartBarIcon },
+  { name: 'Settings', href: '/settings', icon: CogIcon },
 ]
 
 export default function Sidebar() {
