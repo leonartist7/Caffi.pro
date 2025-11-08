@@ -13,6 +13,23 @@
   --color-surface-alt: 245 241 237;
 }
 
+/* Light theme - Light Orange */
+:root[data-theme="light"],
+:root {
+  --theme-bg: 254 216 177; /* #FED8B1 */
+  --theme-text: 62 39 35;
+  --theme-border: 241 186 137;
+}
+
+/* Dark theme - Rust */
+:root[data-theme="dark"] {
+  --theme-bg: 141 64 4; /* #8D4004 */
+  --theme-text: 255 255 255;
+  --theme-border: 111 51 3;
+}
+
 body {
-  background-color: rgb(var(--color-background));
+  background-color: rgb(var(--theme-bg));
+  color: rgb(var(--theme-text));
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

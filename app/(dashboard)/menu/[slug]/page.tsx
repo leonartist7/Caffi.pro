@@ -403,12 +403,12 @@ export default function MenuManagementPage() {
                     className={`p-3 rounded-xl cursor-pointer transition-all group ${
                       selectedCategory === category.category_id
                         ? 'bg-primary text-white'
-                        : 'bg-surface-alt hover:bg-gray-200'
+                        : 'bg-surface-alt hover:bg-gray-200 text-gray-900'
                     }`}
                     onClick={() => setSelectedCategory(category.category_id)}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-medium">{category.name}</span>
+                      <span className={`font-medium ${selectedCategory === category.category_id ? 'text-white' : 'text-gray-900'}`}>{category.name}</span>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={(e) => {

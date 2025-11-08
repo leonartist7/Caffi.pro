@@ -1,4 +1,10 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
+
 export default function DashboardHome() {
+  const router = useRouter()
+
   return (
     <div>
       <div className="mb-8">
@@ -57,15 +63,24 @@ export default function DashboardHome() {
       <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary/5 transition-all">
+          <button
+            onClick={() => router.push('/cafes')}
+            className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary/5 transition-all"
+          >
             <span className="text-2xl">➕</span>
             <span className="font-medium text-gray-700">Add New Café</span>
           </button>
-          <button className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-accent hover:bg-accent/5 transition-all">
+          <button
+            onClick={() => router.push('/notifications')}
+            className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-accent hover:bg-accent/5 transition-all"
+          >
             <span className="text-2xl">📢</span>
             <span className="font-medium text-gray-700">Send Notification</span>
           </button>
-          <button className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all">
+          <button
+            onClick={() => alert('Reports feature coming soon!')}
+            className="flex items-center gap-3 p-4 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all"
+          >
             <span className="text-2xl">📊</span>
             <span className="font-medium text-gray-700">View Reports</span>
           </button>
