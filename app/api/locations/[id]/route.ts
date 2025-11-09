@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // GET a single location
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('locations')
       .select('*')
       .eq('location_id', id)
@@ -42,11 +42,6 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-=======
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
->>>>>>> origin/main
     const { id } = params;
     const body = await request.json();
 
@@ -82,7 +77,7 @@ export async function PATCH(
     if (estimated_prep_time !== undefined)
       updateData.estimated_prep_time = estimated_prep_time;
 
-<<<<<<< HEAD    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('locations')
       .update(updateData)
       .eq('location_id', id)
@@ -111,7 +106,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('locations')
       .delete()
       .eq('location_id', id);
@@ -130,7 +125,4 @@ export async function DELETE(
     );
   }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/main
