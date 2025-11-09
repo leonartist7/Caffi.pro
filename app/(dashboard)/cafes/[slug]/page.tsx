@@ -3,15 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
+import Badge, { type BadgeVariant } from '@/components/Badge'
 
 import {
-  BuildingStorefrontIcon,
   PhoneIcon,
   EnvelopeIcon,
   CheckCircleIcon,
-  ClockIcon,
-  XCircleIcon,
 } from '@heroicons/react/24/outline'
 
 interface Cafe {

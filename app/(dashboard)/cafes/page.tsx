@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import CafeCard from '@/components/CafeCard'
 
 interface Cafe {

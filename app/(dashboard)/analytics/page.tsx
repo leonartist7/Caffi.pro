@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabaseAdmin } from '@/lib/supabase'
 import StatCard from '@/components/StatCard'
 import {
   LineChart,
