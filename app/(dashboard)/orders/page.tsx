@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabaseAdmin } from '@/lib/supabase'
-import OrderCard, { OrderStatus } from '@/components/OrderCard'
+import { createClient } from '@/lib/supabase'
+
 
 interface Order {
   order_id: string
@@ -35,9 +35,9 @@ export default function OrdersPage() {
 
   const fetchCafes = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tenants')
         .select('tenant_id, business_name, slug')
         .order('business_name')
@@ -51,9 +51,9 @@ export default function OrdersPage() {
 
   const fetchOrders = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      let query = supabaseAdmin
+      let query = supabase
         .from('orders')
         .select(`
           *,
@@ -79,9 +79,9 @@ export default function OrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { error } = await supabaseAdmin
+      const { error } = await supabase
         .from('orders')
         .update({ status: newStatus })
         .eq('order_id', orderId)

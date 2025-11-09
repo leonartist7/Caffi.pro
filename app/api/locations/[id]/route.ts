@@ -12,6 +12,13 @@ export async function GET(
     }
     const { id } = params;
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from('locations')
       .select('*')
@@ -84,6 +91,13 @@ export async function PATCH(
     if (estimated_prep_time !== undefined)
       updateData.estimated_prep_time = estimated_prep_time;
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from('locations')
       .update(updateData)
@@ -116,6 +130,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
     const { id } = params;
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
 
     const { error } = await supabaseAdmin
       .from('locations')

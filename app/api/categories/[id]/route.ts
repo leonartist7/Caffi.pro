@@ -13,6 +13,13 @@ export async function GET(
 
     const { id } = params;
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from('categories')
       .select('*')
@@ -53,6 +60,13 @@ export async function PATCH(
 
     const { id } = params;
     const body = await request.json();
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
 
     const { name, description, display_order, is_active } = body;
 
@@ -95,6 +109,13 @@ export async function DELETE(
     }
 
     const { id } = params;
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
 
     const { error } = await supabaseAdmin
       .from('categories')
