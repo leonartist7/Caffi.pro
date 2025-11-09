@@ -356,4 +356,7 @@ You can now proceed with building the rest of your application!
 ---
 
 **Built with ❤️ for Caffi.pro**
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main
