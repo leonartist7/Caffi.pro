@@ -1,217 +1,108 @@
-# 🚀 Apply Database Migrations - Manual Method
+# 🗄️ HOW TO APPLY DATABASE MIGRATIONS
 
-This is the **easiest and most reliable** way to set up your database!
-
----
-
-## ⚡ 5-Minute Setup
-
-### Step 1: Open Your Dashboard
-
-Go to: **https://supabase.com/dashboard/project/ugppbaavzevmdkblniim**
+Since the Supabase CLI requires internet access to download, here's how to apply your database migrations manually through the Supabase Dashboard.
 
 ---
 
-### Step 2: Open SQL Editor
+## 📋 QUICK START (5 Minutes)
 
-Click **"SQL Editor"** in the left sidebar
+### **Step 1: Go to Supabase Dashboard**
+1. Visit https://supabase.com/dashboard
+2. Sign in to your account
+3. Select your project: `ugppbaavzevmdkblniim`
+
+### **Step 2: Apply All Migrations**
+1. Click on **SQL Editor** in the left sidebar
+2. Click **New Query**
+3. Copy the entire contents of **`supabase/complete_migrations.sql`**
+4. Paste into the SQL editor
+5. Click **Run** (or press Ctrl/Cmd + Enter)
+6. Wait ~10 seconds for completion
+
+### **Step 3: Apply Seed Data (Optional)**
+1. In SQL Editor, create a new query
+2. Copy contents of **`supabase/seed/01_test_tenants.sql`**
+3. Paste and run
+4. This creates 2 test cafés with sample data
+
+### **Step 4: Create Super Admin User**
+1. Go to **Authentication > Users**
+2. Click **Add User**
+3. Enter your email and password
+4. Copy the user's UUID
+5. Go back to SQL Editor and run:
+
+```sql
+-- Replace <user-uuid> and <your-email> with your values
+INSERT INTO public.super_admins (auth_id, email, full_name)
+VALUES ('<user-uuid>', '<your-email>', 'Your Name');
+
+UPDATE auth.users
+SET raw_app_meta_data = raw_app_meta_data || '{"role": "super_admin"}'::jsonb
+WHERE id = '<user-uuid>';
+```
+
+### **Step 5: Get Service Role Key**
+1. Go to **Settings > API**
+2. Copy the **service_role** key
+3. Update `.env.local`:
+```
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
+```
+
+### **Step 6: Test Your Setup**
+```bash
+npm run dev
+# Visit http://localhost:3000
+# Login with your super admin credentials
+```
 
 ---
 
-### Step 3: Run Migration Files (One at a Time)
+## ✅ VERIFICATION
 
-For each file below:
-1. Open the file in your code editor
-2. **Copy ALL contents** (Ctrl+A, Ctrl+C)
-3. Go to SQL Editor in Supabase Dashboard
-4. Click **"New Query"**
-5. **Paste** the contents (Ctrl+V)
-6. Click **"Run"** button (or press Ctrl+Enter)
-7. Wait for ✅ "Success" message
+After setup, verify you see:
+- ✅ 14 tables in Table Editor
+- ✅ 2 test cafés (if seed data applied)
+- ✅ Your super admin user
+- ✅ Can login to dashboard
 
 ---
 
-### Migration 1: Initial Schema (Creates 13 tables)
+## 🆘 TROUBLESHOOTING
 
-📁 **File:** `/workspace/supabase/migrations/20250107000001_initial_schema.sql`
+**Can't login?**
+- Check service role key is correct in `.env.local`
+- Verify super admin user exists
+- Restart dev server: `npm run dev`
 
-**What it does:** Creates all database tables
+**Tables already exist?**
+- Skip migration or drop existing tables first
+- Check if migrations were already applied
+
+**RLS errors?**
+- Make sure super admin user has correct role
+- Check `raw_app_meta_data` includes `"role": "super_admin"`
+
+---
+
+## 📚 WHAT GETS CREATED
+
+**14 Tables:**
 - tenants, tenant_manifests, users, locations
 - categories, menu_items, orders, order_items
 - loyalty_transactions, rewards_catalog
 - coupons, coupon_usage, push_campaigns
+- admin_activity_log, super_admins
+
+**40+ RLS Policies** for security
+
+**14 Database Functions** for business logic
+
+**9 Triggers** for automation
+
+**20+ Indexes** for performance
 
 ---
 
-### Migration 2: RLS Policies (Enables security)
-
-📁 **File:** `/workspace/supabase/migrations/20250107000002_rls_policies.sql`
-
-**What it does:** Enables Row-Level Security
-- Protects all tables with security policies
-- Multi-tenant data isolation
-- Role-based access control
-
----
-
-### Migration 3: Database Functions (Business logic)
-
-📁 **File:** `/workspace/supabase/migrations/20250107000003_database_functions.sql`
-
-**What it does:** Adds business logic
-- Order number generation
-- Loyalty point calculations
-- Coupon validation
-- Analytics functions
-- 7 automated triggers
-
----
-
-### Migration 4: Auth Setup (Authentication)
-
-📁 **File:** `/workspace/supabase/migrations/20250107000004_auth_setup.sql`
-
-**What it does:** Configures authentication
-- Custom JWT claims
-- Super admin table
-- Auth hooks
-- User signup handling
-
----
-
-### Migration 5: Test Data (Optional but recommended)
-
-📁 **File:** `/workspace/supabase/seed/01_test_tenants.sql`
-
-**What it does:** Loads sample data
-- 2 test cafés (Blue Bottle, Sunrise Coffee)
-- 3 locations
-- 7 menu items with prices
-- 3 test customers
-- Sample rewards and coupons
-
----
-
-## ✅ Verification
-
-After running all files, verify in **Table Editor**:
-
-You should see these 14 tables:
-- ✅ tenants
-- ✅ tenant_manifests
-- ✅ users
-- ✅ locations
-- ✅ categories
-- ✅ menu_items
-- ✅ orders
-- ✅ order_items
-- ✅ loyalty_transactions
-- ✅ rewards_catalog
-- ✅ coupons
-- ✅ coupon_usage
-- ✅ push_campaigns
-- ✅ super_admins
-
----
-
-## 🧪 Quick Test
-
-In SQL Editor, run:
-
-```sql
--- Should return 2 cafés
-SELECT business_name, slug FROM tenants;
-
--- Should return menu items
-SELECT name, price FROM menu_items LIMIT 5;
-
--- Should return locations
-SELECT name, city FROM locations;
-```
-
-Expected results:
-- 2 tenants (Blue Bottle, Sunrise Coffee)
-- 5+ menu items
-- 3 locations
-
----
-
-## 🎯 What's Next
-
-Once migrations are done:
-
-### 1. Enable Phone Auth (2 min)
-- Go to **Authentication > Providers**
-- Enable **Phone**
-- Click **Save**
-
-### 2. Enable JWT Hook (1 min)
-- Go to **Authentication > Hooks**
-- Enable **"Custom Access Token"**
-- Select function: `public.custom_access_token_hook`
-- Click **Save**
-
-### 3. Create Super Admin (2 min)
-- Go to **Authentication > Users**
-- Click **"Add user"**
-- Email: `admin@caffi.pro`
-- Password: (create secure password)
-- Auto Confirm: ✅ Yes
-- Click **"Create user"**
-
-Then in SQL Editor:
-
-```sql
--- Replace <USER_UUID> with the UUID from the created user
-INSERT INTO public.super_admins (auth_id, email, full_name)
-VALUES ('<USER_UUID>', 'admin@caffi.pro', 'Super Admin');
-
-UPDATE auth.users
-SET raw_app_meta_data = raw_app_meta_data || '{"role": "super_admin"}'::jsonb
-WHERE id = '<USER_UUID>';
-```
-
----
-
-## 🎉 Done!
-
-Your database is now fully operational!
-
-Test it:
-```bash
-cd /workspace
-npm install @supabase/supabase-js
-node test-connection.js
-```
-
----
-
-## 🆘 Troubleshooting
-
-### "Syntax error near..."
-- Make sure you copied the **entire** file
-- Check you didn't accidentally copy line numbers
-- Try copying again
-
-### "Relation already exists"
-- Table was already created
-- This is okay! Skip to next migration
-
-### "Function does not exist"
-- Make sure Migration 3 ran successfully
-- Re-run Migration 3 if needed
-
----
-
-## 📚 Next Steps
-
-Once database is working:
-- Read **START_HERE.md** for what to build next
-- Test connection with `node test-connection.js`
-- Choose next module (Admin Dashboard, Client Dashboard, or Mobile App)
-
----
-
-**Ready? Open your Supabase Dashboard and start copying files!** 🚀
-
-Dashboard: https://supabase.com/dashboard/project/ugppbaavzevmdkblniim
+**Your database will be fully configured after these steps! 🎉**

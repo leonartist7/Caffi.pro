@@ -470,3 +470,7 @@ Good luck building your coffee shop empire! ☕
 **Created:** 2025-01-08  
 **Status:** ✅ Complete and tested  
 **Your Next File:** `HOW_TO_VERIFY.md`
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

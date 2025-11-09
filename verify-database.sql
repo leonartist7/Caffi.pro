@@ -304,3 +304,7 @@ SELECT
         THEN 'Functions present ✅'
         ELSE 'Missing functions ❌'
     END as functions_status;
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
