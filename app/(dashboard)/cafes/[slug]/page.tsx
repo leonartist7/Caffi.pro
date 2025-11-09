@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabaseAdmin } from '@/lib/supabase'
+import Badge, { BadgeVariant } from '@/components/Badge'
 import {
   BuildingStorefrontIcon,
   PhoneIcon,
@@ -121,7 +122,7 @@ export default function CafeDetailPage() {
       <div className="text-center py-12">
         <div className="text-6xl mb-4">❌</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Café not found</h2>
-        <p className="text-gray-600 mb-6">The café you're looking for doesn't exist.</p>
+        <p className="text-gray-600 mb-6">The café you&apos;re looking for doesn&apos;t exist.</p>
         <Link
           href="/cafes"
           className="inline-block bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-xl"
@@ -140,18 +141,24 @@ export default function CafeDetailPage() {
     { id: 'settings', name: 'Settings', icon: '⚙️' },
   ]
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_progress: 'bg-blue-100 text-blue-800',
-      launched: 'bg-green-100 text-green-800',
-      paused: 'bg-gray-100 text-gray-800',
+  const getStatusBadge = (status: string): { variant: BadgeVariant; label: string } => {
+    const statusMap: Record<string, { variant: BadgeVariant; label: string }> = {
+      pending: { variant: 'warning', label: 'Pending' },
+      in_progress: { variant: 'info', label: 'In Progress' },
+      launched: { variant: 'success', label: 'Launched' },
+      paused: { variant: 'default', label: 'Paused' },
     }
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status?.replace('_', ' ') || 'N/A'}
-      </span>
-    )
+    return statusMap[status] || { variant: 'default', label: status?.replace('_', ' ') || 'N/A' }
+  }
+
+  const getTierBadge = (tier: string): { variant: BadgeVariant; label: string } => {
+    const tierMap: Record<string, { variant: BadgeVariant; label: string }> = {
+      free: { variant: 'default', label: 'FREE' },
+      starter: { variant: 'info', label: 'STARTER' },
+      pro: { variant: 'primary', label: 'PRO' },
+      enterprise: { variant: 'accent', label: 'ENTERPRISE' },
+    }
+    return tierMap[tier] || { variant: 'default', label: tier?.toUpperCase() || 'N/A' }
   }
 
   const checklistItems = [
@@ -202,10 +209,12 @@ export default function CafeDetailPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {getStatusBadge(cafe.setup_status)}
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-                  {cafe.subscription_tier?.toUpperCase()}
-                </span>
+                <Badge variant={getStatusBadge(cafe.setup_status).variant} size="md">
+                  {getStatusBadge(cafe.setup_status).label}
+                </Badge>
+                <Badge variant={getTierBadge(cafe.subscription_tier).variant} size="md">
+                  {getTierBadge(cafe.subscription_tier).label}
+                </Badge>
               </div>
             </div>
           </div>
