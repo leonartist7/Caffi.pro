@@ -31,5 +31,13 @@
     "postcss": "^8.4.32",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.3.3"
-  }
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:vercel": "npm run type-check && npm run lint:strict && next build",
+    "type-check": "tsc --noEmit",
+    "lint": "next lint",
+    "lint:strict": "next lint --max-warnings 0",
+    "start": "next start"
 }
