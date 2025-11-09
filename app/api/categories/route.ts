@@ -14,6 +14,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from('categories')
       .select('*')
@@ -46,6 +53,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
+      );
+    }
+
+    if (!supabaseAdmin) {
+      return NextResponse.json(
+        { error: 'Database connection not configured' },
+        { status: 500 }
       );
     }
 
