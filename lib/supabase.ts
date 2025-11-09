@@ -13,6 +13,3 @@ export const supabase = createSupabaseClient(supabaseUrl, supabaseServiceRoleKey
     autoRefreshToken: false,
   },
 })
-
-// Export createClient function for client-side usage
-export { createSupabaseClient as createClient }
