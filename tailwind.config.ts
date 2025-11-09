@@ -11,10 +11,13 @@ const config: Config = {
       colors: {
         primary: '#2D5F5D',
         secondary: '#F4A259',
-        accent: '#E07A5F',
-      },
+        accent: '#E07A5F',      },
     },
   },
   plugins: [],
 }
 export default config
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

@@ -280,3 +280,7 @@ const [topTenants, setTopTenants] = useState<Array<{tenant_id, business_name, re
 ---
 
 **Built with React best practices and Next.js 14 App Router**
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

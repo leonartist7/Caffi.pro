@@ -3,12 +3,58 @@
 @tailwind utilities;
 
 :root {
-  --primary: #2D5F5D;
-  --secondary: #F4A259;
-  --accent: #E07A5F;
+  --color-primary: 111 78 55;
+  --color-primary-light: 139 111 71;
+  --color-primary-dark: 62 39 35;
+  --color-accent: 255 107 53;
+  --color-accent-light: 255 140 97;
+  --color-background: 250 250 249;
+  --color-surface: 255 255 255;
+  --color-surface-alt: 245 241 237;
+}
+
+/* Light theme - Light Orange */
+:root[data-theme="light"],
+:root {
+  --theme-bg: 254 216 177; /* #FED8B1 */
+  --theme-text: 62 39 35;
+  --theme-border: 241 186 137;
+}
+
+/* Dark theme - Rust */
+:root[data-theme="dark"] {
+  --theme-bg: 141 64 4; /* #8D4004 */
+  --theme-text: 255 255 255;
+  --theme-border: 111 51 3;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: #f8f9fa;
+  background-color: rgb(var(--theme-bg));
+  color: rgb(var(--theme-text));
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* Text selection colors - prevent white on white */
+::selection {
+  background-color: rgba(111, 78, 55, 0.3); /* Coffee brown with transparency */
+  color: inherit; /* Keep the original text color */
+}
+
+::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: inherit;
+}
+
+/* Ensure input fields have proper selection colors */
+input::selection,
+textarea::selection,
+button::selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important; /* Force dark text on selection */
+}
+
+input::-moz-selection,
+textarea::-moz-selection,
+button::-moz-selection {
+  background-color: rgba(111, 78, 55, 0.3);
+  color: #000 !important;}

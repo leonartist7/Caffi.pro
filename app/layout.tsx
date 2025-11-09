@@ -6,8 +6,7 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Caffi.pro - Admin Dashboard',
-  description: 'Analytics and management for your coffee shop',
-}
+  description: 'Manage your café clients from one powerful dashboard',}
 
 export default function RootLayout({
   children,

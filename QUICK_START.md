@@ -71,3 +71,7 @@ lib/
 ---
 
 See **ANALYTICS_SETUP.md** for detailed documentation.
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

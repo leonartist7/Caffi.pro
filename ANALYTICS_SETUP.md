@@ -259,3 +259,7 @@ Consider adding:
 Run `npm install && npm run dev` and visit `http://localhost:3000/analytics` to see your dashboard.
 
 Questions? Check the README_APP.md for more details.
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
