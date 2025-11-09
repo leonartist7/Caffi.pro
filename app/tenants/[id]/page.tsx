@@ -56,7 +56,7 @@ interface MenuItem {
 
 export default function TenantDetailPage() {
   const params = useParams();
-  const tenantId = params.id as string;
+  const tenantId = params?.id as string;
 
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [locations, setLocations] = useState<Location[]>([]);
