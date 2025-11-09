@@ -170,4 +170,7 @@ See LICENSE file for details.
 ---
 
 Built with ❤️ for coffee shop owners everywhere ☕
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

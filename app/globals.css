@@ -57,5 +57,4 @@ input::-moz-selection,
 textarea::-moz-selection,
 button::-moz-selection {
   background-color: rgba(111, 78, 55, 0.3);
-  color: #000 !important;
-}
+  color: #000 !important;}
