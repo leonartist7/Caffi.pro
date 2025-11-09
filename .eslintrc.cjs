@@ -4,7 +4,7 @@ module.exports = {
   extends: [
     'next/core-web-vitals',
   ],
-  ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules', 'admin-dashboard', 'mobile-app'],
+  ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules'],
   rules: {
     '@typescript-eslint/no-explicit-any': 'off',
     '@next/next/no-img-element': 'off',

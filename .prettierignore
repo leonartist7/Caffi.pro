@@ -1,0 +1,9 @@
+node_modules
+.next
+.cache
+dist
+build
+admin-dashboard
+mobile-app
+*.min.js
+package-lock.json

@@ -5,6 +5,7 @@
 Use these action verbs to start your requests for maximum clarity and efficiency:
 
 ### 🔍 **Analysis & Investigation**
+
 - **Analyze** - Deep dive into code, performance, or architecture
 - **Investigate** - Research issues, bugs, or unexpected behavior
 - **Review** - Code review, security audit, or quality check
@@ -13,6 +14,7 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 - **Profile** - Performance analysis and bottlenecks
 
 ### 🐛 **Debugging & Fixing**
+
 - **Debug** - Identify and investigate issues
 - **Fix** - Resolve specific bugs or errors
 - **Resolve** - Address warnings, conflicts, or issues
@@ -20,6 +22,7 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 - **Troubleshoot** - Systematic problem-solving
 
 ### ⚡ **Optimization**
+
 - **Optimize** - Improve performance, efficiency, or code quality
 - **Refactor** - Restructure code without changing behavior
 - **Improve** - Enhance readability, maintainability, or UX
@@ -27,6 +30,7 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 - **Reduce** - Cut bundle size, dependencies, or complexity
 
 ### ✅ **Verification & Testing**
+
 - **Verify** - Check implementation, functionality, or correctness
 - **Test** - Run tests or create test cases
 - **Validate** - Ensure data integrity or business rules
@@ -34,6 +38,7 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 - **Audit** - Security, performance, or compliance review
 
 ### 🛠️ **Implementation**
+
 - **Implement** - Add new features or functionality
 - **Create** - Build components, modules, or files
 - **Add** - Insert new capabilities
@@ -42,6 +47,7 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 - **Setup** - Initialize configuration or infrastructure
 
 ### 🔄 **Maintenance**
+
 - **Update** - Modify existing functionality
 - **Upgrade** - Version bumps or dependency updates
 - **Migrate** - Move to new patterns, frameworks, or databases
@@ -49,6 +55,7 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 - **Clean** - Remove unused code, dependencies, or files
 
 ### 📦 **DevOps & Deployment**
+
 - **Deploy** - Push to production or staging
 - **Build** - Compile, bundle, or package
 - **Release** - Prepare and publish versions
@@ -60,26 +67,31 @@ Use these action verbs to start your requests for maximum clarity and efficiency
 ## 🎯 Effective Prompt Patterns
 
 ### Pattern 1: **Action + Target + Context**
+
 ```
 Fix the authentication error in login.tsx that occurs after password reset
 ```
 
 ### Pattern 2: **Action + Target + Constraint**
+
 ```
 Optimize the database queries in analytics.ts without changing the API
 ```
 
 ### Pattern 3: **Action + Target + Goal**
+
 ```
 Refactor the menu component to improve loading performance by 50%
 ```
 
 ### Pattern 4: **Verify + Specific + Expected**
+
 ```
 Verify that all API routes return proper error codes and messages
 ```
 
 ### Pattern 5: **Multi-Step Command**
+
 ```
 1. Fix TypeScript errors in components/
 2. Run tests
@@ -91,6 +103,7 @@ Verify that all API routes return proper error codes and messages
 ## ⚡ Power Commands
 
 ### Quick Combinations
+
 - **"Fix and verify"** - Fix issue + confirm it works
 - **"Debug and optimize"** - Find issue + improve performance
 - **"Implement and test"** - Add feature + create tests
@@ -99,6 +112,7 @@ Verify that all API routes return proper error codes and messages
 - **"Build and deploy"** - Compile + push to production
 
 ### Scope Modifiers
+
 - **"Quick fix"** - Minimal change to resolve issue
 - **"Deep dive"** - Comprehensive analysis
 - **"Aggressive optimization"** - Maximum improvements
@@ -110,6 +124,7 @@ Verify that all API routes return proper error codes and messages
 ## 📋 Request Structure Templates
 
 ### For Bug Fixes
+
 ```
 Debug [component/file]: [symptom]
 Expected: [behavior]
@@ -118,6 +133,7 @@ Context: [relevant info]
 ```
 
 ### For Features
+
 ```
 Implement [feature name]
 Requirements:
@@ -128,6 +144,7 @@ Testing: [how to verify]
 ```
 
 ### For Optimization
+
 ```
 Optimize [target]
 Current performance: [metrics]
@@ -136,6 +153,7 @@ Constraints: [limitations]
 ```
 
 ### For Code Review
+
 ```
 Review [file/component]
 Focus areas:
@@ -150,6 +168,7 @@ Focus areas:
 ## 💡 Best Practices
 
 ### ✅ DO:
+
 - **Be specific** - Name files, components, or functions
 - **Provide context** - Error messages, expected behavior, environment
 - **State constraints** - "without breaking existing functionality"
@@ -158,6 +177,7 @@ Focus areas:
 - **Batch related tasks** - "Fix all TypeScript errors" vs individual fixes
 
 ### ❌ DON'T:
+
 - Be vague - "make it better" or "fix the app"
 - Assume context - Always mention relevant files or components
 - Mix unrelated tasks - Keep requests focused
@@ -169,12 +189,14 @@ Focus areas:
 ## 🚀 Advanced Patterns
 
 ### Conditional Logic
+
 ```
 If build fails: fix errors
 Else: proceed with deployment
 ```
 
 ### Iterative Improvement
+
 ```
 Optimize API performance:
 1. Profile current bottlenecks
@@ -184,6 +206,7 @@ Optimize API performance:
 ```
 
 ### Parallel Tasks
+
 ```
 In parallel:
 - Run tests in watch mode
@@ -198,33 +221,41 @@ In parallel:
 ### ❌ Ineffective → ✅ Effective
 
 **Vague:**
+
 > "The app isn't working"
 
 **Clear:**
+
 > "Debug the blank screen issue on the dashboard page after login"
 
 ---
 
 **Too Broad:**
+
 > "Make it faster"
 
 **Specific:**
+
 > "Optimize menu-items API to load under 200ms by adding indexes and caching"
 
 ---
 
 **Missing Context:**
+
 > "Fix the error"
 
 **With Context:**
+
 > "Fix the TypeScript error in app/api/menu-items/route.ts:45 - 'body' property missing"
 
 ---
 
 **No Success Criteria:**
+
 > "Improve the code"
 
 **With Criteria:**
+
 > "Refactor authentication logic to follow React best practices and achieve 90%+ test coverage"
 
 ---
@@ -263,21 +294,25 @@ Profile [feature] to identify bottlenecks
 ## 🔥 Pro Tips
 
 1. **Chain commands with "then"**
+
    ```
    Fix build errors, then run tests, then commit
    ```
 
 2. **Use priorities**
+
    ```
    Fix critical security issues first, then address performance
    ```
 
 3. **Specify depth**
+
    ```
    Quick scan vs Deep analysis vs Comprehensive audit
    ```
 
 4. **Request documentation**
+
    ```
    Implement OAuth and document the flow
    ```
@@ -304,6 +339,7 @@ Add these for even better results:
 ## 📖 Real-World Examples
 
 ### Example 1: Full Feature Implementation
+
 ```
 Implement user profile editing:
 - Create /api/profile PATCH endpoint
@@ -316,6 +352,7 @@ Implement user profile editing:
 ```
 
 ### Example 2: Performance Issue
+
 ```
 Debug slow page load on /dashboard:
 Current: 5-8 seconds
@@ -326,6 +363,7 @@ Verify with Lighthouse score >90
 ```
 
 ### Example 3: Code Quality
+
 ```
 Review and refactor app/api/ folder:
 - Apply consistent error handling

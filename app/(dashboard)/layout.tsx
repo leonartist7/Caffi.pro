@@ -1,47 +1,29 @@
 'use client'
 
 import Sidebar from '@/components/Sidebar'
-import { ThemeProvider, useTheme } from '@/contexts/ThemeContext'
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline'
+import LiveClock from '@/components/LiveClock'
 
-function ThemeToggle() {
-  const { theme, toggleTheme } = useTheme()
-
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <button
-      onClick={toggleTheme}
-      className="fixed top-6 right-6 z-50 p-3 rounded-full bg-white shadow-lg hover:shadow-xl transition-all border-2 border-gray-200 hover:scale-110"
-      title={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
-    >
-      {theme === 'light' ? (
-        <MoonIcon className="w-6 h-6 text-gray-700" />
-      ) : (
-        <SunIcon className="w-6 h-6 text-yellow-500" />
-      )}
-    </button>
-  )
-}
-
-function DashboardContent({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gradient-to-br from-foam via-cream-100 to-coffee-100 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800">
       <Sidebar />
-      <main className="flex-1 ml-64 p-8">
-        <ThemeToggle />
-        {children}
+
+      <main className="flex-1 ml-64 transition-all duration-500">
+        {/* Header */}
+        <header className="h-20 px-8 flex items-center justify-between border-b border-coffee-200/50 dark:border-dark-700 bg-white/50 dark:bg-dark-900/50 backdrop-blur-lg">
+          <LiveClock />
+
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-coffee-600 dark:text-cream-400">
+              Welcome back,{' '}
+              <span className="font-semibold text-coffee-700 dark:text-cream-200">Admin</span>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <div className="p-8">{children}</div>
       </main>
     </div>
-  )
-}
-
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  return (
-    <ThemeProvider>
-      <DashboardContent>{children}</DashboardContent>
-    </ThemeProvider>
   )
 }
