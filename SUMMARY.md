@@ -215,8 +215,12 @@ caffi-pro/
 ### Set Up Backend (30 minutes)
 ```bash
 # 1. Create Supabase project at https://supabase.com
-# 2. Install CLI
-npm install -g supabase
+
+# 2. Install CLI (Linux/macOS)
+curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+cd /tmp && tar -xzf supabase.tar.gz && sudo mv supabase /usr/local/bin/supabase
+
+# For Windows: Download from https://github.com/supabase/cli/releases
 
 # 3. Link project
 cd /workspace/supabase

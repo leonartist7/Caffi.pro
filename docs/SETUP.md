@@ -6,7 +6,7 @@ Before you begin, ensure you have the following installed:
 
 - **Node.js** 18+ and npm
 - **Git**
-- **Supabase CLI** (`npm install -g supabase`)
+- **Supabase CLI** (see installation instructions below)
 - **Supabase Account** (https://supabase.com)
 
 ## 🚀 Quick Start
@@ -33,8 +33,15 @@ Before you begin, ensure you have the following installed:
 git clone <your-repo-url>
 cd caffi-pro
 
-# Install Supabase CLI
-npm install -g supabase
+# Install Supabase CLI (Linux/macOS)
+curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+cd /tmp && tar -xzf supabase.tar.gz
+sudo mv supabase /usr/local/bin/supabase
+
+# For Windows: Download from https://github.com/supabase/cli/releases
+
+# Verify installation
+supabase --version
 
 # Login to Supabase
 supabase login

@@ -26,17 +26,13 @@
 
 ### Step 2: Install Supabase CLI (2 minutes)
 
-**Note:** Supabase CLI no longer supports `npm install -g`. Use one of these methods:
-
-#### Option A: Direct Binary Installation (Recommended for Linux)
+**Note:** npm global installation is no longer supported. Use the official installer:
 
 ```bash
-# Download and install the binary
-curl -L https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
-tar -xzf /tmp/supabase.tar.gz -C /tmp
-sudo mv /tmp/supabase /usr/local/bin/supabase
-chmod +x /usr/local/bin/supabase
-
+# Install on Linux/macOS
+curl -fsSL https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o /tmp/supabase.tar.gz
+cd /tmp && tar -xzf supabase.tar.gz
+sudo mv supabase /usr/local/bin/supabase
 # Verify installation
 supabase --version
 
@@ -44,18 +40,7 @@ supabase --version
 supabase login
 ```
 
-#### Option B: Use npx (No Installation Required)
-
-```bash
-# Use npx to run Supabase CLI without installing
-npx supabase --version
-
-# For commands, prefix with npx:
-npx supabase login
-npx supabase link --project-ref <your-project-ref>
-npx supabase db push
-```
-
+**For Windows:** Download the Windows installer from [Supabase CLI Releases](https://github.com/supabase/cli/releases)
 Follow the prompts to authenticate.
 
 ---

@@ -163,7 +163,7 @@ ALTER TABLE public.super_admins ENABLE ROW LEVEL SECURITY;
 -- Super admins can view all super admins
 CREATE POLICY "Super admins can view super admins"
     ON public.super_admins FOR SELECT
-    USING (auth.is_super_admin());
+    USING (public.is_super_admin());
 
 -- Super admins can view their own record
 CREATE POLICY "Super admins can view themselves"
