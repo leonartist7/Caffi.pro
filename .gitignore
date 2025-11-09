@@ -31,3 +31,7 @@ dist-ssr
 # Build output
 build
 out
+<<<<<<< HEAD
+=======
+.next/
+>>>>>>> origin/main

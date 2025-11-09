@@ -337,3 +337,7 @@ Everything you need to manage your coffee shop app from a single, beautiful dash
 ---
 
 **Questions or need support?** Refer to the documentation files or review the source code.
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
