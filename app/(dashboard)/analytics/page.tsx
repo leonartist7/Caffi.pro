@@ -41,9 +41,9 @@ interface TopCafe {
 }
 
 export default function AnalyticsPage() {
-  const [loading] = useState(true)
+  const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState('30') // days
-  const [analytics] = useState<AnalyticsData>({
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
     totalRevenue: 24580,
     totalOrders: 1247,
     totalUsers: 3456,
