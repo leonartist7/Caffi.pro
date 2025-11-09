@@ -51,7 +51,8 @@ export default function Sidebar() {
   return (
     <aside
       className={`
-        fixed left-0 top-0 h-screen z-40
+        hidden lg:fixed left-0 top-0 h-screen z-40
+        lg:block
         transition-all duration-500 ease-in-out
         ${isCollapsed ? 'w-20' : 'w-64'}
         bg-gradient-to-b from-coffee-50 to-cream-100
