@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 interface ActivityLog {
   log_id: string
@@ -31,9 +31,9 @@ export default function ActivityLogPage() {
 
   const fetchCafes = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tenants')
         .select('tenant_id, business_name, slug')
         .order('business_name')
@@ -47,9 +47,9 @@ export default function ActivityLogPage() {
 
   const fetchLogs = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      let query = supabaseAdmin
+      let query = supabase
         .from('admin_activity_log')
         .select(`
           *,

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 import {
   BuildingStorefrontIcon,
   PhoneIcon,
@@ -46,12 +46,9 @@ export default function CafeDetailPage() {
 
   const fetchCafe = async () => {
     try {
-      if (!supabaseAdmin) {
-        console.error('Supabase admin client not initialized')
-        return
-      }
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tenants')
         .select('*')
         .eq('slug', slug)
@@ -68,10 +65,12 @@ export default function CafeDetailPage() {
   }
 
   const saveNotes = async () => {
-    if (!supabaseAdmin || !cafe) return
+    if (!cafe) return
 
     try {
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('tenants')
         .update({ internal_notes: notes })
         .eq('tenant_id', cafe.tenant_id)
@@ -85,7 +84,7 @@ export default function CafeDetailPage() {
   }
 
   const toggleChecklistItem = async (key: string) => {
-    if (!supabaseAdmin || !cafe) return
+    if (!cafe) return
 
     const newChecklist = {
       ...cafe.onboarding_checklist,
@@ -93,7 +92,9 @@ export default function CafeDetailPage() {
     }
 
     try {
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('tenants')
         .update({ onboarding_checklist: newChecklist })
         .eq('tenant_id', cafe.tenant_id)

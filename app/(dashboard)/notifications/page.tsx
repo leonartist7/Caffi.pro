@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabaseAdmin } from '@/lib/supabase'
+import { createClient } from '@/lib/supabase'
 
 interface Campaign {
   campaign_id: string
@@ -37,9 +37,9 @@ export default function NotificationsPage() {
 
   const fetchCafes = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('tenants')
         .select('tenant_id, business_name, slug')
         .order('business_name')
@@ -53,9 +53,9 @@ export default function NotificationsPage() {
 
   const fetchCampaigns = async () => {
     try {
-      if (!supabaseAdmin) return
+      const supabase = createClient()
 
-      const { data, error } = await supabaseAdmin
+      const { data, error } = await supabase
         .from('push_campaigns')
         .select(`
           *,
@@ -74,12 +74,14 @@ export default function NotificationsPage() {
 
   const createCampaign = async () => {
     try {
-      if (!supabaseAdmin || !selectedCafe || !title || !message) {
+      if (!selectedCafe || !title || !message) {
         alert('Please fill in all fields')
         return
       }
 
-      const { error } = await supabaseAdmin
+      const supabase = createClient()
+
+      const { error } = await supabase
         .from('push_campaigns')
         .insert({
           tenant_id: selectedCafe,
