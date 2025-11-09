@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabaseAdmin } from '@/lib/supabase'
+import Badge, { BadgeVariant } from '@/components/Badge'
 
 interface Campaign {
   campaign_id: string
@@ -106,17 +107,13 @@ export default function NotificationsPage() {
     }
   }
 
-  const getStatusBadge = (status: Campaign['status']) => {
-    const styles: Record<Campaign['status'], string> = {
-      draft: 'bg-gray-100 text-gray-800',
-      scheduled: 'bg-blue-100 text-blue-800',
-      sent: 'bg-green-100 text-green-800',
+  const getStatusBadgeVariant = (status: Campaign['status']): BadgeVariant => {
+    const variants: Record<Campaign['status'], BadgeVariant> = {
+      draft: 'default',
+      scheduled: 'info',
+      sent: 'success',
     }
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status]}`}>
-        {status.toUpperCase()}
-      </span>
-    )
+    return variants[status]
   }
 
   if (loading) {
@@ -198,7 +195,9 @@ export default function NotificationsPage() {
                         {campaign.tenants?.business_name}
                       </p>
                     </div>
-                    {getStatusBadge(campaign.status)}
+                    <Badge variant={getStatusBadgeVariant(campaign.status)}>
+                      {campaign.status.toUpperCase()}
+                    </Badge>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">{campaign.message}</p>
                   <div className="flex items-center gap-4 text-xs text-gray-500">
