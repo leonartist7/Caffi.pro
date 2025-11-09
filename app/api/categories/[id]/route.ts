@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // GET a single category
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('categories')
       .select('*')
       .eq('category_id', id)
@@ -52,7 +52,7 @@ export async function PATCH(
     if (display_order !== undefined) updateData.display_order = display_order;
     if (is_active !== undefined) updateData.is_active = is_active;
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('categories')
       .update(updateData)
       .eq('category_id', id)
@@ -81,7 +81,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('categories')
       .delete()
       .eq('category_id', id);
@@ -100,7 +100,4 @@ export async function DELETE(
     );
   }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/main

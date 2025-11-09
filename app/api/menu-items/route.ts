@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // GET all menu items for a tenant
 export async function GET(request: NextRequest) {
-  try {
-=======
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
->>>>>>> origin/main
-    const searchParams = request.nextUrl.searchParams;
+  try {const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
     const categoryId = searchParams.get('category_id');
 
@@ -20,7 +14,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let query = supabaseAdmin
+    let query = supabase
       .from('menu_items')
       .select('*, categories(name)')
       .eq('tenant_id', tenantId);
@@ -51,7 +45,6 @@ export async function GET(request: NextRequest) {
 // POST create a new menu item
 export async function POST(request: NextRequest) {
   try {
-<<<<<<< HEAD    const body = await request.json();
     const {
       tenant_id,
       category_id,
@@ -73,16 +66,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-=======
-    if (!supabaseAdmin) {
+    if (!supabase) {
       return NextResponse.json(
         { error: 'Database connection not configured' },
         { status: 500 }
       );
     }
 
->>>>>>> origin/main
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('menu_items')
       .insert({
         tenant_id,
@@ -113,4 +104,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-<<<<<<< HEAD

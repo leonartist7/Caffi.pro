@@ -534,7 +534,3 @@ export default function TenantDetailPage() {
     </div>
   );
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main

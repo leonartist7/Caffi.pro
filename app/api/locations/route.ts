@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // GET all locations for a tenant
 export async function GET(request: NextRequest) {
   try {
-=======
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
->>>>>>> origin/main
     const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
 
@@ -19,11 +14,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('locations')
       .select('*')
       .eq('tenant_id', tenantId)
-      .order('display_order', { ascending: true });
+      .order('display_order', { ascending: true});
 
     if (error) {
       console.error('Error fetching locations:', error);
@@ -42,13 +37,7 @@ export async function GET(request: NextRequest) {
 
 // POST create a new location
 export async function POST(request: NextRequest) {
-  try {
-=======
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
->>>>>>> origin/main
-    const body = await request.json();
+  try {const body = await request.json();
     const {
       tenant_id,
       name,
@@ -73,7 +62,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD    const { data, error } = await supabaseAdmin
       .from('locations')
       .insert({
         tenant_id,
@@ -107,7 +95,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/main

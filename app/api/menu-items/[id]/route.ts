@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 
 // GET a single menu item
 export async function GET(
@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('menu_items')
       .select('*, categories(name)')
       .eq('item_id', id)
@@ -41,13 +41,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
-=======
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
->>>>>>> origin/main
-    const { id } = params;
+  try {const { id } = params;
     const body = await request.json();
 
     const {
@@ -73,7 +67,6 @@ export async function PATCH(
     if (calories !== undefined) updateData.calories = calories;
     if (is_available !== undefined) updateData.is_available = is_available;
 
-<<<<<<< HEAD    const { data, error } = await supabaseAdmin
       .from('menu_items')
       .update(updateData)
       .eq('item_id', id)
@@ -102,7 +95,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('menu_items')
       .delete()
       .eq('item_id', id);
@@ -121,7 +114,4 @@ export async function DELETE(
     );
   }
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/main
