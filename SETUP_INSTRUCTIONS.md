@@ -61,7 +61,6 @@ sudo mv supabase /usr/local/bin/supabase
 
 # Verify installation
 supabase --version
-
 # Login
 supabase login
 
