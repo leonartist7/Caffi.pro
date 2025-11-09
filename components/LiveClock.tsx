@@ -31,15 +31,15 @@ export default function LiveClock() {
   }
 
   return (
-    <div className="flex flex-col items-start space-y-1">
-      <div className="font-mono text-2xl font-bold text-coffee-700 dark:text-cream-200 tracking-wider">
+    <div className="flex flex-col items-start space-y-0.5 lg:space-y-1">
+      <div className="font-mono text-lg lg:text-2xl font-bold text-coffee-700 dark:text-cream-200 tracking-wider">
         {formatTime(time)}
       </div>
-      <div className="text-xs text-coffee-500 dark:text-cream-400 font-medium uppercase tracking-wide">
+      <div className="text-[10px] lg:text-xs text-coffee-500 dark:text-cream-400 font-medium uppercase tracking-wide">
         {formatDate(time)}
       </div>
-      <div className="flex items-center space-x-1 text-xs text-coffee-400 dark:text-cream-500">
-        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+      <div className="flex items-center space-x-1 text-[10px] lg:text-xs text-coffee-400 dark:text-cream-500">
+        <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-green-500 animate-pulse"></div>
         <span>Live</span>
       </div>
     </div>
