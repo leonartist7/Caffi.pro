@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase';
 // GET all categories for a tenant
 export async function GET(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
 
@@ -38,6 +42,10 @@ export async function GET(request: NextRequest) {
 // POST create a new category
 export async function POST(request: NextRequest) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
     const body = await request.json();
     const { tenant_id, name, description, display_order, is_active } = body;
 
