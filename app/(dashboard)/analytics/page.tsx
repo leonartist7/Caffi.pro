@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
 import StatCard from '@/components/StatCard'
 import {
   LineChart,
@@ -42,9 +41,9 @@ interface TopCafe {
 }
 
 export default function AnalyticsPage() {
-  const [loading, setLoading] = useState(true)
+  const [loading] = useState(true)
   const [dateRange, setDateRange] = useState('30') // days
-  const [analytics, setAnalytics] = useState<AnalyticsData>({
+  const [analytics] = useState<AnalyticsData>({
     totalRevenue: 24580,
     totalOrders: 1247,
     totalUsers: 3456,
