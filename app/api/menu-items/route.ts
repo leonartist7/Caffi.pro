@@ -4,9 +4,11 @@ import { supabaseAdmin } from '@/lib/supabase';
 // GET all menu items for a tenant
 export async function GET(request: NextRequest) {
   try {
+=======
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
+>>>>>>> origin/main
     const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
     const categoryId = searchParams.get('category_id');
@@ -49,10 +51,7 @@ export async function GET(request: NextRequest) {
 // POST create a new menu item
 export async function POST(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
-    }
-    const body = await request.json();
+<<<<<<< HEAD    const body = await request.json();
     const {
       tenant_id,
       category_id,
@@ -74,6 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+=======
     if (!supabaseAdmin) {
       return NextResponse.json(
         { error: 'Database connection not configured' },
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+>>>>>>> origin/main
     const { data, error } = await supabaseAdmin
       .from('menu_items')
       .insert({
@@ -112,4 +113,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
+<<<<<<< HEAD

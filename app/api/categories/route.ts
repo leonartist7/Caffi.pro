@@ -4,10 +4,12 @@ import { supabaseAdmin } from '@/lib/supabase';
 // GET all categories for a tenant
 export async function GET(request: NextRequest) {
   try {
+=======
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
+>>>>>>> origin/main
     const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
 
@@ -18,14 +20,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Database connection not configured' },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabaseAdmin
+<<<<<<< HEAD    const { data, error } = await supabaseAdmin
       .from('categories')
       .select('*')
       .eq('tenant_id', tenantId)
@@ -49,10 +44,12 @@ export async function GET(request: NextRequest) {
 // POST create a new category
 export async function POST(request: NextRequest) {
   try {
+=======
     if (!supabaseAdmin) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
     }
 
+>>>>>>> origin/main
     const body = await request.json();
     const { tenant_id, name, description, display_order, is_active } = body;
 
@@ -64,14 +61,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { error: 'Database connection not configured' },
-        { status: 500 }
-      );
-    }
-
-    const { data, error } = await supabaseAdmin
+<<<<<<< HEAD    const { data, error } = await supabaseAdmin
       .from('categories')
       .insert({
         tenant_id,
@@ -97,4 +87,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

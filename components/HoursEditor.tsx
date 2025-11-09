@@ -112,4 +112,7 @@ export default function HoursEditor({ value, onChange }: HoursEditorProps) {
     </div>
   );
 }
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main
