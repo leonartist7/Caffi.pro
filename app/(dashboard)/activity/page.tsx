@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import Badge, { BadgeVariant } from '@/components/Badge'
 
 
 interface ActivityLog {
