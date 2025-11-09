@@ -7,6 +7,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
     const { id } = params;
 
     if (!supabaseAdmin) {
@@ -50,6 +53,9 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
     const { id } = params;
     const body = await request.json();
 
@@ -111,6 +117,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
     const { id } = params;
 
     if (!supabaseAdmin) {

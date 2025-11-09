@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase'
 
+
 interface ActivityLog {
   log_id: string
   tenant_id: string | null
@@ -90,7 +91,7 @@ export default function ActivityLogPage() {
     return icons[action] || '📝'
   }
 
-  const getActionColor = (action: string) => {
+  const getActionColor = (action: string): string => {
     const colors: Record<string, string> = {
       create: 'bg-green-100 text-green-800',
       update: 'bg-blue-100 text-blue-800',
@@ -101,6 +102,19 @@ export default function ActivityLogPage() {
       send: 'bg-purple-100 text-purple-800',
     }
     return colors[action] || 'bg-gray-100 text-gray-800'
+  }
+
+  const getActionBadgeVariant = (action: string): BadgeVariant => {
+    const variants: Record<string, BadgeVariant> = {
+      create: 'success',
+      update: 'info',
+      delete: 'error',
+      approve: 'success',
+      suspend: 'warning',
+      resume: 'info',
+      send: 'primary',
+    }
+    return variants[action] || 'default'
   }
 
   if (loading) {
@@ -210,9 +224,9 @@ export default function ActivityLogPage() {
                           )}
                         </p>
                       </div>
-                      <span className={`px-2 py-1 rounded-lg text-xs font-medium ml-2 flex-shrink-0 ${getActionColor(log.action)}`}>
+                      <Badge variant={getActionBadgeVariant(log.action)} className="ml-2 flex-shrink-0">
                         {log.action.toUpperCase()}
-                      </span>
+                      </Badge>
                     </div>
 
                     <div className="flex items-center gap-4 mt-2">

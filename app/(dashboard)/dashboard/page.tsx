@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import StatCard from '@/components/StatCard'
 
 export default function DashboardHome() {
   const router = useRouter()
@@ -9,54 +10,43 @@ export default function DashboardHome() {
     <div>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Welcome back! Here's what's happening with your cafés.</p>
+        <p className="text-gray-600 mt-2">Welcome back! Here&apos;s what&apos;s happening with your cafés.</p>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl">☕</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">+2 this month</span>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium">Active Cafés</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">12</p>
-        </div>
+        <StatCard
+          title="Active Cafés"
+          value="12"
+          icon="☕"
+          iconBgColor="bg-primary/10"
+          trend={{ value: '+2 this month', positive: true }}
+        />
 
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-              <span className="text-2xl">💰</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">+12%</span>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium">Monthly Revenue</h3>
-          <p className="text-3xl font-bold text-gray-900 font-mono mt-1">€2,400</p>
-        </div>
+        <StatCard
+          title="Monthly Revenue"
+          value="€2,400"
+          icon="💰"
+          iconBgColor="bg-accent/10"
+          valueClassName="font-mono"
+          trend={{ value: '+12%', positive: true }}
+        />
 
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center">
-              <span className="text-2xl">📦</span>
-            </div>
-            <span className="text-sm text-red-600 font-medium">3 urgent</span>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium">Pending Orders</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">24</p>
-        </div>
+        <StatCard
+          title="Pending Orders"
+          value="24"
+          icon="📦"
+          iconBgColor="bg-orange-100"
+          trend={{ value: '3 urgent', positive: false }}
+        />
 
-        <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <span className="text-2xl">👥</span>
-            </div>
-            <span className="text-sm text-green-600 font-medium">+156 today</span>
-          </div>
-          <h3 className="text-gray-600 text-sm font-medium">Active Users</h3>
-          <p className="text-3xl font-bold text-gray-900 mt-1">1,234</p>
-        </div>
+        <StatCard
+          title="Active Users"
+          value="1,234"
+          icon="👥"
+          iconBgColor="bg-blue-100"
+          trend={{ value: '+156 today', positive: true }}
+        />
       </div>
 
       {/* Quick Actions */}

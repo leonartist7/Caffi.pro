@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
+import CafeCard from '@/components/CafeCard'
 
 interface Cafe {
   tenant_id: string
@@ -120,33 +121,6 @@ export default function CafesListPage() {
     return matchesSearch && matchesStatus
   })
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      in_progress: 'bg-blue-100 text-blue-800',
-      launched: 'bg-green-100 text-green-800',
-      paused: 'bg-gray-100 text-gray-800',
-    }
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status?.replace('_', ' ') || 'N/A'}
-      </span>
-    )
-  }
-
-  const getTierBadge = (tier: string) => {
-    const styles: Record<string, string> = {
-      starter: 'bg-gray-100 text-gray-800',
-      pro: 'bg-primary/10 text-primary',
-      enterprise: 'bg-accent/10 text-accent',
-    }
-    return (
-      <span className={`px-3 py-1 rounded-full text-xs font-medium ${styles[tier] || 'bg-gray-100 text-gray-800'}`}>
-        {tier?.toUpperCase() || 'N/A'}
-      </span>
-    )
-  }
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -222,52 +196,16 @@ export default function CafesListPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCafes.map((cafe) => (
-            <Link
+            <CafeCard
               key={cafe.tenant_id}
-              href={`/cafes/${cafe.slug}`}
-              className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover:shadow-xl hover:scale-105 transition-all cursor-pointer"
-            >
-              {/* Logo placeholder */}
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 ring-4 ring-primary/20">
-                <span className="text-3xl">☕</span>
-              </div>
-
-              {/* Cafe Name */}
-              <h3 className="text-xl font-serif italic text-gray-900 mb-2">
-                {cafe.business_name}
-              </h3>
-
-              {/* Contact */}
-              <p className="text-sm text-gray-600 mb-1">{cafe.owner_email}</p>
-              {cafe.owner_phone && (
-                <p className="text-sm text-gray-600 mb-4">{cafe.owner_phone}</p>
-              )}
-
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-surface-alt rounded-xl">
-                <div>
-                  <p className="text-xs text-gray-600">Orders</p>
-                  <p className="text-lg font-bold text-gray-900">--</p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-600">Revenue</p>
-                  <p className="text-lg font-bold text-gray-900 font-mono">--</p>
-                </div>
-              </div>
-
-              {/* Badges */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {getStatusBadge(cafe.setup_status)}
-                {getTierBadge(cafe.subscription_tier)}
-              </div>
-
-              {/* Last Activity */}
-              {cafe.last_activity_at && (
-                <p className="text-xs text-gray-500 mt-4">
-                  Last active: {new Date(cafe.last_activity_at).toLocaleDateString()}
-                </p>
-              )}
-            </Link>
+              slug={cafe.slug}
+              businessName={cafe.business_name}
+              ownerEmail={cafe.owner_email}
+              ownerPhone={cafe.owner_phone}
+              setupStatus={cafe.setup_status}
+              subscriptionTier={cafe.subscription_tier}
+              lastActivityAt={cafe.last_activity_at}
+            />
           ))}
         </div>
       )}
