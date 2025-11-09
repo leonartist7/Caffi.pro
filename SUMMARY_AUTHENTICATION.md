@@ -255,4 +255,7 @@ cd /workspace/admin-dashboard && npm run dev
 
 **Happy coding! 🎉**
 
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

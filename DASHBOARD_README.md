@@ -194,4 +194,7 @@ Proprietary - All rights reserved
 ---
 
 Built with ☕ for Caffi.Pro
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

@@ -17,5 +17,5 @@ export default function Home() {
         <div className="text-6xl mb-4">☕</div>
         <p className="text-xl">Redirecting to login...</p>
       </div>
-    </div>
-  )}
+    </div>  )
+}

@@ -329,4 +329,7 @@ npm run dev
 **Built with ☕ and ❤️ for Caffi.Pro**
 
 *All features implemented and ready to use!*
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

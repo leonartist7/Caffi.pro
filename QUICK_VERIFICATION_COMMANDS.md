@@ -341,4 +341,7 @@ supabase db push
 
 **Last Updated:** 2025-01-08  
 **Quick Reference Version:** 1.0
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

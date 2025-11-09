@@ -12,7 +12,6 @@ This guide will get you up and running with the admin dashboard in 5 minutes.
 ## 🚀 5-Minute Setup
 
 ### Step 1: Install Dependencies (2 minutes)
-
 ```bash
 npm install
 ```
@@ -56,7 +55,6 @@ Ensure your Supabase database has the required tables:
 Migrations are located in: `/workspace/supabase/migrations/`
 
 ### Step 4: Start Development Server (30 seconds)
-
 ```bash
 npm run dev
 ```

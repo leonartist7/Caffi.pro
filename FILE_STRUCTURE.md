@@ -334,4 +334,7 @@ npm run preview      # Test production build
 ---
 
 **Your dashboard is fully organized and ready to use!** 🎉
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main

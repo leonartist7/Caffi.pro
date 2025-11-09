@@ -1,7 +1,6 @@
 # Logs
 logs
-*.log
-npm-debug.log*
+*.lognpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
@@ -31,4 +30,7 @@ dist-ssr
 # Build output
 build
 out
+<<<<<<< HEAD
+=======
 .next/
+>>>>>>> origin/main
