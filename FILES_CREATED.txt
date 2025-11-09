@@ -84,3 +84,7 @@ Quick Start:
   4. Open http://localhost:3000
 
 See QUICKSTART.md for detailed instructions.
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

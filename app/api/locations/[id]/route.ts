@@ -8,7 +8,6 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-
     const { data, error } = await supabaseAdmin
       .from('locations')
       .select('*')
@@ -43,6 +42,11 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+=======
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+>>>>>>> origin/main
     const { id } = params;
     const body = await request.json();
 
@@ -78,7 +82,7 @@ export async function PATCH(
     if (estimated_prep_time !== undefined)
       updateData.estimated_prep_time = estimated_prep_time;
 
-    const { data, error } = await supabaseAdmin
+<<<<<<< HEAD    const { data, error } = await supabaseAdmin
       .from('locations')
       .update(updateData)
       .eq('location_id', id)
@@ -107,7 +111,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-
     const { error } = await supabaseAdmin
       .from('locations')
       .delete()
@@ -127,3 +130,7 @@ export async function DELETE(
     );
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

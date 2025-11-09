@@ -8,7 +8,6 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-
     const { data, error } = await supabaseAdmin
       .from('menu_items')
       .select('*, categories(name)')
@@ -43,6 +42,11 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+=======
+    if (!supabaseAdmin) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
+    }
+>>>>>>> origin/main
     const { id } = params;
     const body = await request.json();
 
@@ -69,7 +73,7 @@ export async function PATCH(
     if (calories !== undefined) updateData.calories = calories;
     if (is_available !== undefined) updateData.is_available = is_available;
 
-    const { data, error } = await supabaseAdmin
+<<<<<<< HEAD    const { data, error } = await supabaseAdmin
       .from('menu_items')
       .update(updateData)
       .eq('item_id', id)
@@ -98,7 +102,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-
     const { error } = await supabaseAdmin
       .from('menu_items')
       .delete()
@@ -118,3 +121,7 @@ export async function DELETE(
     );
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main

@@ -8,7 +8,6 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-
     const { data, error } = await supabaseAdmin
       .from('categories')
       .select('*')
@@ -45,7 +44,6 @@ export async function PATCH(
   try {
     const { id } = params;
     const body = await request.json();
-
     const { name, description, display_order, is_active } = body;
 
     const updateData: any = {};
@@ -83,7 +81,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
-
     const { error } = await supabaseAdmin
       .from('categories')
       .delete()
@@ -103,3 +100,7 @@ export async function DELETE(
     );
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
