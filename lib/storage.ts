@@ -1,4 +1,4 @@
-import { supabaseAdmin } from './supabase'
+import { supabase } from './supabase'
 
 export const STORAGE_BUCKETS = {
   CAFE_LOGOS: 'cafe-logos',
@@ -25,7 +25,7 @@ export async function uploadFile(
   path?: string
 ): Promise<UploadResult> {
   try {
-    if (!supabaseAdmin) {
+    if (!supabase) {
       throw new Error('Supabase client not initialized')
     }
 
@@ -35,7 +35,7 @@ export async function uploadFile(
     const filePath = path ? `${path}/${fileName}` : fileName
 
     // Upload file
-    const { data, error } = await supabaseAdmin.storage
+    const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
         cacheControl: '3600',
@@ -47,7 +47,7 @@ export async function uploadFile(
     }
 
     // Get public URL
-    const { data: urlData } = supabaseAdmin.storage
+    const { data: urlData } = supabase.storage
       .from(bucket)
       .getPublicUrl(data.path)
 
@@ -72,11 +72,11 @@ export async function uploadFile(
  */
 export async function deleteFile(bucket: string, path: string): Promise<boolean> {
   try {
-    if (!supabaseAdmin) {
+    if (!supabase) {
       throw new Error('Supabase client not initialized')
     }
 
-    const { error } = await supabaseAdmin.storage.from(bucket).remove([path])
+    const { error } = await supabase.storage.from(bucket).remove([path])
 
     if (error) {
       throw error
@@ -119,10 +119,10 @@ export async function uploadMenuItemImage(
  * @param path - The file path
  */
 export function getPublicUrl(bucket: string, path: string): string {
-  if (!supabaseAdmin) {
+  if (!supabase) {
     return ''
   }
 
-  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path)
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path)
   return data.publicUrl
 }

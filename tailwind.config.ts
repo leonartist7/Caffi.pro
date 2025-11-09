@@ -17,7 +17,3 @@ const config: Config = {
   plugins: [],
 }
 export default config
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
