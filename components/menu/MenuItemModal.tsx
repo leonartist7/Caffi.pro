@@ -23,6 +23,9 @@ interface MenuItemModalProps {
   onClose: () => void
   item?: any
   categories: any[]
+  onSave?: (menuItemData: any) => Promise<void>
+  tenantId?: string
+  menuItem?: any
 }
 
 export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemModalProps) {

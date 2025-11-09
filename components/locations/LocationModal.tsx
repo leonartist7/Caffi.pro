@@ -26,6 +26,8 @@ interface LocationModalProps {
   isOpen: boolean
   onClose: () => void
   location?: any
+  onSave?: (locationData: any) => Promise<void>
+  tenantId?: string
 }
 
 export function LocationModal({ isOpen, onClose, location }: LocationModalProps) {

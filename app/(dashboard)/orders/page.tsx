@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import OrderCard, { type OrderStatus } from '@/components/OrderCard'
 
 
 interface Order {

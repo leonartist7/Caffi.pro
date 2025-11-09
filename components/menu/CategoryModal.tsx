@@ -17,6 +17,8 @@ interface CategoryModalProps {
   isOpen: boolean
   onClose: () => void
   category?: any
+  onSave?: (categoryData: any) => Promise<void>
+  tenantId?: string
 }
 
 export function CategoryModal({ isOpen, onClose, category }: CategoryModalProps) {
