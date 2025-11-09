@@ -6,14 +6,17 @@ const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'Caffi.pro - Admin Dashboard',
-  description: 'Manage your café clients from one powerful dashboard',}
+  description: 'Manage your café clients from one powerful dashboard',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode}) {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <body className={inter.className}>{children}</body>
     </html>
-  )}
+  )
+}
