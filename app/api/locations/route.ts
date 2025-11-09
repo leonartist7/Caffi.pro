@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { data, error } = await supabase
       .from('locations')
       .insert({
         tenant_id,

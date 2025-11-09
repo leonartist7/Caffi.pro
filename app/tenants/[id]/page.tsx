@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import LocationModal from '@/components/LocationModal';
-import CategoryModal from '@/components/CategoryModal';
-import MenuItemModal from '@/components/MenuItemModal';
+import LocationModal from '@/components/locations/LocationModal';
+import CategoryModal from '@/components/menu/CategoryModal';
+import MenuItemModal from '@/components/menu/MenuItemModal';
 
 interface Tenant {
   tenant_id: string;
