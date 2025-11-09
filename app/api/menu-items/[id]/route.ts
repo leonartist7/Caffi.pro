@@ -67,6 +67,7 @@ export async function PATCH(
     if (calories !== undefined) updateData.calories = calories;
     if (is_available !== undefined) updateData.is_available = is_available;
 
+    const { data, error } = await supabase
       .from('menu_items')
       .update(updateData)
       .eq('item_id', id)
