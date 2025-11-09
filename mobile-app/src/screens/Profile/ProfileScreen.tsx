@@ -6,8 +6,14 @@ import {
   SafeAreaView,
   TouchableOpacity,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Typography, Card } from '../../components';
 import { colors, spacing, borderRadius } from '../../theme';
+import { RootStackParamList } from '../../types';
+import { useFavorites } from '../../contexts/FavoritesContext';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface MenuItemProps {
   icon: string;
@@ -45,6 +51,9 @@ const MenuItem: React.FC<MenuItemProps> = ({
 );
 
 const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const { favorites } = useFavorites();
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -69,8 +78,8 @@ const ProfileScreen: React.FC = () => {
           <MenuItem
             icon="⭐"
             title="Favorites"
-            subtitle="Your saved items"
-            onPress={() => {}}
+            subtitle={`${favorites.length} saved items`}
+            onPress={() => navigation.navigate('Favorites')}
           />
           <MenuItem
             icon="🎁"
@@ -92,7 +101,7 @@ const ProfileScreen: React.FC = () => {
           <MenuItem
             icon="📍"
             title="Store Locations"
-            onPress={() => {}}
+            onPress={() => navigation.navigate('Locations')}
           />
           <MenuItem
             icon="🔔"

@@ -57,11 +57,26 @@ export interface Order {
   items: OrderItem[];
 }
 
+// Store Location types
+export interface StoreLocation {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  phone: string;
+  hours: string;
+  distance?: number;
+}
+
 // Navigation types
 export type RootStackParamList = {
   MainTabs: undefined;
   ProductDetail: { productId: string };
   Checkout: undefined;
+  Favorites: undefined;
+  Locations: undefined;
 };
 
 export type MainTabParamList = {

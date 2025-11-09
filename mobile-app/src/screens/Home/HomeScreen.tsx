@@ -4,12 +4,44 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  TouchableOpacity,
   Image,
 } from 'react-native';
-import { Typography, Button, Card } from '../../components';
-import { colors, spacing } from '../../theme';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { Typography, Button, Card, ProductCard } from '../../components';
+import { colors, spacing, borderRadius } from '../../theme';
+import { RootStackParamList } from '../../types';
+import { PRODUCTS } from '../../data/products';
+import { useFavorites } from '../../contexts/FavoritesContext';
+import { useCart } from '../../contexts/CartContext';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const { favorites } = useFavorites();
+  const { itemCount } = useCart();
+
+  // Get popular items (first 4 products)
+  const popularItems = PRODUCTS.filter(p => p.category === 'hot' || p.category === 'iced').slice(0, 4);
+
+  const handleOrderNow = () => {
+    navigation.navigate('MainTabs', { screen: 'Menu' } as any);
+  };
+
+  const handleFavorites = () => {
+    navigation.navigate('Favorites');
+  };
+
+  const handleLocations = () => {
+    navigation.navigate('Locations');
+  };
+
+  const handleProductPress = (productId: string) => {
+    navigation.navigate('ProductDetail', { productId });
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
@@ -32,7 +64,7 @@ const HomeScreen: React.FC = () => {
               title="Order Now"
               variant="secondary"
               style={styles.heroButton}
-              onPress={() => {}}
+              onPress={handleOrderNow}
             />
           </View>
         </Card>
@@ -43,41 +75,80 @@ const HomeScreen: React.FC = () => {
             Quick Actions
           </Typography>
           <View style={styles.quickActions}>
-            <Card style={styles.quickActionCard}>
-              <Typography variant="body" align="center">
-                ☕
-              </Typography>
-              <Typography variant="label" align="center">
-                Reorder
-              </Typography>
-            </Card>
-            <Card style={styles.quickActionCard}>
-              <Typography variant="body" align="center">
-                ⭐
-              </Typography>
-              <Typography variant="label" align="center">
-                Favorites
-              </Typography>
-            </Card>
-            <Card style={styles.quickActionCard}>
-              <Typography variant="body" align="center">
-                📍
-              </Typography>
-              <Typography variant="label" align="center">
-                Locations
-              </Typography>
-            </Card>
+            <TouchableOpacity onPress={handleOrderNow}>
+              <Card style={styles.quickActionCard}>
+                <Typography variant="body" align="center" style={styles.quickActionIcon}>
+                  ☕
+                </Typography>
+                <Typography variant="label" align="center">
+                  Order
+                </Typography>
+                {itemCount > 0 && (
+                  <View style={styles.badge}>
+                    <Typography variant="caption" color="white" style={styles.badgeText}>
+                      {itemCount}
+                    </Typography>
+                  </View>
+                )}
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleFavorites}>
+              <Card style={styles.quickActionCard}>
+                <Typography variant="body" align="center" style={styles.quickActionIcon}>
+                  ⭐
+                </Typography>
+                <Typography variant="label" align="center">
+                  Favorites
+                </Typography>
+                {favorites.length > 0 && (
+                  <View style={styles.badge}>
+                    <Typography variant="caption" color="white" style={styles.badgeText}>
+                      {favorites.length}
+                    </Typography>
+                  </View>
+                )}
+              </Card>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLocations}>
+              <Card style={styles.quickActionCard}>
+                <Typography variant="body" align="center" style={styles.quickActionIcon}>
+                  📍
+                </Typography>
+                <Typography variant="label" align="center">
+                  Locations
+                </Typography>
+              </Card>
+            </TouchableOpacity>
           </View>
         </View>
 
         {/* Popular Items */}
         <View style={styles.section}>
-          <Typography variant="h3" style={styles.sectionTitle}>
-            Popular Items
-          </Typography>
-          <Typography variant="caption">
-            Try our most loved drinks
-          </Typography>
+          <View style={styles.sectionHeader}>
+            <View>
+              <Typography variant="h3" style={styles.sectionTitle}>
+                Popular Items
+              </Typography>
+              <Typography variant="caption" color="textSecondary">
+                Try our most loved drinks
+              </Typography>
+            </View>
+            <Button
+              title="View All"
+              variant="text"
+              size="small"
+              onPress={handleOrderNow}
+            />
+          </View>
+          <View style={styles.popularGrid}>
+            {popularItems.map((item) => (
+              <ProductCard
+                key={item.id}
+                product={item}
+                onPress={() => handleProductPress(item.id)}
+              />
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -117,8 +188,14 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingTop: spacing.md,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
   sectionTitle: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
   quickActions: {
     flexDirection: 'row',
@@ -131,6 +208,32 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     alignItems: 'center',
     gap: spacing.sm,
+    position: 'relative',
+  },
+  quickActionIcon: {
+    fontSize: 32,
+  },
+  badge: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.full,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  popularGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginTop: spacing.sm,
   },
 });
 
