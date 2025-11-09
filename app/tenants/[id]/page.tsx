@@ -1,85 +1,85 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { LocationModal } from '@/components/locations/LocationModal';
-import { CategoryModal } from '@/components/menu/CategoryModal';
-import { MenuItemModal } from '@/components/menu/MenuItemModal';
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import { LocationModal } from '@/components/locations/LocationModal'
+import { CategoryModal } from '@/components/menu/CategoryModal'
+import { MenuItemModal } from '@/components/menu/MenuItemModal'
 
 interface Tenant {
-  tenant_id: string;
-  business_name: string;
-  app_name: string;
-  owner_email: string;
+  tenant_id: string
+  business_name: string
+  app_name: string
+  owner_email: string
 }
 
 interface Location {
-  location_id: string;
-  tenant_id: string;
-  name: string;
-  address: string;
-  city: string;
-  postal_code: string;
-  country: string;
-  phone: string;
-  email: string;
-  hours: Record<string, string>;
-  is_active: boolean;
-  accepts_mobile_orders: boolean;
-  accepts_dine_in_orders: boolean;
-  estimated_prep_time: number;
+  location_id: string
+  tenant_id: string
+  name: string
+  address: string
+  city: string
+  postal_code: string
+  country: string
+  phone: string
+  email: string
+  hours: Record<string, string>
+  is_active: boolean
+  accepts_mobile_orders: boolean
+  accepts_dine_in_orders: boolean
+  estimated_prep_time: number
 }
 
 interface Category {
-  category_id: string;
-  tenant_id: string;
-  name: string;
-  description: string;
-  display_order: number;
-  is_active: boolean;
+  category_id: string
+  tenant_id: string
+  name: string
+  description: string
+  display_order: number
+  is_active: boolean
 }
 
 interface MenuItem {
-  item_id: string;
-  tenant_id: string;
-  category_id: string;
-  name: string;
-  description: string;
-  price: number;
-  image_url: string;
-  tags: string[];
-  allergens: string[];
-  calories: number | null;
-  is_available: boolean;
-  categories?: { name: string };
+  item_id: string
+  tenant_id: string
+  category_id: string
+  name: string
+  description: string
+  price: number
+  image_url: string
+  tags: string[]
+  allergens: string[]
+  calories: number | null
+  is_available: boolean
+  categories?: { name: string }
 }
 
 export default function TenantDetailPage() {
-  const params = useParams();
-  const tenantId = params.id as string;
+  const params = useParams()
+  const tenantId = params?.id as string
 
-  const [tenant, setTenant] = useState<Tenant | null>(null);
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [tenant, setTenant] = useState<Tenant | null>(null)
+  const [locations, setLocations] = useState<Location[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   // Modal states
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  const [menuItemModalOpen, setMenuItemModalOpen] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false)
+  const [categoryModalOpen, setCategoryModalOpen] = useState(false)
+  const [menuItemModalOpen, setMenuItemModalOpen] = useState(false)
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null)
 
   useEffect(() => {
-    fetchData();
-  }, [tenantId]);
+    fetchData()
+  }, [tenantId])
 
   const fetchData = async () => {
-    setLoading(true);
-    setError('');
+    setLoading(true)
+    setError('')
 
     try {
       // Fetch tenant info (mock for now, you'd implement the tenant API)
@@ -88,45 +88,39 @@ export default function TenantDetailPage() {
         business_name: 'Coffee Shop',
         app_name: 'My Café App',
         owner_email: 'owner@example.com',
-      });
+      })
 
       // Fetch locations
-      const locationsRes = await fetch(
-        `/api/locations?tenant_id=${tenantId}`
-      );
-      const locationsData = await locationsRes.json();
-      setLocations(locationsData.locations || []);
+      const locationsRes = await fetch(`/api/locations?tenant_id=${tenantId}`)
+      const locationsData = await locationsRes.json()
+      setLocations(locationsData.locations || [])
 
       // Fetch categories
-      const categoriesRes = await fetch(
-        `/api/categories?tenant_id=${tenantId}`
-      );
-      const categoriesData = await categoriesRes.json();
-      setCategories(categoriesData.categories || []);
+      const categoriesRes = await fetch(`/api/categories?tenant_id=${tenantId}`)
+      const categoriesData = await categoriesRes.json()
+      setCategories(categoriesData.categories || [])
 
       // Fetch menu items
-      const menuItemsRes = await fetch(
-        `/api/menu-items?tenant_id=${tenantId}`
-      );
-      const menuItemsData = await menuItemsRes.json();
-      setMenuItems(menuItemsData.menu_items || []);
+      const menuItemsRes = await fetch(`/api/menu-items?tenant_id=${tenantId}`)
+      const menuItemsData = await menuItemsRes.json()
+      setMenuItems(menuItemsData.menu_items || [])
     } catch (err: any) {
-      setError(err.message || 'Failed to fetch data');
+      setError(err.message || 'Failed to fetch data')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   // Location handlers
   const handleAddLocation = () => {
-    setEditingLocation(null);
-    setLocationModalOpen(true);
-  };
+    setEditingLocation(null)
+    setLocationModalOpen(true)
+  }
 
   const handleEditLocation = (location: Location) => {
-    setEditingLocation(location);
-    setLocationModalOpen(true);
-  };
+    setEditingLocation(location)
+    setLocationModalOpen(true)
+  }
 
   const handleSaveLocation = async (locationData: Partial<Location>) => {
     if (editingLocation) {
@@ -135,44 +129,44 @@ export default function TenantDetailPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(locationData),
-      });
+      })
 
-      if (!res.ok) throw new Error('Failed to update location');
+      if (!res.ok) throw new Error('Failed to update location')
     } else {
       // Create
       const res = await fetch('/api/locations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(locationData),
-      });
+      })
 
-      if (!res.ok) throw new Error('Failed to create location');
+      if (!res.ok) throw new Error('Failed to create location')
     }
 
-    await fetchData();
-  };
+    await fetchData()
+  }
 
   const handleDeleteLocation = async (locationId: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) return;
+    if (!confirm('Are you sure you want to delete this location?')) return
 
     const res = await fetch(`/api/locations/${locationId}`, {
       method: 'DELETE',
-    });
+    })
 
-    if (!res.ok) throw new Error('Failed to delete location');
-    await fetchData();
-  };
+    if (!res.ok) throw new Error('Failed to delete location')
+    await fetchData()
+  }
 
   // Category handlers
   const handleAddCategory = () => {
-    setEditingCategory(null);
-    setCategoryModalOpen(true);
-  };
+    setEditingCategory(null)
+    setCategoryModalOpen(true)
+  }
 
   const handleEditCategory = (category: Category) => {
-    setEditingCategory(category);
-    setCategoryModalOpen(true);
-  };
+    setEditingCategory(category)
+    setCategoryModalOpen(true)
+  }
 
   const handleSaveCategory = async (categoryData: Partial<Category>) => {
     if (editingCategory) {
@@ -181,44 +175,44 @@ export default function TenantDetailPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(categoryData),
-      });
+      })
 
-      if (!res.ok) throw new Error('Failed to update category');
+      if (!res.ok) throw new Error('Failed to update category')
     } else {
       // Create
       const res = await fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(categoryData),
-      });
+      })
 
-      if (!res.ok) throw new Error('Failed to create category');
+      if (!res.ok) throw new Error('Failed to create category')
     }
 
-    await fetchData();
-  };
+    await fetchData()
+  }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return;
+    if (!confirm('Are you sure you want to delete this category?')) return
 
     const res = await fetch(`/api/categories/${categoryId}`, {
       method: 'DELETE',
-    });
+    })
 
-    if (!res.ok) throw new Error('Failed to delete category');
-    await fetchData();
-  };
+    if (!res.ok) throw new Error('Failed to delete category')
+    await fetchData()
+  }
 
   // Menu Item handlers
   const handleAddMenuItem = () => {
-    setEditingMenuItem(null);
-    setMenuItemModalOpen(true);
-  };
+    setEditingMenuItem(null)
+    setMenuItemModalOpen(true)
+  }
 
   const handleEditMenuItem = (menuItem: MenuItem) => {
-    setEditingMenuItem(menuItem);
-    setMenuItemModalOpen(true);
-  };
+    setEditingMenuItem(menuItem)
+    setMenuItemModalOpen(true)
+  }
 
   const handleSaveMenuItem = async (menuItemData: Partial<MenuItem>) => {
     if (editingMenuItem) {
@@ -227,40 +221,40 @@ export default function TenantDetailPage() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(menuItemData),
-      });
+      })
 
-      if (!res.ok) throw new Error('Failed to update menu item');
+      if (!res.ok) throw new Error('Failed to update menu item')
     } else {
       // Create
       const res = await fetch('/api/menu-items', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(menuItemData),
-      });
+      })
 
-      if (!res.ok) throw new Error('Failed to create menu item');
+      if (!res.ok) throw new Error('Failed to create menu item')
     }
 
-    await fetchData();
-  };
+    await fetchData()
+  }
 
   const handleDeleteMenuItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this menu item?')) return;
+    if (!confirm('Are you sure you want to delete this menu item?')) return
 
     const res = await fetch(`/api/menu-items/${itemId}`, {
       method: 'DELETE',
-    });
+    })
 
-    if (!res.ok) throw new Error('Failed to delete menu item');
-    await fetchData();
-  };
+    if (!res.ok) throw new Error('Failed to delete menu item')
+    await fetchData()
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-lg">Loading...</div>
       </div>
-    );
+    )
   }
 
   if (error) {
@@ -268,7 +262,7 @@ export default function TenantDetailPage() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-red-600">Error: {error}</div>
       </div>
-    );
+    )
   }
 
   return (
@@ -276,9 +270,7 @@ export default function TenantDetailPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {tenant?.business_name}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">{tenant?.business_name}</h1>
           <p className="text-gray-600 mt-1">{tenant?.owner_email}</p>
         </div>
 
@@ -288,7 +280,8 @@ export default function TenantDetailPage() {
             <h2 className="text-2xl font-semibold text-gray-800">Locations</h2>
             <button
               onClick={handleAddLocation}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"            >
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            >
               Add Location
             </button>
           </div>
@@ -297,22 +290,15 @@ export default function TenantDetailPage() {
             {locations.length === 0 ? (
               <p className="text-gray-500">No locations yet</p>
             ) : (
-              locations.map((location) => (
-                <div
-                  key={location.location_id}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
+              locations.map(location => (
+                <div key={location.location_id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {location.name}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{location.name}</h3>
                       <p className="text-gray-600">
                         {location.address}, {location.city} {location.postal_code}
                       </p>
-                      {location.phone && (
-                        <p className="text-gray-600">Phone: {location.phone}</p>
-                      )}
+                      {location.phone && <p className="text-gray-600">Phone: {location.phone}</p>}
                       <div className="mt-2 flex gap-2">
                         <span
                           className={`px-2 py-1 rounded text-xs font-medium ${
@@ -362,7 +348,8 @@ export default function TenantDetailPage() {
             <h2 className="text-2xl font-semibold text-gray-800">Categories</h2>
             <button
               onClick={handleAddCategory}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"            >
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            >
               Add Category
             </button>
           </div>
@@ -371,15 +358,10 @@ export default function TenantDetailPage() {
             {categories.length === 0 ? (
               <p className="text-gray-500 col-span-full">No categories yet</p>
             ) : (
-              categories.map((category) => (
-                <div
-                  key={category.category_id}
-                  className="border border-gray-200 rounded-lg p-4"
-                >
+              categories.map(category => (
+                <div key={category.category_id} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {category.name}
-                    </h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
                     <span
                       className={`px-2 py-1 rounded text-xs font-medium ${
                         category.is_active
@@ -391,9 +373,7 @@ export default function TenantDetailPage() {
                     </span>
                   </div>
                   {category.description && (
-                    <p className="text-gray-600 text-sm mb-3">
-                      {category.description}
-                    </p>
+                    <p className="text-gray-600 text-sm mb-3">{category.description}</p>
                   )}
                   <div className="flex gap-2">
                     <button
@@ -421,7 +401,8 @@ export default function TenantDetailPage() {
             <h2 className="text-2xl font-semibold text-gray-800">Menu Items</h2>
             <button
               onClick={handleAddMenuItem}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"            >
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
+            >
               Add Menu Item
             </button>
           </div>
@@ -430,7 +411,7 @@ export default function TenantDetailPage() {
             {menuItems.length === 0 ? (
               <p className="text-gray-500 col-span-full">No menu items yet</p>
             ) : (
-              menuItems.map((item) => (
+              menuItems.map(item => (
                 <div
                   key={item.item_id}
                   className="border border-gray-200 rounded-lg overflow-hidden"
@@ -444,22 +425,16 @@ export default function TenantDetailPage() {
                   )}
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {item.name}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{item.name}</h3>
                       <span className="text-lg font-bold text-blue-600">
                         €{item.price.toFixed(2)}
                       </span>
                     </div>
                     {item.description && (
-                      <p className="text-gray-600 text-sm mb-2">
-                        {item.description}
-                      </p>
+                      <p className="text-gray-600 text-sm mb-2">{item.description}</p>
                     )}
                     {item.categories && (
-                      <p className="text-gray-500 text-xs mb-2">
-                        Category: {item.categories.name}
-                      </p>
+                      <p className="text-gray-500 text-xs mb-2">Category: {item.categories.name}</p>
                     )}
                     {item.tags && item.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mb-2">
@@ -532,5 +507,5 @@ export default function TenantDetailPage() {
         categories={categories}
       />
     </div>
-  );
+  )
 }
