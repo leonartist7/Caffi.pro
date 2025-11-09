@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tantml:parameter>
-<invoke name="supabase">
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit, Trash2, MapPin, Phone, Mail, Clock } from 'lucide-react'
 import { toast } from 'sonner'
