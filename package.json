@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:vercel": "npm run type-check && npm run lint:strict && next build",
+    "build:production": "npm run lint && next build",
     "type-check": "tsc --noEmit",
     "lint": "next lint",
     "lint:strict": "next lint --max-warnings 0",
