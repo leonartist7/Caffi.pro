@@ -6,8 +6,9 @@ import {
   SafeAreaView,
   Image,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
-import { Typography, Button, Card } from '../../components';
+import { Typography, Button, Card, Input } from '../../components';
 import { colors, spacing, borderRadius } from '../../theme';
 import {
   ProductSize,
@@ -15,7 +16,8 @@ import {
   Extra,
   ProductCustomization,
 } from '../../types';
-import { EXTRAS } from '../../data/products';
+import { EXTRAS, getProductById } from '../../data/products';
+import { useCart } from '../../contexts/CartContext';
 
 interface ProductDetailScreenProps {
   route: {
@@ -47,6 +49,10 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   navigation,
 }) => {
   const { productId } = route.params;
+  const { addItem } = useCart();
+
+  // Get product from data
+  const product = getProductById(productId);
 
   // State for customization
   const [size, setSize] = useState<ProductSize>('medium');
@@ -55,14 +61,12 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
 
-  // Mock product data - we'll get this from context/props later
-  const product = {
-    id: productId,
-    name: 'Caffè Latte',
-    description: 'Smooth espresso with steamed milk and a light foam layer',
-    price: 4.5,
-    image_url: 'https://images.unsplash.com/photo-1561882468-9110e03e0f78',
-  };
+  // Handle case where product is not found
+  if (!product) {
+    Alert.alert('Error', 'Product not found');
+    navigation.goBack();
+    return null;
+  }
 
   const toggleExtra = (extra: Extra) => {
     setSelectedExtras((prev) =>
@@ -85,13 +89,21 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
   };
 
   const handleAddToCart = () => {
-    // We'll implement cart functionality later
-    console.log('Add to cart:', {
-      product,
-      quantity,
-      customization: { size, milk, extras: selectedExtras },
-      notes,
-    });
+    const customization: ProductCustomization = {
+      size,
+      milk,
+      extras: selectedExtras,
+    };
+
+    addItem(product, customization, quantity, notes);
+
+    // Show success feedback
+    Alert.alert(
+      'Added to Cart',
+      `${quantity} ${product.name} added to your cart!`,
+      [{ text: 'OK' }]
+    );
+
     navigation.goBack();
   };
 
@@ -239,6 +251,21 @@ const ProductDetailScreen: React.FC<ProductDetailScreenProps> = ({
               </TouchableOpacity>
             </View>
           </View>
+
+          {/* Special Instructions */}
+          <View style={styles.section}>
+            <Typography variant="h3" style={styles.sectionTitle}>
+              Special Instructions
+            </Typography>
+            <Input
+              placeholder="Add a note for your order (optional)"
+              value={notes}
+              onChangeText={setNotes}
+              multiline
+              numberOfLines={3}
+              style={styles.notesInput}
+            />
+          </View>
         </View>
       </ScrollView>
 
@@ -370,6 +397,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray100,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  notesInput: {
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   footer: {
     padding: spacing.lg,

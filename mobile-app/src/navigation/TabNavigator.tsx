@@ -3,8 +3,9 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types';
 import { colors } from '../theme';
+import { useCart } from '../contexts/CartContext';
 
-// Import screens (we'll create these next)
+// Import screens
 import HomeScreen from '../screens/Home/HomeScreen';
 import MenuScreen from '../screens/Menu/MenuScreen';
 import CartScreen from '../screens/Cart/CartScreen';
@@ -35,6 +36,8 @@ const ProfileIcon = ({ focused }: { focused: boolean }) => (
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const TabNavigator: React.FC = () => {
+  const { itemCount } = useCart();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -74,7 +77,11 @@ export const TabNavigator: React.FC = () => {
         component={CartScreen}
         options={{
           tabBarIcon: ({ focused }) => <CartIcon focused={focused} />,
-          tabBarBadge: undefined, // We'll add cart count here later
+          tabBarBadge: itemCount > 0 ? itemCount : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: colors.primary,
+            color: colors.white,
+          },
         }}
       />
       <Tab.Screen

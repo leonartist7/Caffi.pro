@@ -4,17 +4,60 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
+  Alert,
 } from 'react-native';
-import { Typography, Button, Card } from '../../components';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { Typography, Button, Card, CartItemCard } from '../../components';
 import { colors, spacing } from '../../theme';
+import { useCart } from '../../contexts/CartContext';
+import { MainTabParamList } from '../../types';
+
+type NavigationProp = BottomTabNavigationProp<MainTabParamList>;
 
 const CartScreen: React.FC = () => {
-  const isCartEmpty = true; // We'll replace this with actual cart state later
+  const navigation = useNavigation<NavigationProp>();
+  const { items, itemCount, subtotal, tax, total, updateQuantity, removeItem, clearCart } = useCart();
+
+  const handleCheckout = () => {
+    // TODO: Navigate to checkout screen (Phase 4)
+    Alert.alert(
+      'Checkout',
+      'Checkout functionality will be added in Phase 4!',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleClearCart = () => {
+    Alert.alert(
+      'Clear Cart',
+      'Are you sure you want to remove all items from your cart?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: clearCart,
+        },
+      ]
+    );
+  };
+
+  const handleBrowseMenu = () => {
+    navigation.navigate('Menu');
+  };
+
+  const isCartEmpty = items.length === 0;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Typography variant="h2">Cart</Typography>
+        {!isCartEmpty && (
+          <Typography variant="caption" color="textSecondary">
+            {itemCount} {itemCount === 1 ? 'item' : 'items'}
+          </Typography>
+        )}
       </View>
 
       {isCartEmpty ? (
@@ -30,29 +73,67 @@ const CartScreen: React.FC = () => {
             title="Browse Menu"
             variant="primary"
             style={styles.browseButton}
-            onPress={() => {}}
+            onPress={handleBrowseMenu}
           />
         </View>
       ) : (
         <>
           <ScrollView style={styles.itemsContainer}>
-            {/* Cart items will go here */}
+            {/* Cart Items */}
+            {items.map((item, index) => (
+              <CartItemCard
+                key={index}
+                item={item}
+                index={index}
+                onUpdateQuantity={updateQuantity}
+                onRemove={removeItem}
+              />
+            ))}
+
+            {/* Clear Cart Button */}
+            <Button
+              title="Clear Cart"
+              variant="text"
+              onPress={handleClearCart}
+              style={styles.clearButton}
+            />
           </ScrollView>
 
           <View style={styles.footer}>
             <Card variant="elevated" padding="lg">
+              {/* Subtotal */}
+              <View style={styles.summaryRow}>
+                <Typography variant="body">Subtotal</Typography>
+                <Typography variant="body">
+                  ${subtotal.toFixed(2)}
+                </Typography>
+              </View>
+
+              {/* Tax */}
+              <View style={styles.summaryRow}>
+                <Typography variant="body">Tax (8%)</Typography>
+                <Typography variant="body">
+                  ${tax.toFixed(2)}
+                </Typography>
+              </View>
+
+              {/* Divider */}
+              <View style={styles.divider} />
+
+              {/* Total */}
               <View style={styles.totalRow}>
                 <Typography variant="h3">Total</Typography>
                 <Typography variant="h3" color="primary">
-                  $0.00
+                  ${total.toFixed(2)}
                 </Typography>
               </View>
+
               <Button
-                title="Checkout"
+                title="Proceed to Checkout"
                 variant="primary"
                 fullWidth
                 style={styles.checkoutButton}
-                onPress={() => {}}
+                onPress={handleCheckout}
               />
             </Card>
           </View>
@@ -88,11 +169,26 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.lg,
   },
+  clearButton: {
+    marginTop: spacing.md,
+    alignSelf: 'center',
+  },
   footer: {
     padding: spacing.lg,
     backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.md,
   },
   totalRow: {
     flexDirection: 'row',
