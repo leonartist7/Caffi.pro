@@ -619,4 +619,7 @@ LIMIT 10;
 ---
 
 **🎉 Congratulations!** If all verifications pass, your Caffi.pro backend is fully functional and ready for frontend development!
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main
