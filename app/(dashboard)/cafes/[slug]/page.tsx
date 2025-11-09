@@ -122,7 +122,7 @@ export default function CafeDetailPage() {
       <div className="text-center py-12">
         <div className="text-6xl mb-4">❌</div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Café not found</h2>
-        <p className="text-gray-600 mb-6">The café you're looking for doesn't exist.</p>
+        <p className="text-gray-600 mb-6">The café you&apos;re looking for doesn&apos;t exist.</p>
         <Link
           href="/cafes"
           className="inline-block bg-primary hover:bg-primary-dark text-white font-semibold py-3 px-6 rounded-xl"
