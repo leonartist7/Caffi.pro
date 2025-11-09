@@ -3,7 +3,8 @@ import { supabase } from '@/lib/supabase';
 
 // GET all menu items for a tenant
 export async function GET(request: NextRequest) {
-  try {const searchParams = request.nextUrl.searchParams;
+  try {
+    const searchParams = request.nextUrl.searchParams;
     const tenantId = searchParams.get('tenant_id');
     const categoryId = searchParams.get('category_id');
 
@@ -45,6 +46,7 @@ export async function GET(request: NextRequest) {
 // POST create a new menu item
 export async function POST(request: NextRequest) {
   try {
+    const body = await request.json();
     const {
       tenant_id,
       category_id,

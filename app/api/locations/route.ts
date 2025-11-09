@@ -37,7 +37,8 @@ export async function GET(request: NextRequest) {
 
 // POST create a new location
 export async function POST(request: NextRequest) {
-  try {const body = await request.json();
+  try {
+    const body = await request.json();
     const {
       tenant_id,
       name,
