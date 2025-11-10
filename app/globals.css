@@ -2,16 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-
 /* Text selection colors */
 ::selection {
   background-color: rgba(107, 52, 16, 0.3); /* Coffee brown with transparency */
