@@ -43,12 +43,28 @@ export default function TenantSelector() {
     try {
       const { data, error } = await supabase
         .from('tenants')
-        .select('tenant_id, business_name, slug, logo_url')
-        .eq('status', 'active')
+        .select('tenant_id, business_name, slug')
         .order('business_name')
 
       if (error) throw error
-      setTenants(data || [])
+
+      // Fetch logo URLs from tenant_manifests
+      const tenantsWithLogos = await Promise.all(
+        (data || []).map(async tenant => {
+          const { data: manifest } = await supabase
+            .from('tenant_manifests')
+            .select('logo_url')
+            .eq('tenant_id', tenant.tenant_id)
+            .single()
+
+          return {
+            ...tenant,
+            logo_url: manifest?.logo_url || null,
+          }
+        })
+      )
+
+      setTenants(tenantsWithLogos)
     } catch (error) {
       console.error('Error fetching tenants:', error)
     } finally {
@@ -117,7 +133,7 @@ export default function TenantSelector() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-72 lg:w-80 bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-coffee-200/50 dark:border-dark-700 backdrop-blur-xl z-50 max-h-96 overflow-hidden flex flex-col">
+        <div className="absolute top-full mt-2 right-0 w-72 lg:w-80 bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-coffee-200/50 dark:border-dark-700 backdrop-blur-xl z-[9999] max-h-96 overflow-hidden flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-coffee-200/50 dark:border-dark-700">
             <p className="text-sm font-semibold text-coffee-900 dark:text-cream-100 mb-1">

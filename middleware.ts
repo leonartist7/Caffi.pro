@@ -2,69 +2,23 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 /**
- * Middleware for tenant detection and routing
+ * Middleware for request handling
  *
  * Routes:
- * - /dashboard, /clients, /menu, etc. → Admin dashboard (no tenant detection)
- * - /shop/[slug]/... → Customer-facing shop (tenant detected by slug)
+ * - /dashboard, /clients, /menu, etc. → Admin dashboard
+ * - /shop/[slug]/... → Customer-facing shop (handled by Next.js dynamic routes)
  *
- * For shop routes, we extract the tenant slug from the URL path
- * and pass it to the request via headers for server-side rendering.
+ * This middleware can be extended for authentication, rate limiting, etc.
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const hostname = request.headers.get('host') || ''
 
   // Skip middleware for static files, API routes, and Next.js internals
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.includes('.') // static files like images, fonts, etc.
-  ) {
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname.includes('.')) {
     return NextResponse.next()
   }
 
-  // Admin routes - no tenant detection needed
-  if (
-    pathname.startsWith('/dashboard') ||
-    pathname.startsWith('/clients') ||
-    pathname.startsWith('/menu') ||
-    pathname.startsWith('/orders') ||
-    pathname.startsWith('/analytics') ||
-    pathname.startsWith('/coupons') ||
-    pathname.startsWith('/rewards') ||
-    pathname.startsWith('/cafes') ||
-    pathname.startsWith('/notifications') ||
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/activity') ||
-    pathname.startsWith('/login') ||
-    pathname === '/'
-  ) {
-    return NextResponse.next()
-  }
-
-  // Shop routes - detect tenant from URL path: /shop/[slug]/...
-  if (pathname.startsWith('/shop/')) {
-    const segments = pathname.split('/').filter(Boolean)
-    // segments: ['shop', 'joesbeans', 'menu', ...]
-    const tenantSlug = segments[1] // 'joesbeans'
-
-    if (tenantSlug) {
-      // Pass tenant slug to the request via headers
-      // This allows server components to access it via headers()
-      const requestHeaders = new Headers(request.headers)
-      requestHeaders.set('x-tenant-slug', tenantSlug)
-
-      return NextResponse.next({
-        request: {
-          headers: requestHeaders,
-        },
-      })
-    } else {
-      // No tenant slug provided - redirect to a "shop not found" page
-      return NextResponse.redirect(new URL('/shop-not-found', request.url))
-    }
-  }
+  // Future: Add authentication checks, rate limiting, etc. here
 
   return NextResponse.next()
 }

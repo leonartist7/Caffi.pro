@@ -24,18 +24,15 @@ interface Tenant {
   tenant_id: string
   business_name: string
   slug: string
+  owner_email: string
+  owner_phone?: string
+  app_name: string
+  bundle_id: string
+  subscription_status: 'trial' | 'active' | 'cancelled' | 'suspended'
+  created_at: string
+  // From tenant_manifests
   logo_url?: string
   primary_color?: string
-  contact_email?: string
-  contact_phone?: string
-  address?: string
-  website?: string
-  status: 'active' | 'inactive' | 'suspended'
-  created_at: string
-  // Stats from joins
-  total_orders?: number
-  total_revenue?: number
-  active_users?: number
 }
 
 export default function ClientsPage() {
@@ -55,9 +52,6 @@ export default function ClientsPage() {
     primary_color: '#6b3410',
     contact_email: '',
     contact_phone: '',
-    address: '',
-    website: '',
-    status: 'active' as 'active' | 'inactive' | 'suspended',
   })
 
   useEffect(() => {
@@ -85,36 +79,130 @@ export default function ClientsPage() {
     e.preventDefault()
 
     try {
-      const payload = {
-        business_name: formData.business_name,
-        slug: formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-        logo_url: formData.logo_url || null,
-        primary_color: formData.primary_color,
-        contact_email: formData.contact_email || null,
-        contact_phone: formData.contact_phone || null,
-        address: formData.address || null,
-        website: formData.website || null,
-        status: formData.status,
-      }
+      const cleanSlug = formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')
 
       if (editingTenant) {
-        const { error } = await supabase
+        // For updates, only update fields that exist in tenants table
+        const tenantPayload = {
+          business_name: formData.business_name,
+          slug: cleanSlug,
+          owner_phone: formData.contact_phone || null,
+          // Note: We're not updating owner_email, app_name, bundle_id on edit as they're usually immutable
+        }
+
+        const { error: tenantError } = await supabase
           .from('tenants')
-          .update(payload)
+          .update(tenantPayload)
           .eq('tenant_id', editingTenant.tenant_id)
 
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('tenants').insert(payload)
+        if (tenantError) throw tenantError
 
-        if (error) throw error
+        // Update tenant_manifests if logo or color changed
+        const { error: manifestError } = await supabase
+          .from('tenant_manifests')
+          .update({
+            logo_url: formData.logo_url || null,
+            design_tokens: supabase.rpc('jsonb_set', {
+              target: {},
+              path: '{colors,primary}',
+              new_value: JSON.stringify(formData.primary_color),
+            }),
+          })
+          .eq('tenant_id', editingTenant.tenant_id)
+
+        // Ignore error if manifest doesn't exist yet
+        console.log('Manifest update:', manifestError)
+      } else {
+        // For new tenants, insert into tenants table with required fields
+        const tenantPayload = {
+          business_name: formData.business_name,
+          slug: cleanSlug,
+          owner_email: formData.contact_email || `owner@${cleanSlug}.caffi.pro`,
+          owner_phone: formData.contact_phone || null,
+          app_name: formData.business_name,
+          bundle_id: `com.caffi.${cleanSlug}`,
+        }
+
+        console.log('Creating tenant with payload:', tenantPayload)
+
+        const { data: newTenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert(tenantPayload)
+          .select()
+          .single()
+
+        if (tenantError) {
+          console.error('Tenant creation error:', tenantError)
+          throw new Error(
+            `Failed to create tenant: ${tenantError.message || JSON.stringify(tenantError)}`
+          )
+        }
+
+        // Create tenant_manifests entry with logo and primary color
+        if (newTenant) {
+          const manifestPayload = {
+            tenant_id: newTenant.tenant_id,
+            logo_url: formData.logo_url || null,
+            design_tokens: {
+              colors: {
+                primary: formData.primary_color,
+                secondary: '#F4A259',
+                accent: '#E07A5F',
+                background: '#FFFFFF',
+                surface: '#F8F9FA',
+                error: '#DC3545',
+                success: '#28A745',
+                text_primary: '#212529',
+                text_secondary: '#6C757D',
+              },
+              typography: {
+                font_family: 'Inter',
+                heading_font: 'Poppins',
+                font_size_base: 16,
+                font_size_heading: 24,
+                font_weight_regular: 400,
+                font_weight_bold: 700,
+              },
+              spacing: {
+                xs: 4,
+                sm: 8,
+                md: 16,
+                lg: 24,
+                xl: 32,
+              },
+              border_radius: {
+                sm: 4,
+                md: 8,
+                lg: 16,
+                full: 9999,
+              },
+            },
+          }
+
+          console.log('Creating manifest with payload:', manifestPayload)
+
+          const { error: manifestError } = await supabase
+            .from('tenant_manifests')
+            .insert(manifestPayload)
+
+          if (manifestError) {
+            console.error('Error creating manifest:', manifestError)
+            throw new Error(
+              `Failed to create manifest: ${manifestError.message || JSON.stringify(manifestError)}`
+            )
+          }
+
+          console.log('✅ Tenant and manifest created successfully!')
+        }
       }
 
-      fetchTenants()
+      await fetchTenants()
       closeModal()
+      alert('✅ Client created successfully!')
     } catch (error) {
       console.error('Error saving tenant:', error)
-      alert('Failed to save client. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
+      alert(`❌ Failed to save client:\n\n${errorMessage}`)
     }
   }
 
@@ -142,9 +230,6 @@ export default function ClientsPage() {
       primary_color: '#6b3410',
       contact_email: '',
       contact_phone: '',
-      address: '',
-      website: '',
-      status: 'active',
     })
     setShowModal(true)
   }
@@ -156,11 +241,8 @@ export default function ClientsPage() {
       slug: tenant.slug,
       logo_url: tenant.logo_url || '',
       primary_color: tenant.primary_color || '#6b3410',
-      contact_email: tenant.contact_email || '',
-      contact_phone: tenant.contact_phone || '',
-      address: tenant.address || '',
-      website: tenant.website || '',
-      status: tenant.status,
+      contact_email: tenant.owner_email || '',
+      contact_phone: tenant.owner_phone || '',
     })
     setShowModal(true)
   }
@@ -183,16 +265,18 @@ export default function ClientsPage() {
 
   const stats = {
     total: tenants.length,
-    active: tenants.filter(t => t.status === 'active').length,
-    inactive: tenants.filter(t => t.status === 'inactive').length,
-    suspended: tenants.filter(t => t.status === 'suspended').length,
+    active: tenants.filter(t => t.subscription_status === 'active').length,
+    trial: tenants.filter(t => t.subscription_status === 'trial').length,
+    suspended: tenants.filter(t => t.subscription_status === 'suspended').length,
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-      case 'inactive':
+      case 'trial':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+      case 'cancelled':
         return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
       case 'suspended':
         return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
@@ -235,13 +319,13 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="bg-blue-50 dark:bg-blue-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-3 mb-2">
-            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-gray-600 dark:text-gray-400" />
-            <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Inactive</p>
+            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400" />
+            <p className="text-xs lg:text-sm text-blue-600 dark:text-blue-400">Trial</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-gray-700 dark:text-gray-400">
-            {stats.inactive}
+          <p className="text-2xl lg:text-3xl font-bold text-blue-700 dark:text-blue-400">
+            {stats.trial}
           </p>
         </div>
 
@@ -335,45 +419,30 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(tenant.status)}`}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(tenant.subscription_status)}`}
                 >
-                  {tenant.status}
+                  {tenant.subscription_status}
                 </span>
               </div>
 
               {/* Contact Info */}
               <div className="space-y-2 mb-4 text-sm">
-                {tenant.contact_email && (
+                {tenant.owner_email && (
                   <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
                     <Mail className="w-4 h-4" />
-                    <span className="truncate">{tenant.contact_email}</span>
+                    <span className="truncate">{tenant.owner_email}</span>
                   </div>
                 )}
-                {tenant.contact_phone && (
+                {tenant.owner_phone && (
                   <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
                     <Phone className="w-4 h-4" />
-                    {tenant.contact_phone}
+                    {tenant.owner_phone}
                   </div>
                 )}
-                {tenant.address && (
-                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
-                    <MapPin className="w-4 h-4" />
-                    <span className="truncate">{tenant.address}</span>
-                  </div>
-                )}
-                {tenant.website && (
-                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
-                    <Globe className="w-4 h-4" />
-                    <a
-                      href={tenant.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-coffee-700 dark:hover:text-cream-200 truncate"
-                    >
-                      {tenant.website}
-                    </a>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-xs font-mono">{tenant.bundle_id}</span>
+                </div>
               </div>
 
               {/* Actions */}
@@ -436,12 +505,12 @@ export default function ClientsPage() {
                       type="text"
                       value={formData.business_name}
                       onChange={e => {
+                        const businessName = e.target.value
+                        const autoSlug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
                         setFormData({
                           ...formData,
-                          business_name: e.target.value,
-                          slug:
-                            formData.slug ||
-                            e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                          business_name: businessName,
+                          slug: autoSlug,
                         })
                       }}
                       className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
@@ -450,26 +519,20 @@ export default function ClientsPage() {
                     />
                   </div>
 
-                  {/* Slug */}
+                  {/* Slug - Auto-generated, Read-only */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      App Slug * (unique identifier)
+                      App Slug (auto-generated from business name)
                     </label>
                     <input
                       type="text"
                       value={formData.slug}
-                      onChange={e =>
-                        setFormData({
-                          ...formData,
-                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-                        })
-                      }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 font-mono focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                      placeholder="joes-coffee-shop"
-                      required
+                      readOnly
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-600 dark:text-cream-400 font-mono cursor-not-allowed"
+                      placeholder="will-auto-generate"
                     />
                     <p className="mt-1 text-xs text-coffee-500 dark:text-cream-500">
-                      Will be used as: {formData.slug || 'your-slug'}.yourapp.com
+                      URL: /shop/{formData.slug || 'your-slug'}
                     </p>
                   </div>
 
@@ -515,53 +578,17 @@ export default function ClientsPage() {
                     />
                   </div>
 
-                  {/* Address */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.address}
-                      onChange={e => setFormData({ ...formData, address: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                      placeholder="123 Main St, City, Country"
-                    />
-                  </div>
-
-                  {/* Website */}
+                  {/* Primary Color */}
                   <div>
                     <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      Website
+                      Primary Color
                     </label>
                     <input
-                      type="url"
-                      value={formData.website}
-                      onChange={e => setFormData({ ...formData, website: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                      placeholder="https://joescoffee.com"
+                      type="color"
+                      value={formData.primary_color}
+                      onChange={e => setFormData({ ...formData, primary_color: e.target.value })}
+                      className="w-full h-12 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 cursor-pointer"
                     />
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={e =>
-                        setFormData({
-                          ...formData,
-                          status: e.target.value as typeof formData.status,
-                        })
-                      }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
                   </div>
                 </div>
 
