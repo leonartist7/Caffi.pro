@@ -1,12 +1,14 @@
 'use client'
 
 import Sidebar from '@/components/Sidebar'
+import MobileNav from '@/components/MobileNav'
 import LiveClock from '@/components/LiveClock'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-foam via-cream-100 to-coffee-100 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800">
       <Sidebar />
+      <MobileNav />
 
       <main className="flex-1 ml-0 lg:ml-64 transition-all duration-500">
         {/* Header */}
