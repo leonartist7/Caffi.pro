@@ -85,36 +85,117 @@ export default function ClientsPage() {
     e.preventDefault()
 
     try {
-      const payload = {
-        business_name: formData.business_name,
-        slug: formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-        logo_url: formData.logo_url || null,
-        primary_color: formData.primary_color,
-        contact_email: formData.contact_email || null,
-        contact_phone: formData.contact_phone || null,
-        address: formData.address || null,
-        website: formData.website || null,
-        status: formData.status,
-      }
+      const cleanSlug = formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')
 
       if (editingTenant) {
-        const { error } = await supabase
+        // For updates, only update fields that exist in tenants table
+        const tenantPayload = {
+          business_name: formData.business_name,
+          slug: cleanSlug,
+          owner_phone: formData.contact_phone || null,
+          // Note: We're not updating owner_email, app_name, bundle_id on edit as they're usually immutable
+        }
+
+        const { error: tenantError } = await supabase
           .from('tenants')
-          .update(payload)
+          .update(tenantPayload)
           .eq('tenant_id', editingTenant.tenant_id)
 
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('tenants').insert(payload)
+        if (tenantError) throw tenantError
 
-        if (error) throw error
+        // Update tenant_manifests if logo or color changed
+        const { error: manifestError } = await supabase
+          .from('tenant_manifests')
+          .update({
+            logo_url: formData.logo_url || null,
+            design_tokens: supabase.rpc('jsonb_set', {
+              target: {},
+              path: '{colors,primary}',
+              new_value: JSON.stringify(formData.primary_color),
+            }),
+          })
+          .eq('tenant_id', editingTenant.tenant_id)
+
+        // Ignore error if manifest doesn't exist yet
+        console.log('Manifest update:', manifestError)
+      } else {
+        // For new tenants, insert into tenants table with required fields
+        const tenantPayload = {
+          business_name: formData.business_name,
+          slug: cleanSlug,
+          owner_email: formData.contact_email || `owner@${cleanSlug}.caffi.pro`,
+          owner_phone: formData.contact_phone || null,
+          app_name: formData.business_name,
+          bundle_id: `com.caffi.${cleanSlug}`,
+        }
+
+        const { data: newTenant, error: tenantError } = await supabase
+          .from('tenants')
+          .insert(tenantPayload)
+          .select()
+          .single()
+
+        if (tenantError) throw tenantError
+
+        // Create tenant_manifests entry with logo and primary color
+        if (newTenant) {
+          const manifestPayload = {
+            tenant_id: newTenant.tenant_id,
+            logo_url: formData.logo_url || null,
+            design_tokens: {
+              colors: {
+                primary: formData.primary_color,
+                secondary: '#F4A259',
+                accent: '#E07A5F',
+                background: '#FFFFFF',
+                surface: '#F8F9FA',
+                error: '#DC3545',
+                success: '#28A745',
+                text_primary: '#212529',
+                text_secondary: '#6C757D',
+              },
+              typography: {
+                font_family: 'Inter',
+                heading_font: 'Poppins',
+                font_size_base: 16,
+                font_size_heading: 24,
+                font_weight_regular: 400,
+                font_weight_bold: 700,
+              },
+              spacing: {
+                xs: 4,
+                sm: 8,
+                md: 16,
+                lg: 24,
+                xl: 32,
+              },
+              border_radius: {
+                sm: 4,
+                md: 8,
+                lg: 16,
+                full: 9999,
+              },
+            },
+          }
+
+          const { error: manifestError } = await supabase
+            .from('tenant_manifests')
+            .insert(manifestPayload)
+
+          if (manifestError) {
+            console.error('Error creating manifest:', manifestError)
+            // Don't throw - tenant was created successfully
+          }
+        }
       }
 
       fetchTenants()
       closeModal()
     } catch (error) {
       console.error('Error saving tenant:', error)
-      alert('Failed to save client. Please try again.')
+      alert(
+        `Failed to save client. ${error instanceof Error ? error.message : 'Please try again.'}`
+      )
     }
   }
 
