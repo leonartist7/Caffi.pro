@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTenant } from '@/contexts/TenantContext'
 import {
   DollarSign,
   ShoppingCart,
@@ -12,6 +13,7 @@ import {
   Download,
   Calendar,
   BarChart3,
+  Building2,
 } from 'lucide-react'
 import {
   LineChart,
@@ -39,6 +41,7 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const { selectedTenant } = useTenant()
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState('30')
   const [analytics, setAnalytics] = useState<AnalyticsData>({
@@ -56,10 +59,14 @@ export default function AnalyticsPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchAnalytics()
-  }, [dateRange])
+    if (selectedTenant) {
+      fetchAnalytics()
+    }
+  }, [dateRange, selectedTenant])
 
   async function fetchAnalytics() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
 
@@ -67,16 +74,24 @@ export default function AnalyticsPage() {
       const { data: orders } = await supabase
         .from('orders')
         .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
         .gte(
           'created_at',
           new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
         )
 
-      // Fetch users
-      const { data: users } = await supabase.from('users').select('user_id')
+      // Fetch users (customers of this tenant)
+      const { data: users } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       // Fetch locations
-      const { data: locations } = await supabase.from('locations').select('*').eq('is_active', true)
+      const { data: locations } = await supabase
+        .from('locations')
+        .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
+        .eq('is_active', true)
 
       // Calculate analytics
       const totalRevenue = orders?.reduce((acc, o) => acc + (o.total_amount || 0), 0) || 0
@@ -158,6 +173,25 @@ export default function AnalyticsPage() {
     window.URL.revokeObjectURL(url)
   }
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to view their analytics and insights.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
@@ -167,7 +201,7 @@ export default function AnalyticsPage() {
             Analytics & Insights
           </h1>
           <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-            Track performance and trends across all locations
+            Track performance and trends for {selectedTenant.business_name}
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { Bell, Plus, Send, Calendar, Users, CheckCircle, Clock, X } from 'lucide-react'
+import { useTenant } from '@/contexts/TenantContext'
+import { Bell, Plus, Send, Calendar, Users, CheckCircle, Clock, X, Building2 } from 'lucide-react'
 
 interface Campaign {
   campaign_id: string
@@ -17,6 +18,7 @@ interface Campaign {
 }
 
 export default function NotificationsPage() {
+  const { selectedTenant } = useTenant()
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -30,15 +32,20 @@ export default function NotificationsPage() {
   })
 
   useEffect(() => {
-    fetchCampaigns()
-  }, [])
+    if (selectedTenant) {
+      fetchCampaigns()
+    }
+  }, [selectedTenant])
 
   async function fetchCampaigns() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('push_campaigns')
         .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -51,6 +58,8 @@ export default function NotificationsPage() {
   }
 
   const handleSubmit = async () => {
+    if (!selectedTenant) return
+
     try {
       if (!formData.title || !formData.message) {
         alert('Please fill in title and message')
@@ -58,6 +67,7 @@ export default function NotificationsPage() {
       }
 
       const { error } = await supabase.from('push_campaigns').insert({
+        tenant_id: selectedTenant.tenant_id,
         title: formData.title,
         message: formData.message,
         audience_filter: { type: formData.audience },
@@ -92,6 +102,25 @@ export default function NotificationsPage() {
     drafts: campaigns.filter(c => c.status === 'draft').length,
   }
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to manage their push notifications.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
@@ -101,7 +130,7 @@ export default function NotificationsPage() {
             Push Notifications
           </h1>
           <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-            Send targeted notifications to your customers
+            Send targeted notifications to {selectedTenant.business_name}'s customers
           </p>
         </div>
         <button

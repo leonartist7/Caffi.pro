@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTenant } from '@/contexts/TenantContext'
 import {
   Ticket,
   Plus,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   Search,
   X,
+  Building2,
 } from 'lucide-react'
 
 interface Coupon {
@@ -32,6 +34,7 @@ interface Coupon {
 }
 
 export default function CouponsPage() {
+  const { selectedTenant } = useTenant()
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -52,15 +55,20 @@ export default function CouponsPage() {
   })
 
   useEffect(() => {
-    fetchCoupons()
-  }, [])
+    if (selectedTenant) {
+      fetchCoupons()
+    }
+  }, [selectedTenant])
 
   async function fetchCoupons() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('coupons')
         .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -74,6 +82,7 @@ export default function CouponsPage() {
 
   async function handleSaveCoupon(e: React.FormEvent) {
     e.preventDefault()
+    if (!selectedTenant) return
 
     try {
       const payload = {
@@ -93,10 +102,14 @@ export default function CouponsPage() {
           .from('coupons')
           .update(payload)
           .eq('coupon_id', editingCoupon.coupon_id)
+          .eq('tenant_id', selectedTenant.tenant_id)
 
         if (error) throw error
       } else {
-        const { error } = await supabase.from('coupons').insert(payload)
+        const { error } = await supabase.from('coupons').insert({
+          ...payload,
+          tenant_id: selectedTenant.tenant_id,
+        })
 
         if (error) throw error
       }
@@ -110,9 +123,14 @@ export default function CouponsPage() {
 
   async function handleDeleteCoupon(couponId: string) {
     if (!confirm('Are you sure you want to delete this coupon?')) return
+    if (!selectedTenant) return
 
     try {
-      const { error } = await supabase.from('coupons').delete().eq('coupon_id', couponId)
+      const { error } = await supabase
+        .from('coupons')
+        .delete()
+        .eq('coupon_id', couponId)
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
       fetchCoupons()
@@ -196,6 +214,25 @@ export default function CouponsPage() {
     return coupon.valid_until && new Date(coupon.valid_until) < new Date()
   }
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to manage their coupons.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -215,7 +252,7 @@ export default function CouponsPage() {
           Coupon Management
         </h1>
         <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-          Create and manage discount coupons for your customers
+          Create and manage discount coupons for {selectedTenant.business_name}
         </p>
       </div>
 

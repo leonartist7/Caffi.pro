@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTenant } from '@/contexts/TenantContext'
 import {
   Gift,
   Plus,
@@ -14,6 +15,7 @@ import {
   Search,
   X,
   Image as ImageIcon,
+  Building2,
 } from 'lucide-react'
 
 interface Reward {
@@ -32,6 +34,7 @@ interface Reward {
 }
 
 export default function RewardsPage() {
+  const { selectedTenant } = useTenant()
   const [rewards, setRewards] = useState<Reward[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -52,15 +55,20 @@ export default function RewardsPage() {
   })
 
   useEffect(() => {
-    fetchRewards()
-  }, [])
+    if (selectedTenant) {
+      fetchRewards()
+    }
+  }, [selectedTenant])
 
   async function fetchRewards() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('rewards_catalog')
         .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('points_required', { ascending: true })
 
       if (error) throw error
@@ -74,6 +82,7 @@ export default function RewardsPage() {
 
   async function handleSaveReward(e: React.FormEvent) {
     e.preventDefault()
+    if (!selectedTenant) return
 
     try {
       const payload = {
@@ -93,10 +102,14 @@ export default function RewardsPage() {
           .from('rewards_catalog')
           .update(payload)
           .eq('reward_id', editingReward.reward_id)
+          .eq('tenant_id', selectedTenant.tenant_id)
 
         if (error) throw error
       } else {
-        const { error } = await supabase.from('rewards_catalog').insert(payload)
+        const { error } = await supabase.from('rewards_catalog').insert({
+          ...payload,
+          tenant_id: selectedTenant.tenant_id,
+        })
 
         if (error) throw error
       }
@@ -110,9 +123,14 @@ export default function RewardsPage() {
 
   async function handleDeleteReward(rewardId: string) {
     if (!confirm('Are you sure you want to delete this reward?')) return
+    if (!selectedTenant) return
 
     try {
-      const { error } = await supabase.from('rewards_catalog').delete().eq('reward_id', rewardId)
+      const { error } = await supabase
+        .from('rewards_catalog')
+        .delete()
+        .eq('reward_id', rewardId)
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
       fetchRewards()
@@ -187,6 +205,25 @@ export default function RewardsPage() {
     return labels[type as keyof typeof labels] || type
   }
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to manage their loyalty rewards.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -206,7 +243,7 @@ export default function RewardsPage() {
           Rewards Catalog
         </h1>
         <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-          Manage loyalty rewards that customers can redeem with points
+          Manage loyalty rewards for {selectedTenant.business_name}
         </p>
       </div>
 

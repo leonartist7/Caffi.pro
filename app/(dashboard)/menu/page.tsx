@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTenant } from '@/contexts/TenantContext'
 import {
   Coffee,
   Search,
@@ -14,6 +15,7 @@ import {
   Eye,
   EyeOff,
   X,
+  Building2,
 } from 'lucide-react'
 
 interface Category {
@@ -42,6 +44,7 @@ interface MenuItem {
 }
 
 export default function MenuPage() {
+  const { selectedTenant } = useTenant()
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -63,10 +66,14 @@ export default function MenuPage() {
   })
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (selectedTenant) {
+      fetchData()
+    }
+  }, [selectedTenant])
 
   async function fetchData() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
 
@@ -79,6 +86,7 @@ export default function MenuPage() {
           categories!inner(name)
         `
         )
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
 
       if (itemsError) throw itemsError
@@ -87,6 +95,7 @@ export default function MenuPage() {
       const { data: cats, error: catsError } = await supabase
         .from('categories')
         .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('name')
 
       if (catsError) throw catsError
@@ -125,6 +134,8 @@ export default function MenuPage() {
   }
 
   const handleSubmit = async () => {
+    if (!selectedTenant) return
+
     try {
       if (!formData.name || !formData.price || !formData.category_id) {
         alert('Please fill in all required fields (Name, Price, Category)')
@@ -143,12 +154,14 @@ export default function MenuPage() {
             is_active: formData.is_active,
           })
           .eq('item_id', editingItem.item_id)
+          .eq('tenant_id', selectedTenant.tenant_id)
 
         if (error) throw error
         alert('Menu item updated successfully!')
       } else {
         // Create new item
         const { error } = await supabase.from('menu_items').insert({
+          tenant_id: selectedTenant.tenant_id,
           name: formData.name,
           description: formData.description,
           price: parseFloat(formData.price),
@@ -171,8 +184,14 @@ export default function MenuPage() {
   }
 
   const handleDelete = async (itemId: string) => {
+    if (!selectedTenant) return
+
     try {
-      const { error } = await supabase.from('menu_items').delete().eq('item_id', itemId)
+      const { error } = await supabase
+        .from('menu_items')
+        .delete()
+        .eq('item_id', itemId)
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
 
@@ -186,11 +205,14 @@ export default function MenuPage() {
   }
 
   const toggleAvailability = async (item: MenuItem) => {
+    if (!selectedTenant) return
+
     try {
       const { error } = await supabase
         .from('menu_items')
         .update({ is_active: !item.is_active })
         .eq('item_id', item.item_id)
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
       fetchData()
@@ -224,6 +246,26 @@ export default function MenuPage() {
         : '0.00',
   }
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to manage their menu items and
+            categories.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
@@ -233,7 +275,7 @@ export default function MenuPage() {
             Menu Management
           </h1>
           <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-            Manage your menu items and categories
+            Manage {selectedTenant.business_name}'s menu items and categories
           </p>
         </div>
         <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTenant } from '@/contexts/TenantContext'
 import {
   ShoppingCart,
   Search,
@@ -13,6 +14,7 @@ import {
   Users,
   TrendingUp,
   Package,
+  Building2,
 } from 'lucide-react'
 
 interface Order {
@@ -40,6 +42,7 @@ interface Order {
 }
 
 export default function OrdersPage() {
+  const { selectedTenant } = useTenant()
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -48,10 +51,14 @@ export default function OrdersPage() {
   const supabase = createClient()
 
   useEffect(() => {
-    fetchOrders()
-  }, [])
+    if (selectedTenant) {
+      fetchOrders()
+    }
+  }, [selectedTenant])
 
   async function fetchOrders() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -63,6 +70,7 @@ export default function OrdersPage() {
           locations (name)
         `
         )
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -75,11 +83,14 @@ export default function OrdersPage() {
   }
 
   const updateOrderStatus = async (orderId: string, newStatus: Order['status']) => {
+    if (!selectedTenant) return
+
     try {
       const { error } = await supabase
         .from('orders')
         .update({ status: newStatus })
         .eq('order_id', orderId)
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
       fetchOrders()
@@ -153,6 +164,25 @@ export default function OrdersPage() {
     { status: 'ready', title: 'Ready', icon: <ShoppingCart className="w-5 h-5" /> },
   ]
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to manage their orders.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
@@ -161,7 +191,7 @@ export default function OrdersPage() {
           Orders Management
         </h1>
         <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-          Track and manage all orders in real-time
+          Track and manage {selectedTenant.business_name}'s orders in real-time
         </p>
       </div>
 

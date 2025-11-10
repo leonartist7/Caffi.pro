@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { useTenant } from '@/contexts/TenantContext'
 import {
   MapPin,
   Search,
@@ -16,6 +17,7 @@ import {
   TrendingUp,
   Clock,
   X,
+  Building2,
 } from 'lucide-react'
 
 interface Location {
@@ -38,6 +40,7 @@ interface Location {
 }
 
 export default function LocationsPage() {
+  const { selectedTenant } = useTenant()
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -63,15 +66,20 @@ export default function LocationsPage() {
   })
 
   useEffect(() => {
-    fetchLocations()
-  }, [])
+    if (selectedTenant) {
+      fetchLocations()
+    }
+  }, [selectedTenant])
 
   async function fetchLocations() {
+    if (!selectedTenant) return
+
     try {
       setLoading(true)
       const { data, error } = await supabase
         .from('locations')
         .select('*')
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -120,6 +128,8 @@ export default function LocationsPage() {
   }
 
   const handleSubmit = async () => {
+    if (!selectedTenant) return
+
     try {
       if (!formData.name || !formData.slug || !formData.city) {
         alert('Please fill in all required fields (Name, Slug, City)')
@@ -144,12 +154,14 @@ export default function LocationsPage() {
             accepts_orders: formData.accepts_orders,
           })
           .eq('location_id', editingLocation.location_id)
+          .eq('tenant_id', selectedTenant.tenant_id)
 
         if (error) throw error
         alert('Location updated successfully!')
       } else {
         // Create new location
         const { error } = await supabase.from('locations').insert({
+          tenant_id: selectedTenant.tenant_id,
           name: formData.name,
           slug: formData.slug,
           address: formData.address,
@@ -182,8 +194,14 @@ export default function LocationsPage() {
   }
 
   const handleDelete = async (locationId: string) => {
+    if (!selectedTenant) return
+
     try {
-      const { error } = await supabase.from('locations').delete().eq('location_id', locationId)
+      const { error } = await supabase
+        .from('locations')
+        .delete()
+        .eq('location_id', locationId)
+        .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
 
@@ -217,6 +235,25 @@ export default function LocationsPage() {
     cities: new Set(locations.map(l => l.city)).size,
   }
 
+  // No tenant selected state
+  if (!selectedTenant) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          </div>
+          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+            Select a Coffee Shop Client
+          </h2>
+          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+            Please select a client from the dropdown above to manage their café locations.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
       {/* Header */}
@@ -226,7 +263,7 @@ export default function LocationsPage() {
             Locations Management
           </h1>
           <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-            Manage your café locations and operating hours
+            Manage {selectedTenant.business_name}'s café locations and operating hours
           </p>
         </div>
         <button
