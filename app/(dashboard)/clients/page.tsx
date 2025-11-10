@@ -24,18 +24,15 @@ interface Tenant {
   tenant_id: string
   business_name: string
   slug: string
+  owner_email: string
+  owner_phone?: string
+  app_name: string
+  bundle_id: string
+  subscription_status: 'trial' | 'active' | 'cancelled' | 'suspended'
+  created_at: string
+  // From tenant_manifests
   logo_url?: string
   primary_color?: string
-  contact_email?: string
-  contact_phone?: string
-  address?: string
-  website?: string
-  status: 'active' | 'inactive' | 'suspended'
-  created_at: string
-  // Stats from joins
-  total_orders?: number
-  total_revenue?: number
-  active_users?: number
 }
 
 export default function ClientsPage() {
@@ -55,9 +52,6 @@ export default function ClientsPage() {
     primary_color: '#6b3410',
     contact_email: '',
     contact_phone: '',
-    address: '',
-    website: '',
-    status: 'active' as 'active' | 'inactive' | 'suspended',
   })
 
   useEffect(() => {
@@ -223,9 +217,6 @@ export default function ClientsPage() {
       primary_color: '#6b3410',
       contact_email: '',
       contact_phone: '',
-      address: '',
-      website: '',
-      status: 'active',
     })
     setShowModal(true)
   }
@@ -237,11 +228,8 @@ export default function ClientsPage() {
       slug: tenant.slug,
       logo_url: tenant.logo_url || '',
       primary_color: tenant.primary_color || '#6b3410',
-      contact_email: tenant.contact_email || '',
-      contact_phone: tenant.contact_phone || '',
-      address: tenant.address || '',
-      website: tenant.website || '',
-      status: tenant.status,
+      contact_email: tenant.owner_email || '',
+      contact_phone: tenant.owner_phone || '',
     })
     setShowModal(true)
   }
@@ -264,16 +252,18 @@ export default function ClientsPage() {
 
   const stats = {
     total: tenants.length,
-    active: tenants.filter(t => t.status === 'active').length,
-    inactive: tenants.filter(t => t.status === 'inactive').length,
-    suspended: tenants.filter(t => t.status === 'suspended').length,
+    active: tenants.filter(t => t.subscription_status === 'active').length,
+    trial: tenants.filter(t => t.subscription_status === 'trial').length,
+    suspended: tenants.filter(t => t.subscription_status === 'suspended').length,
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
         return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-      case 'inactive':
+      case 'trial':
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+      case 'cancelled':
         return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
       case 'suspended':
         return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
@@ -316,13 +306,13 @@ export default function ClientsPage() {
           </p>
         </div>
 
-        <div className="bg-gray-50 dark:bg-gray-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+        <div className="bg-blue-50 dark:bg-blue-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-blue-200 dark:border-blue-800">
           <div className="flex items-center gap-3 mb-2">
-            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-gray-600 dark:text-gray-400" />
-            <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Inactive</p>
+            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400" />
+            <p className="text-xs lg:text-sm text-blue-600 dark:text-blue-400">Trial</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-gray-700 dark:text-gray-400">
-            {stats.inactive}
+          <p className="text-2xl lg:text-3xl font-bold text-blue-700 dark:text-blue-400">
+            {stats.trial}
           </p>
         </div>
 
@@ -416,45 +406,30 @@ export default function ClientsPage() {
                   </div>
                 </div>
                 <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(tenant.status)}`}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(tenant.subscription_status)}`}
                 >
-                  {tenant.status}
+                  {tenant.subscription_status}
                 </span>
               </div>
 
               {/* Contact Info */}
               <div className="space-y-2 mb-4 text-sm">
-                {tenant.contact_email && (
+                {tenant.owner_email && (
                   <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
                     <Mail className="w-4 h-4" />
-                    <span className="truncate">{tenant.contact_email}</span>
+                    <span className="truncate">{tenant.owner_email}</span>
                   </div>
                 )}
-                {tenant.contact_phone && (
+                {tenant.owner_phone && (
                   <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
                     <Phone className="w-4 h-4" />
-                    {tenant.contact_phone}
+                    {tenant.owner_phone}
                   </div>
                 )}
-                {tenant.address && (
-                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
-                    <MapPin className="w-4 h-4" />
-                    <span className="truncate">{tenant.address}</span>
-                  </div>
-                )}
-                {tenant.website && (
-                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
-                    <Globe className="w-4 h-4" />
-                    <a
-                      href={tenant.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-coffee-700 dark:hover:text-cream-200 truncate"
-                    >
-                      {tenant.website}
-                    </a>
-                  </div>
-                )}
+                <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                  <Globe className="w-4 h-4" />
+                  <span className="text-xs font-mono">{tenant.bundle_id}</span>
+                </div>
               </div>
 
               {/* Actions */}
@@ -596,53 +571,17 @@ export default function ClientsPage() {
                     />
                   </div>
 
-                  {/* Address */}
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      Address
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.address}
-                      onChange={e => setFormData({ ...formData, address: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                      placeholder="123 Main St, City, Country"
-                    />
-                  </div>
-
-                  {/* Website */}
+                  {/* Primary Color */}
                   <div>
                     <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      Website
+                      Primary Color
                     </label>
                     <input
-                      type="url"
-                      value={formData.website}
-                      onChange={e => setFormData({ ...formData, website: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                      placeholder="https://joescoffee.com"
+                      type="color"
+                      value={formData.primary_color}
+                      onChange={e => setFormData({ ...formData, primary_color: e.target.value })}
+                      className="w-full h-12 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 cursor-pointer"
                     />
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={formData.status}
-                      onChange={e =>
-                        setFormData({
-                          ...formData,
-                          status: e.target.value as typeof formData.status,
-                        })
-                      }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                    >
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
                   </div>
                 </div>
 
