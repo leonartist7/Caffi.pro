@@ -7,7 +7,7 @@ import { Search, Coffee, Loader2 } from 'lucide-react'
 import MenuItemCard, { type MenuItem } from '@/components/shop/MenuItem'
 import CategoryFilter, { type Category } from '@/components/shop/CategoryFilter'
 import ItemDetailModal, { type ItemOptions } from '@/components/shop/ItemDetailModal'
-import { headers } from 'next/headers'
+import { useCart } from '@/contexts/CartContext'
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>([])
@@ -18,8 +18,10 @@ export default function MenuPage() {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [tenantSlug, setTenantSlug] = useState<string | null>(null)
+  const [tenantId, setTenantId] = useState<string | null>(null)
   const [currency, setCurrency] = useState('EUR')
 
+  const { addItem } = useCart()
   const supabase = createClient()
 
   // Extract tenant slug from URL on mount
@@ -48,6 +50,7 @@ export default function MenuPage() {
       const tenant = await getTenantBySlug(tenantSlug)
       if (tenant) {
         setCurrency(tenant.currency || 'EUR')
+        setTenantId(tenant.tenant_id)
       }
 
       // Fetch categories
@@ -115,9 +118,43 @@ export default function MenuPage() {
   }
 
   const handleAddToCart = (item: MenuItem, options?: ItemOptions) => {
-    // TODO: Implement cart functionality in Phase 4.3
-    console.log('Add to cart:', item, options)
-    alert(`Added ${item.name} to cart! (Cart functionality coming in Phase 4.3)`)
+    if (!tenantId) return
+
+    if (options) {
+      // From modal with customization
+      addItem(
+        {
+          item_id: item.item_id,
+          tenant_id: tenantId,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          image_url: item.image_url,
+        },
+        {
+          size: options.size,
+          addons: options.addons,
+        },
+        options.quantity,
+        options.special_instructions
+      )
+    } else {
+      // Quick add from card (no customization)
+      addItem(
+        {
+          item_id: item.item_id,
+          tenant_id: tenantId,
+          name: item.name,
+          description: item.description,
+          price: item.price,
+          image_url: item.image_url,
+        },
+        {
+          addons: [],
+        },
+        1
+      )
+    }
   }
 
   return (
