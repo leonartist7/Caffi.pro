@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { Home, ShoppingBag, Gift, User, Menu } from 'lucide-react'
+import { Home, ShoppingBag, Gift, User, Menu, LogOut, LogIn } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'
+import { useAuth } from '@/contexts/AuthContext'
 import CartSidebar from '@/components/shop/CartSidebar'
 import type { Tenant } from '@/lib/get-tenant'
+import { useState } from 'react'
 
 interface ShopLayoutClientProps {
   tenant: Tenant
@@ -13,8 +15,15 @@ interface ShopLayoutClientProps {
 
 export default function ShopLayoutClient({ tenant, children }: ShopLayoutClientProps) {
   const { itemCount, toggleCart } = useCart()
+  const { user, loading: authLoading, signOut } = useAuth()
+  const [showUserMenu, setShowUserMenu] = useState(false)
   const shopUrl = `/shop/${tenant.slug}`
   const primaryColor = tenant.primary_color || '#6b3410'
+
+  const handleSignOut = async () => {
+    await signOut()
+    setShowUserMenu(false)
+  }
 
   return (
     <div
@@ -60,22 +69,21 @@ export default function ShopLayoutClient({ tenant, children }: ShopLayoutClientP
             <NavLink href={`${shopUrl}/menu`} icon={<Menu size={18} />}>
               Menu
             </NavLink>
-            <NavLink href={`${shopUrl}/orders`} icon={<ShoppingBag size={18} />}>
-              Orders
-            </NavLink>
-            {tenant.features_enabled?.rewards && (
+            {user && (
+              <NavLink href={`${shopUrl}/orders`} icon={<ShoppingBag size={18} />}>
+                Orders
+              </NavLink>
+            )}
+            {user && tenant.features_enabled?.rewards && (
               <NavLink href={`${shopUrl}/rewards`} icon={<Gift size={18} />}>
                 Rewards
               </NavLink>
             )}
-            <NavLink href={`${shopUrl}/profile`} icon={<User size={18} />}>
-              Profile
-            </NavLink>
 
             {/* Cart Button - Desktop */}
             <button
               onClick={toggleCart}
-              className="relative flex items-center gap-2 px-4 py-2 rounded-lg text-coffee-700 dark:text-coffee-200 hover:bg-coffee-100/50 dark:hover:bg-dark-800/50 transition-colors ml-2"
+              className="relative flex items-center gap-2 px-4 py-2 rounded-lg text-coffee-700 dark:text-coffee-200 hover:bg-coffee-100/50 dark:hover:bg-dark-800/50 transition-colors"
             >
               <ShoppingBag size={18} />
               {itemCount > 0 && (
@@ -84,6 +92,68 @@ export default function ShopLayoutClient({ tenant, children }: ShopLayoutClientP
                 </span>
               )}
             </button>
+
+            {/* User Menu - Desktop */}
+            {!authLoading && (
+              <>
+                {user ? (
+                  <div className="relative ml-2">
+                    <button
+                      onClick={() => setShowUserMenu(!showUserMenu)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-coffee-700 dark:text-coffee-200 hover:bg-coffee-100/50 dark:hover:bg-dark-800/50 transition-colors"
+                    >
+                      <User size={18} />
+                      <span className="font-medium">
+                        {user.user_metadata?.full_name || user.email?.split('@')[0]}
+                      </span>
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {showUserMenu && (
+                      <>
+                        <div
+                          className="fixed inset-0 z-10"
+                          onClick={() => setShowUserMenu(false)}
+                        />
+                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-800 rounded-lg shadow-xl border border-coffee-200 dark:border-dark-700 py-2 z-20">
+                          <Link
+                            href={`${shopUrl}/profile`}
+                            className="block px-4 py-2 text-coffee-700 dark:text-coffee-200 hover:bg-coffee-100 dark:hover:bg-dark-700 transition-colors"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            Profile
+                          </Link>
+                          <Link
+                            href={`${shopUrl}/orders`}
+                            className="block px-4 py-2 text-coffee-700 dark:text-coffee-200 hover:bg-coffee-100 dark:hover:bg-dark-700 transition-colors"
+                            onClick={() => setShowUserMenu(false)}
+                          >
+                            My Orders
+                          </Link>
+                          <button
+                            onClick={handleSignOut}
+                            className="w-full text-left px-4 py-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
+                          >
+                            <LogOut size={16} />
+                            Sign Out
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 ml-2">
+                    <Link
+                      href={`${shopUrl}/login`}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-coffee-700 dark:text-coffee-200 hover:bg-coffee-100/50 dark:hover:bg-dark-800/50 transition-colors"
+                    >
+                      <LogIn size={18} />
+                      <span className="font-medium">Sign In</span>
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
           </nav>
 
           {/* Mobile: Cart Icon */}
