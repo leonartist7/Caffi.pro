@@ -1,91 +1,204 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTenant } from '@/contexts/TenantContext'
 import { createClient } from '@/utils/supabase/client'
-import { Users, Search, Filter, TrendingUp, Award, ShoppingBag, Mail, Phone } from 'lucide-react'
+import {
+  Building2,
+  Search,
+  Plus,
+  Edit,
+  Trash2,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  TrendingUp,
+  Users,
+  ShoppingBag,
+  X,
+  Eye,
+} from 'lucide-react'
 
-interface Client {
-  user_id: string
-  full_name: string
-  email: string
-  phone: string
-  loyalty_points: number
-  loyalty_tier: string
-  total_orders: number
-  total_spent: number
-  last_order_at: string
+interface Tenant {
+  tenant_id: string
+  business_name: string
+  slug: string
+  logo_url?: string
+  primary_color?: string
+  contact_email?: string
+  contact_phone?: string
+  address?: string
+  website?: string
+  status: 'active' | 'inactive' | 'suspended'
   created_at: string
+  // Stats from joins
+  total_orders?: number
+  total_revenue?: number
+  active_users?: number
 }
 
 export default function ClientsPage() {
-  const [clients, setClients] = useState<Client[]>([])
+  const { setSelectedTenant } = useTenant()
+  const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterTier, setFilterTier] = useState<string>('all')
+  const [showModal, setShowModal] = useState(false)
+  const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
   const supabase = createClient()
 
+  // Form state
+  const [formData, setFormData] = useState({
+    business_name: '',
+    slug: '',
+    logo_url: '',
+    primary_color: '#6b3410',
+    contact_email: '',
+    contact_phone: '',
+    address: '',
+    website: '',
+    status: 'active' as 'active' | 'inactive' | 'suspended',
+  })
+
   useEffect(() => {
-    fetchClients()
+    fetchTenants()
   }, [])
 
-  async function fetchClients() {
+  async function fetchTenants() {
     try {
       setLoading(true)
       const { data, error } = await supabase
-        .from('users')
+        .from('tenants')
         .select('*')
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setClients(data || [])
+      setTenants(data || [])
     } catch (error) {
-      console.error('Error fetching clients:', error)
+      console.error('Error fetching tenants:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredClients = clients.filter(client => {
-    const matchesSearch =
-      client.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      client.phone?.includes(searchQuery)
+  async function handleSaveTenant(e: React.FormEvent) {
+    e.preventDefault()
 
-    const matchesTier = filterTier === 'all' || client.loyalty_tier === filterTier
+    try {
+      const payload = {
+        business_name: formData.business_name,
+        slug: formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+        logo_url: formData.logo_url || null,
+        primary_color: formData.primary_color,
+        contact_email: formData.contact_email || null,
+        contact_phone: formData.contact_phone || null,
+        address: formData.address || null,
+        website: formData.website || null,
+        status: formData.status,
+      }
 
-    return matchesSearch && matchesTier
-  })
+      if (editingTenant) {
+        const { error } = await supabase
+          .from('tenants')
+          .update(payload)
+          .eq('tenant_id', editingTenant.tenant_id)
 
-  const stats = {
-    total: clients.length,
-    activeThisMonth: clients.filter(
-      c =>
-        c.last_order_at &&
-        new Date(c.last_order_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    ).length,
-    averageOrders: clients.length
-      ? (clients.reduce((acc, c) => acc + c.total_orders, 0) / clients.length).toFixed(1)
-      : 0,
-    totalRevenue: clients.reduce((acc, c) => acc + c.total_spent, 0).toFixed(2),
-  }
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('tenants').insert(payload)
 
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'platinum':
-        return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400'
-      case 'gold':
-        return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
-      case 'silver':
-        return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
-      default:
-        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+        if (error) throw error
+      }
+
+      fetchTenants()
+      closeModal()
+    } catch (error) {
+      console.error('Error saving tenant:', error)
+      alert('Failed to save client. Please try again.')
     }
   }
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return 'Never'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  async function handleDeleteTenant(tenantId: string) {
+    if (!confirm('Are you sure you want to delete this client? This action cannot be undone.'))
+      return
+
+    try {
+      const { error } = await supabase.from('tenants').delete().eq('tenant_id', tenantId)
+
+      if (error) throw error
+      fetchTenants()
+    } catch (error) {
+      console.error('Error deleting tenant:', error)
+      alert('Failed to delete client. Please try again.')
+    }
+  }
+
+  function openCreateModal() {
+    setEditingTenant(null)
+    setFormData({
+      business_name: '',
+      slug: '',
+      logo_url: '',
+      primary_color: '#6b3410',
+      contact_email: '',
+      contact_phone: '',
+      address: '',
+      website: '',
+      status: 'active',
+    })
+    setShowModal(true)
+  }
+
+  function openEditModal(tenant: Tenant) {
+    setEditingTenant(tenant)
+    setFormData({
+      business_name: tenant.business_name,
+      slug: tenant.slug,
+      logo_url: tenant.logo_url || '',
+      primary_color: tenant.primary_color || '#6b3410',
+      contact_email: tenant.contact_email || '',
+      contact_phone: tenant.contact_phone || '',
+      address: tenant.address || '',
+      website: tenant.website || '',
+      status: tenant.status,
+    })
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditingTenant(null)
+  }
+
+  function handleSelectTenant(tenant: Tenant) {
+    setSelectedTenant(tenant)
+    // Optionally redirect to dashboard or show success message
+  }
+
+  const filteredTenants = tenants.filter(
+    tenant =>
+      tenant.business_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.slug.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const stats = {
+    total: tenants.length,
+    active: tenants.filter(t => t.status === 'active').length,
+    inactive: tenants.filter(t => t.status === 'inactive').length,
+    suspended: tenants.filter(t => t.status === 'suspended').length,
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+      case 'inactive':
+        return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
+      case 'suspended':
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+      default:
+        return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
+    }
   }
 
   return (
@@ -93,212 +206,386 @@ export default function ClientsPage() {
       {/* Header */}
       <div className="mb-6 lg:mb-8">
         <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-          Clients Management
+          My Coffee Shop Clients
         </h1>
         <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-          Manage your customer base and loyalty program
+          Manage all your coffee shop businesses from one control center
         </p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
         <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Total Clients
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                {stats.total}
-              </p>
-            </div>
-            <Users className="w-8 h-8 lg:w-10 lg:h-10 text-coffee-600 dark:text-cream-300" />
+          <div className="flex items-center gap-3 mb-2">
+            <Building2 className="w-5 h-5 lg:w-6 lg:h-6 text-coffee-600 dark:text-cream-400" />
+            <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400">Total Clients</p>
           </div>
+          <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100">
+            {stats.total}
+          </p>
         </div>
 
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Active This Month
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                {stats.activeThisMonth}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 lg:w-10 lg:h-10 text-green-600" />
+        <div className="bg-green-50 dark:bg-green-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-green-200 dark:border-green-800">
+          <div className="flex items-center gap-3 mb-2">
+            <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400" />
+            <p className="text-xs lg:text-sm text-green-600 dark:text-green-400">Active</p>
           </div>
+          <p className="text-2xl lg:text-3xl font-bold text-green-700 dark:text-green-400">
+            {stats.active}
+          </p>
         </div>
 
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Avg. Orders
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                {stats.averageOrders}
-              </p>
-            </div>
-            <ShoppingBag className="w-8 h-8 lg:w-10 lg:h-10 text-blue-600" />
+        <div className="bg-gray-50 dark:bg-gray-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 mb-2">
+            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-gray-600 dark:text-gray-400" />
+            <p className="text-xs lg:text-sm text-gray-600 dark:text-gray-400">Inactive</p>
           </div>
+          <p className="text-2xl lg:text-3xl font-bold text-gray-700 dark:text-gray-400">
+            {stats.inactive}
+          </p>
         </div>
 
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Total Revenue
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                €{stats.totalRevenue}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 lg:w-10 lg:h-10 text-green-600" />
+        <div className="bg-red-50 dark:bg-red-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-red-200 dark:border-red-800">
+          <div className="flex items-center gap-3 mb-2">
+            <ShoppingBag className="w-5 h-5 lg:w-6 lg:h-6 text-red-600 dark:text-red-400" />
+            <p className="text-xs lg:text-sm text-red-600 dark:text-red-400">Suspended</p>
           </div>
+          <p className="text-2xl lg:text-3xl font-bold text-red-700 dark:text-red-400">
+            {stats.suspended}
+          </p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6 lg:mb-8">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-coffee-400 dark:text-cream-500" />
+      {/* Search & Add */}
+      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 justify-between">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-coffee-400 dark:text-cream-600" />
             <input
               type="text"
-              placeholder="Search by name, email, or phone..."
+              placeholder="Search clients..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 placeholder:text-coffee-400 dark:placeholder:text-cream-500 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
+              className="w-full pl-10 pr-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
             />
           </div>
-
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
-            <select
-              value={filterTier}
-              onChange={e => setFilterTier(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
-            >
-              <option value="all">All Tiers</option>
-              <option value="bronze">Bronze</option>
-              <option value="silver">Silver</option>
-              <option value="gold">Gold</option>
-              <option value="platinum">Platinum</option>
-            </select>
-          </div>
+          <button
+            onClick={openCreateModal}
+            className="flex items-center justify-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base"
+          >
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+            Add New Client
+          </button>
         </div>
       </div>
 
-      {/* Clients Table */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-coffee-200/50 dark:border-dark-700 overflow-hidden">
+      {/* Clients Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-          <div className="p-12 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin"></div>
-            <p className="text-coffee-600 dark:text-cream-400 mt-4">Loading clients...</p>
+          <div className="col-span-full p-12 text-center">
+            <div className="inline-block w-12 h-12 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-coffee-600 dark:text-cream-400">Loading clients...</p>
           </div>
-        ) : filteredClients.length === 0 ? (
-          <div className="p-12 text-center">
-            <Users className="w-12 h-12 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
-            <p className="text-coffee-600 dark:text-cream-400">No clients found</p>
+        ) : filteredTenants.length === 0 ? (
+          <div className="col-span-full p-12 text-center">
+            <Building2 className="w-16 h-16 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
+              No clients yet
+            </h3>
+            <p className="text-coffee-600 dark:text-cream-400 mb-4">
+              {searchQuery
+                ? 'Try a different search'
+                : 'Add your first coffee shop client to get started'}
+            </p>
+            {!searchQuery && (
+              <button
+                onClick={openCreateModal}
+                className="inline-flex items-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+              >
+                <Plus className="w-5 h-5" />
+                Add First Client
+              </button>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-coffee-50 dark:bg-dark-900 border-b border-coffee-200 dark:border-dark-700">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase tracking-wider">
-                    Client
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase tracking-wider">
-                    Loyalty
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase tracking-wider">
-                    Orders
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase tracking-wider">
-                    Spent
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase tracking-wider">
-                    Last Order
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-coffee-100 dark:divide-dark-700">
-                {filteredClients.map(client => (
-                  <tr
-                    key={client.user_id}
-                    className="hover:bg-coffee-50/50 dark:hover:bg-dark-700/30 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gradient-coffee flex items-center justify-center text-cream-100 font-semibold">
-                          {client.full_name?.charAt(0) || 'U'}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-coffee-900 dark:text-cream-100">
-                            {client.full_name || 'Unknown'}
-                          </p>
-                          <p className="text-xs text-coffee-500 dark:text-cream-500">
-                            Since {formatDate(client.created_at)}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-1">
-                        {client.email && (
-                          <div className="flex items-center gap-2 text-sm text-coffee-600 dark:text-cream-400">
-                            <Mail className="w-4 h-4" />
-                            {client.email}
-                          </div>
-                        )}
-                        {client.phone && (
-                          <div className="flex items-center gap-2 text-sm text-coffee-600 dark:text-cream-400">
-                            <Phone className="w-4 h-4" />
-                            {client.phone}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="space-y-2">
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${getTierColor(client.loyalty_tier)}`}
-                        >
-                          <Award className="w-3 h-3" />
-                          {client.loyalty_tier?.toUpperCase()}
-                        </span>
-                        <p className="text-sm text-coffee-600 dark:text-cream-400">
-                          {client.loyalty_points} points
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-coffee-900 dark:text-cream-100">
-                        {client.total_orders}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="font-semibold text-coffee-900 dark:text-cream-100">
-                        €{client.total_spent?.toFixed(2)}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-coffee-600 dark:text-cream-400">
-                        {formatDate(client.last_order_at)}
-                      </p>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          filteredTenants.map(tenant => (
+            <div
+              key={tenant.tenant_id}
+              className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 hover:border-coffee-300 dark:hover:border-dark-600 hover:shadow-xl transition-all group"
+            >
+              {/* Logo & Status */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  {tenant.logo_url ? (
+                    <img
+                      src={tenant.logo_url}
+                      alt={tenant.business_name}
+                      className="w-14 h-14 rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-gradient-coffee flex items-center justify-center">
+                      <Building2 className="w-7 h-7 text-cream-100" />
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="font-bold text-lg text-coffee-900 dark:text-cream-100">
+                      {tenant.business_name}
+                    </h3>
+                    <p className="text-sm text-coffee-500 dark:text-cream-500">{tenant.slug}</p>
+                  </div>
+                </div>
+                <span
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(tenant.status)}`}
+                >
+                  {tenant.status}
+                </span>
+              </div>
+
+              {/* Contact Info */}
+              <div className="space-y-2 mb-4 text-sm">
+                {tenant.contact_email && (
+                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                    <Mail className="w-4 h-4" />
+                    <span className="truncate">{tenant.contact_email}</span>
+                  </div>
+                )}
+                {tenant.contact_phone && (
+                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                    <Phone className="w-4 h-4" />
+                    {tenant.contact_phone}
+                  </div>
+                )}
+                {tenant.address && (
+                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                    <MapPin className="w-4 h-4" />
+                    <span className="truncate">{tenant.address}</span>
+                  </div>
+                )}
+                {tenant.website && (
+                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                    <Globe className="w-4 h-4" />
+                    <a
+                      href={tenant.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="hover:text-coffee-700 dark:hover:text-cream-200 truncate"
+                    >
+                      {tenant.website}
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 pt-4 border-t border-coffee-200/50 dark:border-dark-700">
+                <button
+                  onClick={() => handleSelectTenant(tenant)}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-coffee text-cream-100 hover:shadow-lg transition-all text-sm font-medium"
+                >
+                  <Eye className="w-4 h-4" />
+                  Manage
+                </button>
+                <button
+                  onClick={() => openEditModal(tenant)}
+                  className="px-3 py-2 rounded-lg bg-coffee-100 dark:bg-dark-700 text-coffee-700 dark:text-cream-300 hover:bg-coffee-200 dark:hover:bg-dark-600 transition-all"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteTenant(tenant.tenant_id)}
+                  className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))
         )}
       </div>
+
+      {/* Create/Edit Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
+            <div
+              className="fixed inset-0 transition-opacity bg-gray-900/75 backdrop-blur-sm"
+              onClick={closeModal}
+            />
+
+            <div className="relative bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 lg:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl lg:text-2xl font-bold text-coffee-900 dark:text-cream-100">
+                  {editingTenant ? 'Edit Client' : 'Add New Client'}
+                </h3>
+                <button
+                  onClick={closeModal}
+                  className="p-2 hover:bg-coffee-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveTenant} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Business Name */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Business Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.business_name}
+                      onChange={e => {
+                        setFormData({
+                          ...formData,
+                          business_name: e.target.value,
+                          slug:
+                            formData.slug ||
+                            e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                        })
+                      }}
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="Joe's Coffee Shop"
+                      required
+                    />
+                  </div>
+
+                  {/* Slug */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      App Slug * (unique identifier)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.slug}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+                        })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 font-mono focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="joes-coffee-shop"
+                      required
+                    />
+                    <p className="mt-1 text-xs text-coffee-500 dark:text-cream-500">
+                      Will be used as: {formData.slug || 'your-slug'}.yourapp.com
+                    </p>
+                  </div>
+
+                  {/* Logo URL */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Logo URL
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.logo_url}
+                      onChange={e => setFormData({ ...formData, logo_url: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+
+                  {/* Contact Email */}
+                  <div>
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Contact Email
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.contact_email}
+                      onChange={e => setFormData({ ...formData, contact_email: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="owner@joescoffee.com"
+                    />
+                  </div>
+
+                  {/* Contact Phone */}
+                  <div>
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Contact Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={formData.contact_phone}
+                      onChange={e => setFormData({ ...formData, contact_phone: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="+1 234 567 8900"
+                    />
+                  </div>
+
+                  {/* Address */}
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Address
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.address}
+                      onChange={e => setFormData({ ...formData, address: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="123 Main St, City, Country"
+                    />
+                  </div>
+
+                  {/* Website */}
+                  <div>
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      value={formData.website}
+                      onChange={e => setFormData({ ...formData, website: e.target.value })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      placeholder="https://joescoffee.com"
+                    />
+                  </div>
+
+                  {/* Status */}
+                  <div>
+                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      Status
+                    </label>
+                    <select
+                      value={formData.status}
+                      onChange={e =>
+                        setFormData({
+                          ...formData,
+                          status: e.target.value as typeof formData.status,
+                        })
+                      }
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex justify-end gap-3 pt-6 border-t border-coffee-200/50 dark:border-dark-700">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-6 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-700 dark:text-cream-300 hover:bg-coffee-100 dark:hover:bg-dark-600 transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 rounded-xl bg-gradient-coffee text-cream-100 font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                  >
+                    {editingTenant ? 'Update Client' : 'Add Client'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
