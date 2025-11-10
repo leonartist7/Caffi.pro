@@ -1,5 +1,4 @@
 import { getTenantBySlug } from '@/lib/get-tenant'
-import { headers } from 'next/headers'
 import Link from 'next/link'
 import { Home, ShoppingBag, Gift, User, Menu } from 'lucide-react'
 
@@ -9,11 +8,14 @@ import { Home, ShoppingBag, Gift, User, Menu } from 'lucide-react'
  * This layout wraps all customer-facing pages (/shop/[slug]/...)
  * and provides tenant-specific branding and navigation.
  */
-export default async function ShopLayout({ children }: { children: React.ReactNode }) {
-  const headersList = headers()
-  const tenantSlug = headersList.get('x-tenant-slug')
-
-  const tenant = await getTenantBySlug(tenantSlug)
+export default async function ShopLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode
+  params: { slug: string }
+}) {
+  const tenant = await getTenantBySlug(params.slug)
 
   if (!tenant) {
     return (

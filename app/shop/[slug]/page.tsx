@@ -1,5 +1,4 @@
 import { getTenantBySlug } from '@/lib/get-tenant'
-import { headers } from 'next/headers'
 import Link from 'next/link'
 import { Coffee, ShoppingBag, Gift, Clock, MapPin } from 'lucide-react'
 
@@ -9,11 +8,8 @@ import { Coffee, ShoppingBag, Gift, Clock, MapPin } from 'lucide-react'
  * This is the main landing page for each coffee shop's customer app.
  * URL pattern: /shop/[slug]
  */
-export default async function ShopHomePage() {
-  const headersList = headers()
-  const tenantSlug = headersList.get('x-tenant-slug')
-
-  const tenant = await getTenantBySlug(tenantSlug)
+export default async function ShopHomePage({ params }: { params: { slug: string } }) {
+  const tenant = await getTenantBySlug(params.slug)
 
   if (!tenant) {
     return null // Layout handles this case
