@@ -123,13 +123,20 @@ export default function ClientsPage() {
           bundle_id: `com.caffi.${cleanSlug}`,
         }
 
+        console.log('Creating tenant with payload:', tenantPayload)
+
         const { data: newTenant, error: tenantError } = await supabase
           .from('tenants')
           .insert(tenantPayload)
           .select()
           .single()
 
-        if (tenantError) throw tenantError
+        if (tenantError) {
+          console.error('Tenant creation error:', tenantError)
+          throw new Error(
+            `Failed to create tenant: ${tenantError.message || JSON.stringify(tenantError)}`
+          )
+        }
 
         // Create tenant_manifests entry with logo and primary color
         if (newTenant) {
@@ -172,24 +179,30 @@ export default function ClientsPage() {
             },
           }
 
+          console.log('Creating manifest with payload:', manifestPayload)
+
           const { error: manifestError } = await supabase
             .from('tenant_manifests')
             .insert(manifestPayload)
 
           if (manifestError) {
             console.error('Error creating manifest:', manifestError)
-            // Don't throw - tenant was created successfully
+            throw new Error(
+              `Failed to create manifest: ${manifestError.message || JSON.stringify(manifestError)}`
+            )
           }
+
+          console.log('✅ Tenant and manifest created successfully!')
         }
       }
 
-      fetchTenants()
+      await fetchTenants()
       closeModal()
+      alert('✅ Client created successfully!')
     } catch (error) {
       console.error('Error saving tenant:', error)
-      alert(
-        `Failed to save client. ${error instanceof Error ? error.message : 'Please try again.'}`
-      )
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
+      alert(`❌ Failed to save client:\n\n${errorMessage}`)
     }
   }
 
@@ -492,12 +505,12 @@ export default function ClientsPage() {
                       type="text"
                       value={formData.business_name}
                       onChange={e => {
+                        const businessName = e.target.value
+                        const autoSlug = businessName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
                         setFormData({
                           ...formData,
-                          business_name: e.target.value,
-                          slug:
-                            formData.slug ||
-                            e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                          business_name: businessName,
+                          slug: autoSlug,
                         })
                       }}
                       className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
@@ -506,26 +519,20 @@ export default function ClientsPage() {
                     />
                   </div>
 
-                  {/* Slug */}
+                  {/* Slug - Auto-generated, Read-only */}
                   <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                      App Slug * (unique identifier)
+                      App Slug (auto-generated from business name)
                     </label>
                     <input
                       type="text"
                       value={formData.slug}
-                      onChange={e =>
-                        setFormData({
-                          ...formData,
-                          slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-                        })
-                      }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 font-mono focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
-                      placeholder="joes-coffee-shop"
-                      required
+                      readOnly
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-600 dark:text-cream-400 font-mono cursor-not-allowed"
+                      placeholder="will-auto-generate"
                     />
                     <p className="mt-1 text-xs text-coffee-500 dark:text-cream-500">
-                      Will be used as: {formData.slug || 'your-slug'}.yourapp.com
+                      URL: /shop/{formData.slug || 'your-slug'}
                     </p>
                   </div>
 
