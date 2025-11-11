@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Gift, Star, Loader2, ShoppingBag, CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getTenantBySlug } from '@/lib/get-tenant'
+import { toast } from 'sonner'
 
 interface Reward {
   reward_id: string
@@ -103,7 +104,7 @@ export default function RewardsPage() {
 
   async function handleRedeem(reward: Reward) {
     if (userPoints.available_points < reward.points_required) {
-      alert('Not enough points to redeem this reward!')
+      toast.error('Not enough points to redeem this reward!')
       return
     }
 
@@ -132,11 +133,11 @@ export default function RewardsPage() {
 
       if (error) throw error
 
-      alert(`✅ Successfully redeemed ${reward.name}!\n\nShow this to staff when ordering.`)
+      toast.success(`Successfully redeemed ${reward.name}! Show this to staff when ordering.`)
       await fetchData() // Refresh points
     } catch (err: any) {
       console.error('Error redeeming reward:', err)
-      alert(`Failed to redeem reward: ${err.message}`)
+      toast.error(`Failed to redeem reward: ${err.message}`)
     } finally {
       setRedeeming(null)
     }

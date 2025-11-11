@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react'
 import { PlusIcon, TrashIcon, PencilIcon } from '@heroicons/react/24/outline'
+import { toast } from 'sonner'
 
 export interface Modifier {
   id: string
@@ -26,7 +27,7 @@ interface ModifiersBuildProps {
 const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
   modifiers,
   onChange,
-  className = ''
+  className = '',
 }) => {
   const [editingModifier, setEditingModifier] = useState<Modifier | null>(null)
   const [showModifierModal, setShowModifierModal] = useState(false)
@@ -63,7 +64,7 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
 
   const handleSaveModifier = () => {
     if (!modifierName || options.length === 0) {
-      alert('Please provide a modifier name and at least one option')
+      toast.error('Please provide a modifier name and at least one option')
       return
     }
 
@@ -76,7 +77,7 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
     }
 
     if (editingModifier) {
-      onChange(modifiers.map(m => m.id === modifier.id ? modifier : m))
+      onChange(modifiers.map(m => (m.id === modifier.id ? modifier : m)))
     } else {
       onChange([...modifiers, modifier])
     }
@@ -126,11 +127,8 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
         </div>
       ) : (
         <div className="space-y-3">
-          {modifiers.map((modifier) => (
-            <div
-              key={modifier.id}
-              className="p-4 bg-surface-alt rounded-xl border border-gray-200"
-            >
+          {modifiers.map(modifier => (
+            <div key={modifier.id} className="p-4 bg-surface-alt rounded-xl border border-gray-200">
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900">{modifier.name}</h4>
@@ -167,11 +165,8 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
 
               {/* Options */}
               <div className="mt-3 space-y-1">
-                {modifier.options.map((option) => (
-                  <div
-                    key={option.id}
-                    className="flex items-center justify-between text-sm"
-                  >
+                {modifier.options.map(option => (
+                  <div key={option.id} className="flex items-center justify-between text-sm">
                     <span className="text-gray-700">{option.name}</span>
                     <span className="font-mono text-gray-600">
                       {option.priceAdjustment >= 0 ? '+' : ''}€{option.priceAdjustment.toFixed(2)}
@@ -197,13 +192,11 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
             <div className="p-6 space-y-4">
               {/* Modifier Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Group Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Group Name *</label>
                 <input
                   type="text"
                   value={modifierName}
-                  onChange={(e) => setModifierName(e.target.value)}
+                  onChange={e => setModifierName(e.target.value)}
                   placeholder="e.g., Size, Milk Options, Extra Toppings"
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                 />
@@ -215,7 +208,7 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
                   <input
                     type="checkbox"
                     checked={isRequired}
-                    onChange={(e) => setIsRequired(e.target.checked)}
+                    onChange={e => setIsRequired(e.target.checked)}
                     className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                   />
                   <span className="text-sm font-medium text-gray-700">Required</span>
@@ -224,23 +217,23 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
                   <input
                     type="checkbox"
                     checked={isMultipleSelect}
-                    onChange={(e) => setIsMultipleSelect(e.target.checked)}
+                    onChange={e => setIsMultipleSelect(e.target.checked)}
                     className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                  <span className="text-sm font-medium text-gray-700">Allow multiple selection</span>
+                  <span className="text-sm font-medium text-gray-700">
+                    Allow multiple selection
+                  </span>
                 </label>
               </div>
 
               {/* Add Option */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Options *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Options *</label>
                 <div className="flex gap-2">
                   <input
                     type="text"
                     value={optionName}
-                    onChange={(e) => setOptionName(e.target.value)}
+                    onChange={e => setOptionName(e.target.value)}
                     placeholder="Option name (e.g., Small, Large)"
                     className="flex-1 px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                   />
@@ -248,7 +241,7 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
                     type="number"
                     step="0.01"
                     value={optionPrice}
-                    onChange={(e) => setOptionPrice(e.target.value)}
+                    onChange={e => setOptionPrice(e.target.value)}
                     placeholder="Price ±"
                     className="w-24 px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                   />
@@ -265,7 +258,7 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
               {/* Options List */}
               {options.length > 0 && (
                 <div className="space-y-2">
-                  {options.map((option) => (
+                  {options.map(option => (
                     <div
                       key={option.id}
                       className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
@@ -273,7 +266,8 @@ const ModifiersBuilder: React.FC<ModifiersBuildProps> = ({
                       <div className="flex-1">
                         <span className="font-medium text-gray-900">{option.name}</span>
                         <span className="ml-3 font-mono text-sm text-gray-600">
-                          {option.priceAdjustment >= 0 ? '+' : ''}€{option.priceAdjustment.toFixed(2)}
+                          {option.priceAdjustment >= 0 ? '+' : ''}€
+                          {option.priceAdjustment.toFixed(2)}
                         </span>
                       </div>
                       <button

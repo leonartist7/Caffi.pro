@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { User, Mail, Phone, Star, ShoppingBag, Gift, Edit2, Save, X, Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { getTenantBySlug } from '@/lib/get-tenant'
+import { toast } from 'sonner'
 
 interface UserProfile {
   full_name: string
@@ -139,10 +140,10 @@ export default function ProfilePage() {
 
       setProfile(editedProfile)
       setEditing(false)
-      alert('✅ Profile updated successfully!')
+      toast.success('Profile updated successfully!')
     } catch (err: any) {
       console.error('Error updating profile:', err)
-      alert(`Failed to update profile: ${err.message}`)
+      toast.error(`Failed to update profile: ${err.message}`)
     } finally {
       setSaving(false)
     }
