@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import { Plus, Edit, Trash2, Shield, Coffee } from 'lucide-react'
 
 interface StaffMember {
@@ -129,13 +130,13 @@ export default function AdminStaffPage() {
           .eq('staff_id', editingStaff.staff_id)
 
         if (error) throw error
-        alert('Staff member updated successfully!')
+        toast.success('Staff member updated successfully!')
       } else {
         const { error } = await supabase.from('staff_users').insert(payload)
 
         if (error) throw error
-        alert(
-          'Staff member added successfully!\n\nThey can now sign in at /staff/login with their email and password.'
+        toast.success(
+          'Staff member added successfully! They can now sign in at /staff/login with their email and password.'
         )
       }
 
@@ -144,7 +145,7 @@ export default function AdminStaffPage() {
       resetForm()
     } catch (error: any) {
       console.error('Error saving staff:', error)
-      alert(`Failed to save staff member: ${error.message}`)
+      toast.error(`Failed to save staff member: ${error.message}`)
     }
   }
 
@@ -157,10 +158,10 @@ export default function AdminStaffPage() {
       if (error) throw error
 
       await fetchStaffMembers()
-      alert('Staff member removed successfully!')
+      toast.success('Staff member removed successfully!')
     } catch (error: any) {
       console.error('Error deleting staff:', error)
-      alert(`Failed to remove staff member: ${error.message}`)
+      toast.error(`Failed to remove staff member: ${error.message}`)
     }
   }
 
@@ -176,7 +177,7 @@ export default function AdminStaffPage() {
       await fetchStaffMembers()
     } catch (error: any) {
       console.error('Error toggling status:', error)
-      alert(`Failed to update status: ${error.message}`)
+      toast.error(`Failed to update status: ${error.message}`)
     }
   }
 
