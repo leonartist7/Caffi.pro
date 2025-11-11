@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useCallback, useMemo } from 'react'
 import { X, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react'
 import { useCart, type CartItem } from '@/contexts/CartContext'
 import CartItemComponent from './CartItem'
@@ -10,7 +11,7 @@ interface CartSidebarProps {
   currency?: string
 }
 
-export default function CartSidebar({ tenantSlug, currency = 'EUR' }: CartSidebarProps) {
+function CartSidebar({ tenantSlug, currency = 'EUR' }: CartSidebarProps) {
   const {
     items,
     itemCount,
@@ -25,24 +26,27 @@ export default function CartSidebar({ tenantSlug, currency = 'EUR' }: CartSideba
   } = useCart()
   const router = useRouter()
 
-  const formatPrice = (price: number) => {
-    if (currency === 'EUR') return `€${price.toFixed(2)}`
-    if (currency === 'USD') return `$${price.toFixed(2)}`
-    return `${price.toFixed(2)} ${currency}`
-  }
+  const formatPrice = useCallback(
+    (price: number) => {
+      if (currency === 'EUR') return `€${price.toFixed(2)}`
+      if (currency === 'USD') return `$${price.toFixed(2)}`
+      return `${price.toFixed(2)} ${currency}`
+    },
+    [currency]
+  )
 
-  const getModifiersHash = (item: CartItem): string => {
+  const getModifiersHash = useCallback((item: CartItem): string => {
     return JSON.stringify({
       size: item.modifiers.size?.name || null,
       addons: item.modifiers.addons.map(a => a.name).sort(),
       instructions: item.special_instructions || null,
     })
-  }
+  }, [])
 
-  const handleCheckout = () => {
+  const handleCheckout = useCallback(() => {
     closeCart()
     router.push(`/shop/${tenantSlug}/checkout`)
-  }
+  }, [closeCart, router, tenantSlug])
 
   return (
     <>
@@ -169,3 +173,5 @@ export default function CartSidebar({ tenantSlug, currency = 'EUR' }: CartSideba
     </>
   )
 }
+
+export default memo(CartSidebar)

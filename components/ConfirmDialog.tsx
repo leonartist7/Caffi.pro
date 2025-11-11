@@ -1,5 +1,6 @@
 'use client'
 
+import { memo, useMemo, useCallback } from 'react'
 import { AlertTriangle, Info, X } from 'lucide-react'
 
 interface ConfirmDialogProps {
@@ -14,7 +15,7 @@ interface ConfirmDialogProps {
   isLoading?: boolean
 }
 
-export function ConfirmDialog({
+function ConfirmDialogComponent({
   isOpen,
   onClose,
   onConfirm,
@@ -25,31 +26,39 @@ export function ConfirmDialog({
   variant = 'warning',
   isLoading = false,
 }: ConfirmDialogProps) {
-  if (!isOpen) return null
+  const variantStyles = useMemo(
+    () => ({
+      danger: {
+        icon: AlertTriangle,
+        iconColor: 'text-red-600 dark:text-red-400',
+        iconBg: 'bg-red-100 dark:bg-red-900/20',
+        confirmButton:
+          'bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed',
+      },
+      warning: {
+        icon: AlertTriangle,
+        iconColor: 'text-orange-600 dark:text-orange-400',
+        iconBg: 'bg-orange-100 dark:bg-orange-900/20',
+        confirmButton:
+          'bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed',
+      },
+      info: {
+        icon: Info,
+        iconColor: 'text-blue-600 dark:text-blue-400',
+        iconBg: 'bg-blue-100 dark:bg-blue-900/20',
+        confirmButton:
+          'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed',
+      },
+    }),
+    []
+  )
 
-  const variantStyles = {
-    danger: {
-      icon: AlertTriangle,
-      iconColor: 'text-red-600 dark:text-red-400',
-      iconBg: 'bg-red-100 dark:bg-red-900/20',
-      confirmButton:
-        'bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed',
-    },
-    warning: {
-      icon: AlertTriangle,
-      iconColor: 'text-orange-600 dark:text-orange-400',
-      iconBg: 'bg-orange-100 dark:bg-orange-900/20',
-      confirmButton:
-        'bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50 disabled:cursor-not-allowed',
-    },
-    info: {
-      icon: Info,
-      iconColor: 'text-blue-600 dark:text-blue-400',
-      iconBg: 'bg-blue-100 dark:bg-blue-900/20',
-      confirmButton:
-        'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed',
-    },
-  }
+  const handleConfirm = useCallback(() => {
+    onConfirm()
+    onClose()
+  }, [onConfirm, onClose])
+
+  if (!isOpen) return null
 
   const style = variantStyles[variant]
   const Icon = style.icon
@@ -97,10 +106,7 @@ export function ConfirmDialog({
               {cancelText}
             </button>
             <button
-              onClick={() => {
-                onConfirm()
-                onClose()
-              }}
+              onClick={handleConfirm}
               disabled={isLoading}
               className={`px-4 py-2 rounded-lg transition-colors ${style.confirmButton}`}
             >
@@ -112,3 +118,5 @@ export function ConfirmDialog({
     </div>
   )
 }
+
+export const ConfirmDialog = memo(ConfirmDialogComponent)
