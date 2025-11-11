@@ -5,6 +5,8 @@ import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
 import { Plus, Edit, Trash2, Shield, Coffee } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface StaffMember {
   staff_id: string
@@ -30,6 +32,7 @@ interface Location {
 
 export default function AdminStaffPage() {
   const { selectedTenant } = useTenant()
+  const { confirm, confirmState, closeConfirm } = useConfirm()
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([])
   const [locations, setLocations] = useState<Location[]>([])
   const [loading, setLoading] = useState(true)
@@ -150,7 +153,14 @@ export default function AdminStaffPage() {
   }
 
   const handleDelete = async (staffId: string) => {
-    if (!confirm('Are you sure you want to remove this staff member?')) return
+    const confirmed = await confirm({
+      title: 'Remove Staff Member',
+      message: 'Are you sure you want to remove this staff member? This action cannot be undone.',
+      confirmText: 'Remove',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const { error } = await supabase.from('staff_users').delete().eq('staff_id', staffId)
@@ -530,6 +540,18 @@ export default function AdminStaffPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

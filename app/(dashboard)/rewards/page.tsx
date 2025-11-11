@@ -17,6 +17,8 @@ import {
   Image as ImageIcon,
   Building2,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Reward {
   reward_id: string
@@ -35,6 +37,7 @@ interface Reward {
 
 export default function RewardsPage() {
   const { selectedTenant } = useTenant()
+  const { confirm, confirmState, closeConfirm } = useConfirm()
   const [rewards, setRewards] = useState<Reward[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -122,7 +125,14 @@ export default function RewardsPage() {
   }
 
   async function handleDeleteReward(rewardId: string) {
-    if (!confirm('Are you sure you want to delete this reward?')) return
+    const confirmed = await confirm({
+      title: 'Delete Reward',
+      message: 'Are you sure you want to delete this reward? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
     if (!selectedTenant) return
 
     try {
@@ -633,6 +643,18 @@ export default function RewardsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

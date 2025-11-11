@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import {
   Ticket,
   Plus,
@@ -17,6 +18,8 @@ import {
   X,
   Building2,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Coupon {
   coupon_id: string
@@ -35,6 +38,7 @@ interface Coupon {
 
 export default function CouponsPage() {
   const { selectedTenant } = useTenant()
+  const { confirm, confirmState, closeConfirm } = useConfirm()
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
@@ -122,7 +126,14 @@ export default function CouponsPage() {
   }
 
   async function handleDeleteCoupon(couponId: string) {
-    if (!confirm('Are you sure you want to delete this coupon?')) return
+    const confirmed = await confirm({
+      title: 'Delete Coupon',
+      message: 'Are you sure you want to delete this coupon? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
     if (!selectedTenant) return
 
     try {
@@ -134,8 +145,10 @@ export default function CouponsPage() {
 
       if (error) throw error
       fetchCoupons()
+      toast.success('Coupon deleted successfully!')
     } catch (error) {
       console.error('Error deleting coupon:', error)
+      toast.error('Failed to delete coupon')
     }
   }
 
@@ -623,6 +636,18 @@ export default function CouponsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

@@ -10,6 +10,8 @@ import {
   type MenuItem as MenuItemType,
   type Category as CategoryType,
 } from '@/components/menu/MenuItemModal'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Tenant {
   tenant_id: string
@@ -49,6 +51,7 @@ interface MenuItem extends MenuItemType {
 export default function TenantDetailPage() {
   const params = useParams()
   const tenantId = params?.id as string
+  const { confirm, confirmState, closeConfirm } = useConfirm()
 
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
@@ -139,7 +142,14 @@ export default function TenantDetailPage() {
   }
 
   const handleDeleteLocation = async (locationId: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) return
+    const confirmed = await confirm({
+      title: 'Delete Location',
+      message: 'Are you sure you want to delete this location? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     const res = await fetch(`/api/locations/${locationId}`, {
       method: 'DELETE',
@@ -185,7 +195,14 @@ export default function TenantDetailPage() {
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    const confirmed = await confirm({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     const res = await fetch(`/api/categories/${categoryId}`, {
       method: 'DELETE',
@@ -231,7 +248,14 @@ export default function TenantDetailPage() {
   }
 
   const handleDeleteMenuItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this menu item?')) return
+    const confirmed = await confirm({
+      title: 'Delete Menu Item',
+      message: 'Are you sure you want to delete this menu item? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     const res = await fetch(`/api/menu-items/${itemId}`, {
       method: 'DELETE',
@@ -497,6 +521,18 @@ export default function TenantDetailPage() {
         menuItem={editingMenuItem ?? undefined}
         tenantId={tenantId}
         categories={categories}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
       />
     </div>
   )

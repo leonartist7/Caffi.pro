@@ -20,6 +20,8 @@ import {
   X,
   Eye,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Tenant {
   tenant_id: string
@@ -38,6 +40,7 @@ interface Tenant {
 
 export default function ClientsPage() {
   const { setSelectedTenant } = useTenant()
+  const { confirm, confirmState, closeConfirm } = useConfirm()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -201,8 +204,14 @@ export default function ClientsPage() {
   }
 
   async function handleDeleteTenant(tenantId: string) {
-    if (!confirm('Are you sure you want to delete this client? This action cannot be undone.'))
-      return
+    const confirmed = await confirm({
+      title: 'Delete Client',
+      message: 'Are you sure you want to delete this client? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const { error } = await supabase.from('tenants').delete().eq('tenant_id', tenantId)
@@ -608,6 +617,18 @@ export default function ClientsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

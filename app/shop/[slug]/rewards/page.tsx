@@ -7,6 +7,8 @@ import { Gift, Star, Loader2, ShoppingBag, CheckCircle, AlertCircle } from 'luci
 import { useAuth } from '@/contexts/AuthContext'
 import { getTenantBySlug } from '@/lib/get-tenant'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Reward {
   reward_id: string
@@ -31,6 +33,7 @@ export default function RewardsPage() {
   const router = useRouter()
   const params = useParams()
   const { user, loading: authLoading } = useAuth()
+  const { confirm, confirmState, closeConfirm } = useConfirm()
   const [rewards, setRewards] = useState<Reward[]>([])
   const [userPoints, setUserPoints] = useState<UserPoints>({
     total_points: 0,
@@ -108,9 +111,14 @@ export default function RewardsPage() {
       return
     }
 
-    if (!confirm(`Redeem ${reward.name} for ${reward.points_required} points?`)) {
-      return
-    }
+    const confirmed = await confirm({
+      title: 'Redeem Reward',
+      message: `Redeem ${reward.name} for ${reward.points_required} points? You currently have ${userPoints.available_points} points available.`,
+      confirmText: 'Redeem',
+      variant: 'warning',
+    })
+
+    if (!confirmed) return
 
     try {
       setRedeeming(reward.reward_id)
@@ -304,6 +312,18 @@ export default function RewardsPage() {
           </div>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

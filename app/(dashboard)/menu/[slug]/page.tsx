@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Category {
   category_id: string
@@ -36,6 +38,7 @@ export default function MenuManagementPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params?.slug as string
+  const { confirm, confirmState, closeConfirm } = useConfirm()
 
   const [cafe, setCafe] = useState<Cafe | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -195,7 +198,14 @@ export default function MenuManagementPage() {
   }
 
   const deleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    const confirmed = await confirm({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const supabase = createClient()
@@ -290,7 +300,14 @@ export default function MenuManagementPage() {
   }
 
   const deleteMenuItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return
+    const confirmed = await confirm({
+      title: 'Delete Menu Item',
+      message: 'Are you sure you want to delete this item? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const supabase = createClient()
@@ -699,6 +716,18 @@ export default function MenuManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }
