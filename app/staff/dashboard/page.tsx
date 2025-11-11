@@ -131,8 +131,6 @@ export default function KitchenDashboardPage() {
           filter: `tenant_id=eq.${staffUser.tenant_id}`,
         },
         payload => {
-          console.log('Order update:', payload)
-
           // Play sound for new orders
           if (payload.eventType === 'INSERT' && soundEnabled) {
             playNotificationSound()

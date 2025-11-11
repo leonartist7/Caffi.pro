@@ -14,6 +14,23 @@ import {
   format,
 } from 'date-fns'
 
+interface OrderItem {
+  item_snapshot?: {
+    name?: string
+    quantity?: number
+  }
+}
+
+interface Order {
+  order_id: string
+  tenant_id: string
+  location_id: string
+  status: string
+  total: number
+  created_at: string
+  items?: OrderItem[]
+}
+
 interface Stats {
   total_orders: number
   completed_orders: number
@@ -75,19 +92,22 @@ export default function StaffReportsPage() {
       if (error) throw error
 
       // Calculate stats
-      const completedOrders = (orders || []).filter((o: any) => o.status === 'completed')
-      const totalRevenue = completedOrders.reduce((sum: number, o: any) => sum + (o.total || 0), 0)
+      const completedOrders = (orders || []).filter((o: Order) => o.status === 'completed')
+      const totalRevenue = completedOrders.reduce(
+        (sum: number, o: Order) => sum + (o.total || 0),
+        0
+      )
 
       // Orders by status
       const ordersByStatus: { [key: string]: number } = {}
-      ;(orders || []).forEach((o: any) => {
+      ;(orders || []).forEach((o: Order) => {
         ordersByStatus[o.status] = (ordersByStatus[o.status] || 0) + 1
       })
 
       // Top items
       const itemCounts: { [key: string]: number } = {}
-      completedOrders.forEach((order: any) => {
-        ;(order.items || []).forEach((item: any) => {
+      completedOrders.forEach((order: Order) => {
+        ;(order.items || []).forEach((item: OrderItem) => {
           const name = item.item_snapshot?.name
           if (name) {
             itemCounts[name] = (itemCounts[name] || 0) + (item.item_snapshot?.quantity || 1)
@@ -102,7 +122,7 @@ export default function StaffReportsPage() {
 
       // Hourly orders
       const hourlyOrders: { [key: number]: number } = {}
-      ;(orders || []).forEach((o: any) => {
+      ;(orders || []).forEach((o: Order) => {
         const hour = new Date(o.created_at).getHours()
         hourlyOrders[hour] = (hourlyOrders[hour] || 0) + 1
       })
@@ -183,7 +203,7 @@ export default function StaffReportsPage() {
         <div className="flex items-center space-x-2">
           <select
             value={dateRange}
-            onChange={e => setDateRange(e.target.value as any)}
+            onChange={e => setDateRange(e.target.value as 'today' | 'week' | 'month')}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500"
           >
             <option value="today">Today</option>

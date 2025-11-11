@@ -4,7 +4,12 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { LocationModal } from '@/components/locations/LocationModal'
 import { CategoryModal } from '@/components/menu/CategoryModal'
-import { MenuItemModal } from '@/components/menu/MenuItemModal'
+import {
+  MenuItemModal,
+  type MenuItemFormData,
+  type MenuItem as MenuItemType,
+  type Category as CategoryType,
+} from '@/components/menu/MenuItemModal'
 
 interface Tenant {
   tenant_id: string
@@ -30,27 +35,14 @@ interface Location {
   estimated_prep_time: number
 }
 
-interface Category {
-  category_id: string
-  tenant_id: string
-  name: string
+interface Category extends CategoryType {
   description: string
   display_order: number
   is_active: boolean
 }
 
-interface MenuItem {
-  item_id: string
+interface MenuItem extends MenuItemType {
   tenant_id: string
-  category_id: string
-  name: string
-  description: string
-  price: number
-  image_url: string
-  tags: string[]
-  allergens: string[]
-  calories: number | null
-  is_available: boolean
   categories?: { name: string }
 }
 
@@ -214,7 +206,7 @@ export default function TenantDetailPage() {
     setMenuItemModalOpen(true)
   }
 
-  const handleSaveMenuItem = async (menuItemData: Partial<MenuItem>) => {
+  const handleSaveMenuItem = async (menuItemData: MenuItemFormData) => {
     if (editingMenuItem) {
       // Update
       const res = await fetch(`/api/menu-items/${editingMenuItem.item_id}`, {
@@ -502,7 +494,7 @@ export default function TenantDetailPage() {
         isOpen={menuItemModalOpen}
         onClose={() => setMenuItemModalOpen(false)}
         onSave={handleSaveMenuItem}
-        menuItem={editingMenuItem}
+        menuItem={editingMenuItem ?? undefined}
         tenantId={tenantId}
         categories={categories}
       />

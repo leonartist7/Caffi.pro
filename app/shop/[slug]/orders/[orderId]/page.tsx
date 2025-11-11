@@ -16,36 +16,8 @@ import {
   XCircle,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getOrder } from '@/lib/create-order'
+import { getOrder, type OrderWithRelations } from '@/lib/create-order'
 import { getTenantBySlug } from '@/lib/get-tenant'
-
-interface Order {
-  order_id: string
-  order_number: string
-  tenant_id: string
-  user_id: string
-  location_id: string
-  order_type: 'pickup' | 'dine_in' | 'delivery'
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'
-  subtotal: number
-  tax: number
-  total: number
-  discount: number
-  coupon_code: string | null
-  special_instructions: string | null
-  points_earned: number
-  created_at: string
-  updated_at: string
-  order_items: Array<{
-    order_item_id: string
-    item_name: string
-    quantity: number
-    unit_price: number
-    total_price: number
-    modifiers: any
-    special_instructions: string | null
-  }>
-}
 
 interface Location {
   location_id: string
@@ -69,7 +41,7 @@ export default function OrderDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { user, loading: authLoading } = useAuth()
-  const [order, setOrder] = useState<Order | null>(null)
+  const [order, setOrder] = useState<OrderWithRelations | null>(null)
   const [location, setLocation] = useState<Location | null>(null)
   const [currency, setCurrency] = useState('EUR')
   const [loading, setLoading] = useState(true)
@@ -362,13 +334,13 @@ export default function OrderDetailPage() {
                     {item.item_name}
                   </span>
                 </div>
-                {(item.modifiers?.size || item.modifiers?.addons?.length > 0) && (
+                {(item.modifiers?.size || (item.modifiers?.addons?.length ?? 0) > 0) && (
                   <div className="text-sm text-coffee-600 dark:text-coffee-400 mt-1">
-                    {item.modifiers.size && <span>{item.modifiers.size.name}</span>}
-                    {item.modifiers.addons?.length > 0 && (
+                    {item.modifiers?.size && <span>{item.modifiers.size.name}</span>}
+                    {(item.modifiers?.addons?.length ?? 0) > 0 && (
                       <span>
-                        {item.modifiers.size && ' • '}
-                        Add: {item.modifiers.addons.map((a: any) => a.name).join(', ')}
+                        {item.modifiers?.size && ' • '}
+                        Add: {item.modifiers?.addons?.map(a => a.name).join(', ')}
                       </span>
                     )}
                   </div>
@@ -403,7 +375,7 @@ export default function OrderDetailPage() {
           </div>
           {order.discount > 0 && (
             <div className="flex justify-between text-green-600 dark:text-green-400">
-              <span>Discount {order.coupon_code && `(${order.coupon_code})`}</span>
+              <span>Discount {order.coupon_code_used && `(${order.coupon_code_used})`}</span>
               <span>-{formatPrice(order.discount)}</span>
             </div>
           )}

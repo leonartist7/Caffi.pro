@@ -112,7 +112,6 @@ export default function ClientsPage() {
           .eq('tenant_id', editingTenant.tenant_id)
 
         // Ignore error if manifest doesn't exist yet
-        console.log('Manifest update:', manifestError)
       } else {
         // For new tenants, insert into tenants table with required fields
         const tenantPayload = {
@@ -123,8 +122,6 @@ export default function ClientsPage() {
           app_name: formData.business_name,
           bundle_id: `com.caffi.${cleanSlug}`,
         }
-
-        console.log('Creating tenant with payload:', tenantPayload)
 
         const { data: newTenant, error: tenantError } = await supabase
           .from('tenants')
@@ -180,8 +177,6 @@ export default function ClientsPage() {
             },
           }
 
-          console.log('Creating manifest with payload:', manifestPayload)
-
           const { error: manifestError } = await supabase
             .from('tenant_manifests')
             .insert(manifestPayload)
@@ -192,8 +187,6 @@ export default function ClientsPage() {
               `Failed to create manifest: ${manifestError.message || JSON.stringify(manifestError)}`
             )
           }
-
-          console.log('✅ Tenant and manifest created successfully!')
         }
       }
 

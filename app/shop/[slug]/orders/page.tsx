@@ -14,29 +14,14 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import { getUserOrders } from '@/lib/create-order'
+import { getUserOrders, type OrderWithRelations } from '@/lib/create-order'
 import { getTenantBySlug } from '@/lib/get-tenant'
-
-interface Order {
-  order_id: string
-  order_number: string
-  tenant_id: string
-  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'
-  order_type: 'pickup' | 'dine_in' | 'delivery'
-  total: number
-  points_earned: number
-  created_at: string
-  order_items: Array<{
-    item_name: string
-    quantity: number
-  }>
-}
 
 export default function OrdersPage() {
   const router = useRouter()
   const params = useParams()
   const { user, loading: authLoading } = useAuth()
-  const [orders, setOrders] = useState<Order[]>([])
+  const [orders, setOrders] = useState<OrderWithRelations[]>([])
   const [loading, setLoading] = useState(true)
   const [currency, setCurrency] = useState('EUR')
   const tenantSlug = params.slug as string
