@@ -80,7 +80,7 @@ export default function AdminStaffPage() {
 
       if (error) throw error
 
-      setStaffMembers((data as any) || [])
+      setStaffMembers(data || [])
     } catch (error) {
       console.error('Error fetching staff:', error)
     }
@@ -146,9 +146,10 @@ export default function AdminStaffPage() {
       await fetchStaffMembers()
       setModalOpen(false)
       resetForm()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving staff:', error)
-      toast.error(`Failed to save staff member: ${error.message}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to save staff member: ${message}`)
     }
   }
 
@@ -169,9 +170,10 @@ export default function AdminStaffPage() {
 
       await fetchStaffMembers()
       toast.success('Staff member removed successfully!')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error deleting staff:', error)
-      toast.error(`Failed to remove staff member: ${error.message}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to remove staff member: ${message}`)
     }
   }
 
@@ -185,9 +187,10 @@ export default function AdminStaffPage() {
       if (error) throw error
 
       await fetchStaffMembers()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error toggling status:', error)
-      toast.error(`Failed to update status: ${error.message}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to update status: ${message}`)
     }
   }
 
@@ -321,7 +324,7 @@ export default function AdminStaffPage() {
               {staff.location && (
                 <div className="flex items-center justify-between">
                   <span className="text-gray-600">Location:</span>
-                  <span className="font-medium text-gray-900">{(staff.location as any).name}</span>
+                  <span className="font-medium text-gray-900">{staff.location.name}</span>
                 </div>
               )}
 
@@ -433,7 +436,17 @@ export default function AdminStaffPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
                   <select
                     value={formData.role}
-                    onChange={e => setFormData({ ...formData, role: e.target.value as any })}
+                    onChange={e =>
+                      setFormData({
+                        ...formData,
+                        role: e.target.value as
+                          | 'owner'
+                          | 'manager'
+                          | 'barista'
+                          | 'kitchen'
+                          | 'cashier',
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                   >
                     <option value="barista">Barista</option>

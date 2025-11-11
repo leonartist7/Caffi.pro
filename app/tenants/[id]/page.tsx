@@ -26,10 +26,13 @@ interface Location {
   name: string
   address: string
   city: string
+  state: string
   postal_code: string
   country: string
   phone: string
   email: string
+  latitude: number | null
+  longitude: number | null
   hours: Record<string, string>
   is_active: boolean
   accepts_mobile_orders: boolean
@@ -41,6 +44,8 @@ interface Category extends CategoryType {
   description: string
   display_order: number
   is_active: boolean
+  image_url: string
+  icon_name: string
 }
 
 interface MenuItem extends MenuItemType {
@@ -502,7 +507,7 @@ export default function TenantDetailPage() {
         isOpen={locationModalOpen}
         onClose={() => setLocationModalOpen(false)}
         onSave={handleSaveLocation}
-        location={editingLocation}
+        location={editingLocation || undefined}
         tenantId={tenantId}
       />
 
@@ -510,7 +515,7 @@ export default function TenantDetailPage() {
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
         onSave={handleSaveCategory}
-        category={editingCategory}
+        category={editingCategory || undefined}
         tenantId={tenantId}
       />
 

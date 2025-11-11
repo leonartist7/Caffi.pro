@@ -1,7 +1,7 @@
 'use client'
 
 import { X, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react'
-import { useCart } from '@/contexts/CartContext'
+import { useCart, type CartItem } from '@/contexts/CartContext'
 import CartItemComponent from './CartItem'
 import { useRouter } from 'next/navigation'
 
@@ -31,10 +31,10 @@ export default function CartSidebar({ tenantSlug, currency = 'EUR' }: CartSideba
     return `${price.toFixed(2)} ${currency}`
   }
 
-  const getModifiersHash = (item: any): string => {
+  const getModifiersHash = (item: CartItem): string => {
     return JSON.stringify({
       size: item.modifiers.size?.name || null,
-      addons: item.modifiers.addons.map((a: any) => a.name).sort(),
+      addons: item.modifiers.addons.map(a => a.name).sort(),
       instructions: item.special_instructions || null,
     })
   }

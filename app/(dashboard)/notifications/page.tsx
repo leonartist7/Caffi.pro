@@ -11,7 +11,12 @@ interface Campaign {
   tenant_id: string
   title: string
   message: string
-  audience_filter: any
+  audience_filter: {
+    type?: string
+    location_ids?: string[]
+    user_segments?: string[]
+    min_orders?: number
+  }
   scheduled_at: string | null
   sent_at: string | null
   status: 'draft' | 'scheduled' | 'sent'

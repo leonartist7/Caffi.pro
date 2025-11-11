@@ -24,7 +24,10 @@ interface MenuItem {
   price: number
   image_url: string | null
   is_active: boolean
-  modifiers: any
+  modifiers: {
+    sizes?: Array<{ name: string; price: number }>
+    addons?: Array<{ name: string; price: number }>
+  }
   tags: string[]
 }
 

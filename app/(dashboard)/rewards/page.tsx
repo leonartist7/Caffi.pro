@@ -28,7 +28,11 @@ interface Reward {
   points_required: number
   image_url: string | null
   reward_type: 'coupon' | 'free_item' | 'discount'
-  reward_value: any
+  reward_value: {
+    item_id?: string
+    discount_percentage?: number
+    discount_amount?: number
+  }
   stock_limit: number | null
   stock_remaining: number | null
   is_active: boolean

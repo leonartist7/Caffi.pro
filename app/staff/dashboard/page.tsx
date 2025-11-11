@@ -7,6 +7,38 @@ import { toast } from 'sonner'
 import { Clock, MapPin, User, ChevronRight, Bell } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
+interface Modifiers {
+  size?: { name: string; price: number }
+  addons?: Array<{ name: string; price: number }>
+}
+
+interface OrderFromDB {
+  order_id: string
+  order_number: string
+  status: 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+  order_type: string
+  created_at: string
+  preparation_started_at?: string
+  estimated_ready_time?: string
+  total: number
+  user: Array<{
+    full_name: string
+    phone?: string
+  }>
+  location: Array<{
+    name: string
+  }>
+  items: Array<{
+    item_snapshot: {
+      name: string
+      quantity: number
+      modifiers?: Modifiers
+    }
+  }>
+  special_instructions?: string
+  assigned_to_staff_id?: string
+}
+
 interface Order {
   order_id: string
   order_number: string
@@ -19,17 +51,17 @@ interface Order {
   user: {
     full_name: string
     phone?: string
-  }
+  } | null
   location: {
     name: string
-  }
-  items: {
+  } | null
+  items: Array<{
     item_snapshot: {
       name: string
       quantity: number
-      modifiers?: any[]
+      modifiers?: Modifiers
     }
-  }[]
+  }>
   special_instructions?: string
   assigned_to_staff_id?: string
 }
@@ -102,7 +134,14 @@ export default function KitchenDashboardPage() {
 
       if (error) throw error
 
-      setOrders((data as any) || [])
+      // Transform the database response to match our Order interface
+      const transformedOrders: Order[] = (data || []).map((order: OrderFromDB) => ({
+        ...order,
+        user: order.user?.[0] || null,
+        location: order.location?.[0] || null,
+      }))
+
+      setOrders(transformedOrders)
     } catch (error) {
       console.error('Error fetching orders:', error)
     } finally {
@@ -150,7 +189,11 @@ export default function KitchenDashboardPage() {
 
   const playNotificationSound = () => {
     // Simple beep sound (you can replace with a better sound file)
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const AudioContextClass =
+      window.AudioContext ||
+      (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioContextClass) return
+    const audioContext = new AudioContextClass()
     const oscillator = audioContext.createOscillator()
     const gainNode = audioContext.createGain()
 
@@ -169,7 +212,12 @@ export default function KitchenDashboardPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const updates: any = { status: newStatus }
+      const updates: {
+        status: string
+        preparation_started_at?: string
+        assigned_to_staff_id?: string
+        ready_at?: string
+      } = { status: newStatus }
 
       if (
         newStatus === 'preparing' &&
@@ -319,11 +367,11 @@ export default function KitchenDashboardPage() {
               <div className="space-y-2 mb-3 text-sm">
                 <div className="flex items-center text-gray-700">
                   <User className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{(order.user as any)?.full_name || 'Guest'}</span>
+                  <span className="truncate">{order.user?.full_name || 'Guest'}</span>
                 </div>
                 <div className="flex items-center text-gray-700">
                   <MapPin className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span className="truncate">{(order.location as any)?.name}</span>
+                  <span className="truncate">{order.location?.name || 'Unknown'}</span>
                 </div>
                 <div className="flex items-center text-gray-700">
                   <Clock className="w-4 h-4 mr-2 flex-shrink-0" />

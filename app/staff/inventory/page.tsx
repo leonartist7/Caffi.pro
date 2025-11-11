@@ -135,7 +135,7 @@ export default function InventoryPage() {
 
       if (error) throw error
 
-      setTransactions((data as any) || [])
+      setTransactions(data || [])
     } catch (error) {
       console.error('Error fetching transactions:', error)
     }
@@ -200,9 +200,10 @@ export default function InventoryPage() {
       await fetchItems()
       setModalOpen(false)
       resetForm()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error saving item:', error)
-      toast.error(`Failed to save item: ${error.message}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to save item: ${message}`)
     }
   }
 
@@ -264,9 +265,10 @@ export default function InventoryPage() {
       setSelectedItem(null)
       resetTransactionForm()
       toast.success('Stock updated successfully!')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error recording transaction:', error)
-      toast.error(`Failed to update stock: ${error.message}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Failed to update stock: ${message}`)
     }
   }
 
@@ -525,9 +527,9 @@ export default function InventoryPage() {
                   <TrendingDown className="w-5 h-5 text-red-600" />
                 )}
                 <div>
-                  <p className="font-medium text-gray-900">{(tx.item as any)?.name}</p>
+                  <p className="font-medium text-gray-900">{tx.item?.name}</p>
                   <p className="text-sm text-gray-600">
-                    {tx.transaction_type.replace('_', ' ')} by {(tx.staff as any)?.full_name}
+                    {tx.transaction_type.replace('_', ' ')} by {tx.staff?.full_name}
                   </p>
                   {tx.notes && <p className="text-xs text-gray-500 mt-1">{tx.notes}</p>}
                 </div>

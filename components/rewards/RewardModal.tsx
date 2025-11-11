@@ -16,15 +16,25 @@ interface RewardFormData {
   is_active: boolean
 }
 
+interface Reward extends RewardFormData {
+  reward_id: string
+}
+
 interface RewardModalProps {
   isOpen: boolean
   onClose: () => void
-  reward?: any
+  reward?: Reward
 }
 
 export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
   const queryClient = useQueryClient()
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<RewardFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<RewardFormData>({
     defaultValues: {
       name: '',
       description: '',
@@ -76,13 +86,11 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
           .from('rewards_catalog')
           .update(payload)
           .eq('reward_id', reward.reward_id)
-        
+
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('rewards_catalog')
-          .insert(payload)
-        
+        const { error } = await supabase.from('rewards_catalog').insert(payload)
+
         if (error) throw error
       }
     },
@@ -92,7 +100,7 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
       onClose()
       reset()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to save reward')
     },
   })
@@ -106,7 +114,10 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75"
+          onClick={onClose}
+        />
 
         <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           <div className="flex items-center justify-between mb-6">
@@ -129,15 +140,11 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
                   className="input"
                   placeholder="Free Coffee"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   {...register('description')}
                   rows={3}
@@ -152,9 +159,9 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
                 </label>
                 <input
                   type="number"
-                  {...register('points_required', { 
+                  {...register('points_required', {
                     required: 'Points required',
-                    min: { value: 1, message: 'Must be at least 1' }
+                    min: { value: 1, message: 'Must be at least 1' },
                   })}
                   className="input"
                   placeholder="100"
@@ -179,9 +186,7 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
                 <div className="flex gap-2">
                   <input
                     {...register('image_url')}
@@ -196,9 +201,7 @@ export function RewardModal({ isOpen, onClose, reward }: RewardModalProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Stock Limit
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Stock Limit</label>
                 <input
                   type="number"
                   {...register('stock_limit')}

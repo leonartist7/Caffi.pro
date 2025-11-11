@@ -22,17 +22,26 @@ interface LocationFormData {
   is_active: boolean
 }
 
+interface Location extends LocationFormData {
+  location_id: string
+}
+
 interface LocationModalProps {
   isOpen: boolean
   onClose: () => void
-  location?: any
-  onSave?: (locationData: any) => Promise<void>
+  location?: Location
+  onSave?: (locationData: Partial<Location>) => Promise<void>
   tenantId?: string
 }
 
 export function LocationModal({ isOpen, onClose, location }: LocationModalProps) {
   const queryClient = useQueryClient()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<LocationFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<LocationFormData>({
     defaultValues: {
       name: '',
       address: '',
@@ -110,13 +119,11 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
           .from('locations')
           .update(payload)
           .eq('location_id', location.location_id)
-        
+
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('locations')
-          .insert(payload)
-        
+        const { error } = await supabase.from('locations').insert(payload)
+
         if (error) throw error
       }
     },
@@ -126,7 +133,7 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
       onClose()
       reset()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to save location')
     },
   })
@@ -140,7 +147,10 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75"
+          onClick={onClose}
+        />
 
         <div className="relative inline-block w-full max-w-3xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           <div className="flex items-center justify-between mb-6">
@@ -163,15 +173,11 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
                   className="input"
                   placeholder="Downtown Café"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Address *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
                 <input
                   {...register('address', { required: 'Address is required' })}
                   className="input"
@@ -183,45 +189,27 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  City *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
                 <input
                   {...register('city', { required: 'City is required' })}
                   className="input"
                   placeholder="Paris"
                 />
-                {errors.city && (
-                  <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-                )}
+                {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  State/Region
-                </label>
-                <input
-                  {...register('state')}
-                  className="input"
-                  placeholder="Île-de-France"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">State/Region</label>
+                <input {...register('state')} className="input" placeholder="Île-de-France" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Postal Code
-                </label>
-                <input
-                  {...register('postal_code')}
-                  className="input"
-                  placeholder="75001"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code</label>
+                <input {...register('postal_code')} className="input" placeholder="75001" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Country *</label>
                 <input
                   {...register('country', { required: 'Country is required' })}
                   className="input"
@@ -233,20 +221,12 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Phone
-                </label>
-                <input
-                  {...register('phone')}
-                  className="input"
-                  placeholder="+33 1 23 45 67 89"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input {...register('phone')} className="input" placeholder="+33 1 23 45 67 89" />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
                   type="email"
                   {...register('email')}
@@ -256,9 +236,7 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Latitude
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Latitude</label>
                 <input
                   type="number"
                   step="any"
@@ -269,9 +247,7 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Longitude
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Longitude</label>
                 <input
                   type="number"
                   step="any"
@@ -300,9 +276,7 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
                     {...register('accepts_mobile_orders')}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    Accept mobile orders
-                  </span>
+                  <span className="text-sm font-medium text-gray-700">Accept mobile orders</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -310,9 +284,7 @@ export function LocationModal({ isOpen, onClose, location }: LocationModalProps)
                     {...register('accepts_dine_in_orders')}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    Accept dine-in orders
-                  </span>
+                  <span className="text-sm font-medium text-gray-700">Accept dine-in orders</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
