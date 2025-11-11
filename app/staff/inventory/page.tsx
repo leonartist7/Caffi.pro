@@ -152,6 +152,28 @@ export default function InventoryPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate required fields
+    if (!formData.name.trim()) {
+      alert('Item name is required')
+      return
+    }
+
+    // Validate numeric fields
+    if (formData.current_stock < 0) {
+      alert('Current stock cannot be negative')
+      return
+    }
+
+    if (formData.min_stock_level < 0) {
+      alert('Minimum stock level cannot be negative')
+      return
+    }
+
+    if (formData.unit_cost && formData.unit_cost < 0) {
+      alert('Unit cost cannot be negative')
+      return
+    }
+
     try {
       const payload = {
         ...formData,
@@ -188,11 +210,26 @@ export default function InventoryPage() {
 
     if (!selectedItem) return
 
+    // Validate quantity
+    if (transactionData.quantity <= 0) {
+      alert('Quantity must be greater than zero')
+      return
+    }
+
     try {
       // Determine quantity sign based on transaction type
       let quantity = parseFloat(transactionData.quantity.toString())
       if (['usage', 'waste'].includes(transactionData.transaction_type)) {
         quantity = -Math.abs(quantity)
+      }
+
+      // Prevent negative stock
+      const newStock = selectedItem.current_stock + quantity
+      if (newStock < 0) {
+        alert(
+          `Cannot process transaction: would result in negative stock (${newStock.toFixed(2)} ${selectedItem.unit})`
+        )
+        return
       }
 
       // Create transaction
@@ -208,8 +245,7 @@ export default function InventoryPage() {
 
       if (transError) throw transError
 
-      // Update inventory stock level
-      const newStock = selectedItem.current_stock + quantity
+      // Update inventory stock level (newStock already calculated above)
       const { error: updateError } = await supabase
         .from('inventory_items')
         .update({

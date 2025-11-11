@@ -111,13 +111,21 @@ export async function createOrder(orderData: OrderData): Promise<{
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError)
-      // TODO: Rollback order creation if items fail
-      return { order: null, error: itemsError }
+      // Rollback: Delete the order that was just created
+      await supabase.from('orders').delete().eq('order_id', order.order_id)
+      return {
+        order: null,
+        error: {
+          ...itemsError,
+          message: 'Failed to create order items. Order has been cancelled.',
+        },
+      }
     }
 
     // Create loyalty transaction (points earned)
+    // Don't fail the entire order if loyalty points fail - just log the error
     if (pointsEarned > 0) {
-      await supabase.from('loyalty_transactions').insert({
+      const { error: loyaltyError } = await supabase.from('loyalty_transactions').insert({
         user_id: orderData.user_id,
         tenant_id: orderData.tenant_id,
         order_id: order.order_id,
@@ -125,6 +133,11 @@ export async function createOrder(orderData: OrderData): Promise<{
         transaction_type: 'earned',
         description: `Points earned from order ${orderNumber}`,
       })
+
+      if (loyaltyError) {
+        console.error('Warning: Failed to create loyalty transaction:', loyaltyError)
+        // Don't return error - order was created successfully
+      }
     }
 
     return { order, error: null }

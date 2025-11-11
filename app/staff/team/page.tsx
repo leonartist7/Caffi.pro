@@ -115,6 +115,33 @@ export default function StaffTeamPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate required fields
+    if (!formData.email.trim()) {
+      alert('Email is required')
+      return
+    }
+
+    if (!formData.full_name.trim()) {
+      alert('Full name is required')
+      return
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      alert('Please enter a valid email address')
+      return
+    }
+
+    // Validate phone format if provided
+    if (formData.phone && formData.phone.trim()) {
+      const phoneRegex = /^[+\d\s\-()]+$/
+      if (!phoneRegex.test(formData.phone)) {
+        alert('Please enter a valid phone number')
+        return
+      }
+    }
+
     try {
       const payload = {
         ...formData,
