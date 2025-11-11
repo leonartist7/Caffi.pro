@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import {
   MapPin,
   Search,
@@ -132,7 +133,7 @@ export default function LocationsPage() {
 
     try {
       if (!formData.name || !formData.slug || !formData.city) {
-        alert('Please fill in all required fields (Name, Slug, City)')
+        toast.error('Please fill in all required fields (Name, Slug, City)')
         return
       }
 
@@ -157,7 +158,7 @@ export default function LocationsPage() {
           .eq('tenant_id', selectedTenant.tenant_id)
 
         if (error) throw error
-        alert('Location updated successfully!')
+        toast.success('Location updated successfully!')
       } else {
         // Create new location
         const { error } = await supabase.from('locations').insert({
@@ -177,19 +178,19 @@ export default function LocationsPage() {
 
         if (error) {
           if (error.code === '23505') {
-            alert('A location with this slug already exists. Please use a different slug.')
+            toast.error('A location with this slug already exists. Please use a different slug.')
             return
           }
           throw error
         }
-        alert('Location created successfully!')
+        toast.success('Location created successfully!')
       }
 
       setShowModal(false)
       fetchLocations()
     } catch (error) {
       console.error('Error saving location:', error)
-      alert('Failed to save location. Please try again.')
+      toast.error('Failed to save location. Please try again.')
     }
   }
 
@@ -205,12 +206,12 @@ export default function LocationsPage() {
 
       if (error) throw error
 
-      alert('Location deleted successfully!')
+      toast.success('Location deleted successfully!')
       setDeleteConfirm(null)
       fetchLocations()
     } catch (error) {
       console.error('Error deleting location:', error)
-      alert('Failed to delete location. Please try again.')
+      toast.error('Failed to delete location. Please try again.')
     }
   }
 

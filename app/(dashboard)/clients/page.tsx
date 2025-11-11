@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTenant } from '@/contexts/TenantContext'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 import {
   Building2,
   Search,
@@ -198,11 +199,11 @@ export default function ClientsPage() {
 
       await fetchTenants()
       closeModal()
-      alert('✅ Client created successfully!')
+      toast.success('Client created successfully!')
     } catch (error) {
       console.error('Error saving tenant:', error)
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
-      alert(`❌ Failed to save client:\n\n${errorMessage}`)
+      toast.error(`Failed to save client: ${errorMessage}`)
     }
   }
 
@@ -215,9 +216,10 @@ export default function ClientsPage() {
 
       if (error) throw error
       fetchTenants()
+      toast.success('Client deleted successfully!')
     } catch (error) {
       console.error('Error deleting tenant:', error)
-      alert('Failed to delete client. Please try again.')
+      toast.error('Failed to delete client. Please try again.')
     }
   }
 

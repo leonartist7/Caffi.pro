@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import { Bell, Plus, Send, Calendar, Users, CheckCircle, Clock, X, Building2 } from 'lucide-react'
 
 interface Campaign {
@@ -62,7 +63,7 @@ export default function NotificationsPage() {
 
     try {
       if (!formData.title || !formData.message) {
-        alert('Please fill in title and message')
+        toast.error('Please fill in title and message')
         return
       }
 
@@ -79,10 +80,10 @@ export default function NotificationsPage() {
       setFormData({ title: '', message: '', audience: 'all' })
       setShowModal(false)
       fetchCampaigns()
-      alert('Campaign created successfully!')
+      toast.success('Campaign created successfully!')
     } catch (error) {
       console.error('Error creating campaign:', error)
-      alert('Failed to create campaign')
+      toast.error('Failed to create campaign')
     }
   }
 
