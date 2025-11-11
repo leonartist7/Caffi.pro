@@ -9,7 +9,7 @@
 **Project Name:** Caffi.pro
 **Type:** Multi-Tenant SaaS Coffee Shop Management Platform
 **Purpose:** White-label ordering and loyalty app for independent coffee shops
-**Stage:** Phase 4 Complete (Customer-Facing Shop 100% built)
+**Stage:** Phase 4 & 5 Complete (Customer Shop + Staff Operations 100% built)
 
 ### The Vision
 
@@ -98,6 +98,14 @@ Enable coffee shop owners to launch their own branded mobile ordering apps witho
 │   │   ├── /login             # Customer login
 │   │   ├── /signup            # Customer signup
 │   │   └── layout.tsx         # Shop layout (cart provider)
+│   ├── /staff                 # Staff operations portal
+│   │   ├── /dashboard         # Kitchen dashboard (real-time orders)
+│   │   ├── /orders            # All orders view
+│   │   ├── /inventory         # Inventory management
+│   │   ├── /team              # Staff team management
+│   │   ├── /reports           # Analytics & reports
+│   │   ├── /login             # Staff login
+│   │   └── layout.tsx         # Staff layout (auth provider)
 │   ├── /api                   # API routes
 │   │   ├── /categories        # Category CRUD
 │   │   ├── /menu-items        # Menu item CRUD
@@ -113,6 +121,7 @@ Enable coffee shop owners to launch their own branded mobile ordering apps witho
 │   └── /shop                  # Customer shop components
 ├── /contexts                  # React Context providers
 │   ├── AuthContext.tsx        # Admin authentication
+│   ├── StaffAuthContext.tsx   # Staff authentication
 │   ├── CartContext.tsx        # Shopping cart state
 │   ├── TenantContext.tsx      # Selected tenant
 │   └── ThemeContext.tsx       # Light/dark theme
@@ -129,7 +138,9 @@ Enable coffee shop owners to launch their own branded mobile ordering apps witho
 │   ├── 20250107000001_initial_schema.sql
 │   ├── 20250107000002_rls_policies.sql
 │   ├── 20250110000001_dev_mode_rls.sql
-│   └── 20250110000002_add_custom_domain.sql
+│   ├── 20250110000002_add_custom_domain.sql
+│   ├── 20250110000003_staff_operations.sql    # Phase 5 schema
+│   └── 20250110000004_staff_rls_policies.sql  # Phase 5 RLS
 ├── /public                    # Static assets
 │   ├── manifest.json          # PWA manifest
 │   ├── sw.js                  # Service worker
@@ -348,6 +359,101 @@ Enable coffee shop owners to launch their own branded mobile ordering apps witho
 - clicks, opens (INTEGER)
 ```
 
+### Phase 5 Tables (Staff Operations)
+
+**14. staff_users**
+
+```sql
+- staff_id (UUID, PK)
+- tenant_id (UUID, FK → tenants)
+- email (VARCHAR, UNIQUE per tenant)
+- full_name (VARCHAR)
+- phone (VARCHAR)
+- role (ENUM: owner, manager, barista, kitchen, cashier)
+- assigned_location_id (UUID, FK → locations)
+- can_manage_orders (BOOLEAN, DEFAULT true)
+- can_manage_inventory (BOOLEAN, DEFAULT false)
+- can_manage_staff (BOOLEAN, DEFAULT false)
+- can_view_reports (BOOLEAN, DEFAULT false)
+- is_active (BOOLEAN, DEFAULT true)
+- last_login (TIMESTAMP)
+- created_at, updated_at
+```
+
+**15. inventory_items**
+
+```sql
+- inventory_item_id (UUID, PK)
+- tenant_id (UUID, FK → tenants)
+- location_id (UUID, FK → locations)
+- name (VARCHAR) - "Coffee Beans - Ethiopian"
+- description (TEXT)
+- category (VARCHAR) - "coffee_beans", "milk", "syrups", "cups", "food"
+- sku (VARCHAR, UNIQUE per tenant)
+- current_stock (DECIMAL) - Current quantity
+- unit (VARCHAR) - "kg", "liters", "units", "bags"
+- min_stock_level (DECIMAL) - Alert threshold
+- max_stock_level (DECIMAL)
+- unit_cost (DECIMAL)
+- is_active (BOOLEAN, DEFAULT true)
+- last_restocked_at (TIMESTAMP)
+- created_at, updated_at
+```
+
+**16. inventory_transactions**
+
+```sql
+- transaction_id (UUID, PK)
+- tenant_id (UUID, FK → tenants)
+- inventory_item_id (UUID, FK → inventory_items)
+- staff_id (UUID, FK → staff_users)
+- order_id (UUID, FK → orders)
+- transaction_type (ENUM: restock, usage, adjustment, waste, transfer)
+- quantity (DECIMAL) - Positive for restock, negative for usage
+- unit (VARCHAR)
+- notes (TEXT)
+- reference_number (VARCHAR) - Purchase order, etc.
+- created_at
+```
+
+**17. menu_item_ingredients**
+
+```sql
+- ingredient_id (UUID, PK)
+- menu_item_id (UUID, FK → menu_items)
+- inventory_item_id (UUID, FK → inventory_items)
+- quantity_per_serving (DECIMAL)
+- unit (VARCHAR)
+- modifier_id (VARCHAR) - Optional: modifier-specific ingredients
+- created_at
+```
+
+**18. staff_shifts**
+
+```sql
+- shift_id (UUID, PK)
+- tenant_id (UUID, FK → tenants)
+- staff_id (UUID, FK → staff_users)
+- location_id (UUID, FK → locations)
+- shift_date (DATE)
+- clock_in, clock_out (TIMESTAMP)
+- break_duration_minutes (INTEGER)
+- orders_completed (INTEGER)
+- total_sales (DECIMAL)
+- notes (TEXT)
+- created_at, updated_at
+```
+
+**Orders Table Enhancements (Phase 5):**
+
+```sql
+-- Added columns to orders table:
+- assigned_to_staff_id (UUID, FK → staff_users)
+- preparation_started_at (TIMESTAMP)
+- ready_at (TIMESTAMP)
+- estimated_ready_time (TIMESTAMP)
+```
+
 ---
 
 ## 🔐 AUTHENTICATION & SECURITY
@@ -365,6 +471,20 @@ Enable coffee shop owners to launch their own branded mobile ordering apps witho
 - **Context:** Customer auth logic in `lib/auth-customer.ts`
 - **Routes:** `/shop/[slug]/login`, `/shop/[slug]/signup`
 - **Protected:** Checkout, orders, profile, rewards
+
+### Staff Authentication
+
+- **Provider:** Supabase Auth
+- **Context:** `StaffAuthContext.tsx`
+- **Routes:** `/staff/login`
+- **Protected:** All staff routes (dashboard, orders, inventory, team, reports)
+- **Permissions:** Role-based with granular permissions
+  - `can_manage_orders` - Update order status, assign to self
+  - `can_manage_inventory` - Add/edit inventory items, record transactions
+  - `can_manage_staff` - Add/edit/deactivate staff members
+  - `can_view_reports` - Access analytics and reports
+- **Roles:** owner, manager, barista, kitchen, cashier
+- **Location Assignment:** Staff can be assigned to specific locations
 
 ### Row-Level Security (RLS)
 
@@ -642,7 +762,13 @@ Stored in `tenants.features_enabled` (JSONB):
 ### Current State
 
 - **Phase 4 Complete:** Customer shop fully functional
-- **Authentication:** Dev mode (bypassed for rapid development)
+- **Phase 5 Complete:** Staff operations portal fully functional
+  - Kitchen dashboard with real-time order queue
+  - Staff team management with role-based permissions
+  - Inventory tracking and transaction history
+  - Reports & analytics dashboard
+  - All orders view with search and filters
+- **Authentication:** Dev mode for admin, production auth for staff and customers
 - **RLS Policies:** Dev mode policies must be applied for tenant creation to work
 - **PWA:** Functional but needs icon files generated
 - **Custom Domains:** Implemented but requires DNS setup
@@ -666,15 +792,16 @@ Stored in `tenants.features_enabled` (JSONB):
 
 ### Testing Flow
 
+**Admin Setup:**
+
 1. Create tenant in admin dashboard (`/clients`)
 2. Add locations (`/cafes`)
 3. Create categories (`/menu`)
 4. Add menu items (`/menu`)
-5. Test customer shop at `/shop/[your-tenant-slug]`
-6. Complete an order
-7. Track order in real-time
-8. Check rewards page for points
-9. Test profile management
+
+**Customer Shop:** 5. Test customer shop at `/shop/[your-tenant-slug]` 6. Complete an order 7. Track order in real-time 8. Check rewards page for points 9. Test profile management
+
+**Staff Portal:** 10. Create staff user in admin dashboard (`/staff`) 11. Login to staff portal at `/staff/login` 12. View kitchen dashboard (`/staff/dashboard`) - see real-time orders 13. Update order status (pending → confirmed → preparing → ready → completed) 14. Test inventory management (`/staff/inventory`) - add items, record transactions 15. View reports & analytics (`/staff/reports`) - daily/weekly/monthly stats 16. Manage team members (`/staff/team`) - if you have permission 17. View all orders (`/staff/orders`) - search and filter
 
 ---
 
@@ -737,15 +864,17 @@ Stored in `tenants.features_enabled` (JSONB):
 
 ## 🎯 WHAT'S NEXT (Potential Future Phases)
 
-### Phase 5: Operations & Staff (Suggested)
+**Current Progress: ~50% Complete** (Phases 4 & 5 done)
 
-- Kitchen/staff dashboard for managing orders
-- Real-time order notifications (WebSocket/Supabase Realtime)
-- Staff user management and permissions
-- Order preparation workflow
-- Inventory tracking
+### ~~Phase 5: Operations & Staff~~ ✅ COMPLETE
 
-### Phase 6: Payments & Integrations (Suggested)
+- ✅ Kitchen/staff dashboard for managing orders
+- ✅ Real-time order notifications (Supabase Realtime)
+- ✅ Staff user management and permissions
+- ✅ Order preparation workflow
+- ✅ Inventory tracking
+
+### Phase 6: Payments & Integrations (Next Priority)
 
 - Stripe/PayPal payment integration
 - Email notifications (SendGrid/Resend)
@@ -844,6 +973,79 @@ Stored in `tenants.features_enabled` (JSONB):
 - Meta tags
 - Install prompt
 
+### ✅ Phase 5 Complete (100%)
+
+**5.1 Staff Authentication** ✅
+
+- StaffAuthContext with role-based permissions
+- Staff login page
+- Protected staff routes
+- Permission checks (manage orders, inventory, staff, reports)
+
+**5.2 Kitchen Dashboard** ✅
+
+- Real-time order queue with Supabase Realtime
+- Order status updates (accept → start → ready → complete)
+- Order assignment to staff members
+- Sound notifications for new orders
+- Filter by active/completed/all orders
+- Visual status indicators with color coding
+
+**5.3 Orders Management** ✅
+
+- All orders view with search functionality
+- Filter by status (pending, confirmed, preparing, ready, completed, cancelled)
+- Search by order number
+- View order details with customer info
+- Location filtering for assigned staff
+
+**5.4 Inventory Management** ✅
+
+- Inventory items CRUD (add, edit, view)
+- Categories (coffee_beans, milk, syrups, cups, food)
+- Stock tracking with units (kg, liters, units, bags)
+- Low stock alerts (min_stock_level threshold)
+- Transaction history (restock, usage, adjustment, waste)
+- Record inventory transactions with notes
+- Filter by category and low stock
+
+**5.5 Team Management** ✅
+
+- Staff users CRUD (add, edit, deactivate)
+- Role assignment (owner, manager, barista, kitchen, cashier)
+- Location assignment
+- Granular permissions (orders, inventory, staff, reports)
+- Active/inactive status management
+- View staff list with role and location
+
+**5.6 Reports & Analytics** ✅
+
+- Date range selection (today, this week, this month)
+- Total orders and revenue metrics
+- Average order value calculation
+- Completion rate tracking
+- Orders by status breakdown with charts
+- Top selling items (top 5)
+- Hourly order distribution chart
+- Export report functionality (JSON)
+- Location filtering for assigned staff
+
+**5.7 Database Schema** ✅
+
+- staff_users table with roles and permissions
+- inventory_items table with stock tracking
+- inventory_transactions table for movements
+- menu_item_ingredients linking system
+- staff_shifts table for time tracking
+- Orders table enhancements (assigned_to_staff_id, preparation times)
+
+**5.8 Real-time Features** ✅
+
+- Supabase Realtime subscriptions for orders
+- Auto-refresh kitchen dashboard
+- Sound notifications for new orders
+- Live order status updates
+
 ---
 
 ## 💡 TIPS FOR AI ASSISTANTS WORKING ON THIS PROJECT
@@ -906,8 +1108,13 @@ This is a **production-ready multi-tenant SaaS platform** with:
 
 - ✅ Complete customer ordering flow
 - ✅ Loyalty program
-- ✅ Order tracking
+- ✅ Order tracking (real-time)
 - ✅ Admin dashboard
+- ✅ Staff operations portal
+- ✅ Kitchen management
+- ✅ Inventory tracking
+- ✅ Team management with permissions
+- ✅ Reports & analytics
 - ✅ Multi-domain support
 - ✅ PWA capabilities
 - ✅ Type-safe TypeScript
@@ -919,8 +1126,11 @@ This is a **production-ready multi-tenant SaaS platform** with:
 - White-label capability (custom branding per tenant)
 - Feature flags for flexibility
 - Row-level security for data isolation
-- Real-time order tracking
+- Real-time order tracking and kitchen updates
 - Comprehensive loyalty system
+- Role-based staff permissions
+- Inventory management with low stock alerts
+- Analytics and reporting
 - PWA for app-like experience
 
 **Use this context when asking AI assistants to:**
@@ -935,6 +1145,6 @@ This is a **production-ready multi-tenant SaaS platform** with:
 
 ---
 
-**Last Updated:** 2025-01-10
-**Version:** Phase 4 Complete
-**Status:** Ready for Testing & Phase 5 Planning
+**Last Updated:** 2025-01-11
+**Version:** Phase 4 & 5 Complete
+**Status:** ~50% Complete - Ready for Phase 6 (Payments & Integrations)
