@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 import { Clock, MapPin, User, ChevronRight, Bell } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
@@ -191,7 +192,7 @@ export default function KitchenDashboardPage() {
       await fetchOrders()
     } catch (error) {
       console.error('Error updating order status:', error)
-      alert('Failed to update order status')
+      toast.error('Failed to update order status')
     }
   }
 

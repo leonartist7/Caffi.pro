@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 import {
   Package,
   Plus,
@@ -154,23 +155,23 @@ export default function InventoryPage() {
 
     // Validate required fields
     if (!formData.name.trim()) {
-      alert('Item name is required')
+      toast.error('Item name is required')
       return
     }
 
     // Validate numeric fields
     if (formData.current_stock < 0) {
-      alert('Current stock cannot be negative')
+      toast.error('Current stock cannot be negative')
       return
     }
 
     if (formData.min_stock_level < 0) {
-      alert('Minimum stock level cannot be negative')
+      toast.error('Minimum stock level cannot be negative')
       return
     }
 
     if (formData.unit_cost && formData.unit_cost < 0) {
-      alert('Unit cost cannot be negative')
+      toast.error('Unit cost cannot be negative')
       return
     }
 
@@ -188,12 +189,12 @@ export default function InventoryPage() {
           .eq('inventory_item_id', editingItem.inventory_item_id)
 
         if (error) throw error
-        alert('Item updated successfully!')
+        toast.success('Item updated successfully!')
       } else {
         const { error } = await supabase.from('inventory_items').insert(payload)
 
         if (error) throw error
-        alert('Item added successfully!')
+        toast.success('Item added successfully!')
       }
 
       await fetchItems()
@@ -201,7 +202,7 @@ export default function InventoryPage() {
       resetForm()
     } catch (error: any) {
       console.error('Error saving item:', error)
-      alert(`Failed to save item: ${error.message}`)
+      toast.error(`Failed to save item: ${error.message}`)
     }
   }
 
@@ -212,7 +213,7 @@ export default function InventoryPage() {
 
     // Validate quantity
     if (transactionData.quantity <= 0) {
-      alert('Quantity must be greater than zero')
+      toast.error('Quantity must be greater than zero')
       return
     }
 
@@ -226,7 +227,7 @@ export default function InventoryPage() {
       // Prevent negative stock
       const newStock = selectedItem.current_stock + quantity
       if (newStock < 0) {
-        alert(
+        toast.error(
           `Cannot process transaction: would result in negative stock (${newStock.toFixed(2)} ${selectedItem.unit})`
         )
         return
@@ -262,10 +263,10 @@ export default function InventoryPage() {
       setTransactionModalOpen(false)
       setSelectedItem(null)
       resetTransactionForm()
-      alert('Stock updated successfully!')
+      toast.success('Stock updated successfully!')
     } catch (error: any) {
       console.error('Error recording transaction:', error)
-      alert(`Failed to update stock: ${error.message}`)
+      toast.error(`Failed to update stock: ${error.message}`)
     }
   }
 

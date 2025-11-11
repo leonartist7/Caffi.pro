@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import PWARegister from '@/components/PWARegister'
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: 'Caffi.pro - Admin Dashboard',
@@ -34,7 +35,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <PWARegister />
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <Toaster position="top-right" richColors closeButton />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

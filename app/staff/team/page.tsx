@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 import { Plus, Edit, Trash2, User, MapPin, Shield } from 'lucide-react'
 
 interface StaffMember {
@@ -117,19 +118,19 @@ export default function StaffTeamPage() {
 
     // Validate required fields
     if (!formData.email.trim()) {
-      alert('Email is required')
+      toast.error('Email is required')
       return
     }
 
     if (!formData.full_name.trim()) {
-      alert('Full name is required')
+      toast.error('Full name is required')
       return
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.email)) {
-      alert('Please enter a valid email address')
+      toast.error('Please enter a valid email address')
       return
     }
 
@@ -137,7 +138,7 @@ export default function StaffTeamPage() {
     if (formData.phone && formData.phone.trim()) {
       const phoneRegex = /^[+\d\s\-()]+$/
       if (!phoneRegex.test(formData.phone)) {
-        alert('Please enter a valid phone number')
+        toast.error('Please enter a valid phone number')
         return
       }
     }
@@ -157,14 +158,14 @@ export default function StaffTeamPage() {
           .eq('staff_id', editingStaff.staff_id)
 
         if (error) throw error
-        alert('Staff member updated successfully!')
+        toast.success('Staff member updated successfully!')
       } else {
         // Create new staff
         const { error } = await supabase.from('staff_users').insert(payload)
 
         if (error) throw error
-        alert(
-          'Staff member added successfully!\n\nThey can now sign in at /staff/login with their email and password.'
+        toast.success(
+          'Staff member added successfully! They can now sign in at /staff/login with their email and password.'
         )
       }
 
@@ -173,7 +174,7 @@ export default function StaffTeamPage() {
       resetForm()
     } catch (error: any) {
       console.error('Error saving staff:', error)
-      alert(`Failed to save staff member: ${error.message}`)
+      toast.error(`Failed to save staff member: ${error.message}`)
     }
   }
 
@@ -186,10 +187,10 @@ export default function StaffTeamPage() {
       if (error) throw error
 
       await fetchStaffMembers()
-      alert('Staff member removed successfully!')
+      toast.success('Staff member removed successfully!')
     } catch (error: any) {
       console.error('Error deleting staff:', error)
-      alert(`Failed to remove staff member: ${error.message}`)
+      toast.error(`Failed to remove staff member: ${error.message}`)
     }
   }
 
@@ -205,7 +206,7 @@ export default function StaffTeamPage() {
       await fetchStaffMembers()
     } catch (error: any) {
       console.error('Error toggling status:', error)
-      alert(`Failed to update status: ${error.message}`)
+      toast.error(`Failed to update status: ${error.message}`)
     }
   }
 
