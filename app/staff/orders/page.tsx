@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
 import { createClient } from '@/utils/supabase/client'
-import { Search, Filter, Eye } from 'lucide-react'
+import { Search, Eye } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 
 interface Order {
@@ -21,7 +21,7 @@ interface Order {
   }
 }
 
-const STATUS_COLORS: {[key: string]: string} = {
+const STATUS_COLORS: { [key: string]: string } = {
   pending: 'bg-yellow-100 text-yellow-800',
   confirmed: 'bg-blue-100 text-blue-800',
   preparing: 'bg-orange-100 text-orange-800',
@@ -90,6 +90,7 @@ export default function StaffOrdersPage() {
 
   useEffect(() => {
     fetchOrders()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffUser, statusFilter])
 
   const handleSearch = () => {
@@ -189,7 +190,9 @@ export default function StaffOrdersPage() {
                     <div className="text-sm font-medium text-gray-900">{order.order_number}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{(order.user as any)?.full_name || 'Guest'}</div>
+                    <div className="text-sm text-gray-900">
+                      {(order.user as any)?.full_name || 'Guest'}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{(order.location as any)?.name}</div>
@@ -198,12 +201,16 @@ export default function StaffOrdersPage() {
                     <div className="text-sm text-gray-900 capitalize">{order.order_type}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${STATUS_COLORS[order.status]}`}>
+                    <span
+                      className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${STATUS_COLORS[order.status]}`}
+                    >
                       {order.status}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-semibold text-gray-900">€{order.total.toFixed(2)}</div>
+                    <div className="text-sm font-semibold text-gray-900">
+                      €{order.total.toFixed(2)}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}

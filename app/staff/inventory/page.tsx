@@ -3,7 +3,15 @@
 import { useEffect, useState } from 'react'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
 import { createClient } from '@/utils/supabase/client'
-import { Package, Plus, Edit, AlertTriangle, TrendingUp, TrendingDown, RefreshCw } from 'lucide-react'
+import {
+  Package,
+  Plus,
+  Edit,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+  RefreshCw,
+} from 'lucide-react'
 
 interface InventoryItem {
   inventory_item_id: string
@@ -68,17 +76,6 @@ export default function InventoryPage() {
   })
 
   const supabase = createClient()
-
-  // Check permissions
-  if (!staffUser?.can_manage_inventory) {
-    return (
-      <div className="text-center py-12">
-        <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-        <p className="text-gray-600">You don't have permission to manage inventory.</p>
-      </div>
-    )
-  }
 
   const fetchItems = async () => {
     if (!staffUser) return
@@ -149,6 +146,7 @@ export default function InventoryPage() {
       setLoading(false)
     }
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffUser, filterCategory, showLowStockOnly])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -216,7 +214,9 @@ export default function InventoryPage() {
         .from('inventory_items')
         .update({
           current_stock: newStock,
-          ...(transactionData.transaction_type === 'restock' ? { last_restocked_at: new Date().toISOString() } : {})
+          ...(transactionData.transaction_type === 'restock'
+            ? { last_restocked_at: new Date().toISOString() }
+            : {}),
         })
         .eq('inventory_item_id', selectedItem.inventory_item_id)
 
@@ -284,6 +284,17 @@ export default function InventoryPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coffee-700"></div>
+      </div>
+    )
+  }
+
+  // Check permissions
+  if (!staffUser?.can_manage_inventory) {
+    return (
+      <div className="text-center py-12">
+        <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+        <p className="text-gray-600">You don't have permission to manage inventory.</p>
       </div>
     )
   }
@@ -383,7 +394,9 @@ export default function InventoryPage() {
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <h3 className="font-bold text-gray-900">{item.name}</h3>
-                  <p className="text-xs text-gray-500 capitalize">{item.category.replace('_', ' ')}</p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {item.category.replace('_', ' ')}
+                  </p>
                   {item.sku && <p className="text-xs text-gray-400 mt-1">SKU: {item.sku}</p>}
                 </div>
                 <button
@@ -399,7 +412,8 @@ export default function InventoryPage() {
                   <div className="flex justify-between items-end mb-1">
                     <span className="text-sm text-gray-600">Current Stock</span>
                     <span className="text-2xl font-bold text-gray-900">
-                      {item.current_stock} <span className="text-sm text-gray-500">{item.unit}</span>
+                      {item.current_stock}{' '}
+                      <span className="text-sm text-gray-500">{item.unit}</span>
                     </span>
                   </div>
                   {item.max_stock_level && (
@@ -463,7 +477,10 @@ export default function InventoryPage() {
         <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Transactions</h2>
         <div className="space-y-3">
           {transactions.slice(0, 10).map(tx => (
-            <div key={tx.transaction_id} className="flex items-center justify-between py-2 border-b border-gray-100">
+            <div
+              key={tx.transaction_id}
+              className="flex items-center justify-between py-2 border-b border-gray-100"
+            >
               <div className="flex items-center space-x-3">
                 {tx.quantity > 0 ? (
                   <TrendingUp className="w-5 h-5 text-green-600" />
@@ -471,9 +488,7 @@ export default function InventoryPage() {
                   <TrendingDown className="w-5 h-5 text-red-600" />
                 )}
                 <div>
-                  <p className="font-medium text-gray-900">
-                    {(tx.item as any)?.name}
-                  </p>
+                  <p className="font-medium text-gray-900">{(tx.item as any)?.name}</p>
                   <p className="text-sm text-gray-600">
                     {tx.transaction_type.replace('_', ' ')} by {(tx.staff as any)?.full_name}
                   </p>
@@ -509,7 +524,9 @@ export default function InventoryPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Item Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Item Name *
+                  </label>
                   <input
                     type="text"
                     required
@@ -520,7 +537,9 @@ export default function InventoryPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
                   <textarea
                     value={formData.description}
                     onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -555,13 +574,17 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Current Stock *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Current Stock *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     required
                     value={formData.current_stock}
-                    onChange={e => setFormData({ ...formData, current_stock: parseFloat(e.target.value) })}
+                    onChange={e =>
+                      setFormData({ ...formData, current_stock: parseFloat(e.target.value) })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                   />
                 </div>
@@ -584,35 +607,47 @@ export default function InventoryPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Stock Level *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Min Stock Level *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     required
                     value={formData.min_stock_level}
-                    onChange={e => setFormData({ ...formData, min_stock_level: parseFloat(e.target.value) })}
+                    onChange={e =>
+                      setFormData({ ...formData, min_stock_level: parseFloat(e.target.value) })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Stock Level</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Stock Level
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.max_stock_level}
-                    onChange={e => setFormData({ ...formData, max_stock_level: parseFloat(e.target.value) })}
+                    onChange={e =>
+                      setFormData({ ...formData, max_stock_level: parseFloat(e.target.value) })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Unit Cost (€)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Unit Cost (€)
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     value={formData.unit_cost}
-                    onChange={e => setFormData({ ...formData, unit_cost: parseFloat(e.target.value) })}
+                    onChange={e =>
+                      setFormData({ ...formData, unit_cost: parseFloat(e.target.value) })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                   />
                 </div>
@@ -645,14 +680,20 @@ export default function InventoryPage() {
       {transactionModalOpen && selectedItem && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Update Stock: {selectedItem.name}</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Update Stock: {selectedItem.name}
+            </h2>
 
             <form onSubmit={handleTransaction} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Transaction Type *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Transaction Type *
+                </label>
                 <select
                   value={transactionData.transaction_type}
-                  onChange={e => setTransactionData({ ...transactionData, transaction_type: e.target.value })}
+                  onChange={e =>
+                    setTransactionData({ ...transactionData, transaction_type: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                 >
                   <option value="restock">Restock (Add)</option>
@@ -671,7 +712,9 @@ export default function InventoryPage() {
                   step="0.01"
                   required
                   value={transactionData.quantity}
-                  onChange={e => setTransactionData({ ...transactionData, quantity: parseFloat(e.target.value) })}
+                  onChange={e =>
+                    setTransactionData({ ...transactionData, quantity: parseFloat(e.target.value) })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                 />
                 <p className="text-xs text-gray-500 mt-1">

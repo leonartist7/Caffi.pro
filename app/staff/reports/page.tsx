@@ -4,7 +4,15 @@ import { useEffect, useState } from 'react'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
 import { createClient } from '@/utils/supabase/client'
 import { TrendingUp, DollarSign, ShoppingBag, Clock, Calendar, Download } from 'lucide-react'
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, format } from 'date-fns'
+import {
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  format,
+} from 'date-fns'
 
 interface Stats {
   total_orders: number
@@ -23,24 +31,16 @@ export default function StaffReportsPage() {
   const [dateRange, setDateRange] = useState<'today' | 'week' | 'month'>('today')
   const supabase = createClient()
 
-  // Check permissions
-  if (!staffUser?.can_view_reports) {
-    return (
-      <div className="text-center py-12">
-        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-        <p className="text-gray-600">You don't have permission to view reports.</p>
-      </div>
-    )
-  }
-
   const getDateRangeBounds = () => {
     const now = new Date()
     switch (dateRange) {
       case 'today':
         return { start: startOfDay(now), end: endOfDay(now) }
       case 'week':
-        return { start: startOfWeek(now, { weekStartsOn: 1 }), end: endOfWeek(now, { weekStartsOn: 1 }) }
+        return {
+          start: startOfWeek(now, { weekStartsOn: 1 }),
+          end: endOfWeek(now, { weekStartsOn: 1 }),
+        }
       case 'month':
         return { start: startOfMonth(now), end: endOfMonth(now) }
     }
@@ -130,6 +130,7 @@ export default function StaffReportsPage() {
 
   useEffect(() => {
     fetchStats()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffUser, dateRange])
 
   const exportReport = () => {
@@ -155,6 +156,17 @@ export default function StaffReportsPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coffee-700"></div>
+      </div>
+    )
+  }
+
+  // Check permissions
+  if (!staffUser?.can_view_reports) {
+    return (
+      <div className="text-center py-12">
+        <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
+        <p className="text-gray-600">You don't have permission to view reports.</p>
       </div>
     )
   }
@@ -197,9 +209,7 @@ export default function StaffReportsPage() {
             <ShoppingBag className="w-5 h-5 text-blue-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900">{stats?.total_orders || 0}</p>
-          <p className="text-xs text-gray-500 mt-1">
-            {stats?.completed_orders || 0} completed
-          </p>
+          <p className="text-xs text-gray-500 mt-1">{stats?.completed_orders || 0} completed</p>
         </div>
 
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
@@ -207,7 +217,9 @@ export default function StaffReportsPage() {
             <p className="text-sm text-gray-600">Total Revenue</p>
             <DollarSign className="w-5 h-5 text-green-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">€{(stats?.total_revenue || 0).toFixed(2)}</p>
+          <p className="text-3xl font-bold text-gray-900">
+            €{(stats?.total_revenue || 0).toFixed(2)}
+          </p>
           <p className="text-xs text-gray-500 mt-1">From completed orders</p>
         </div>
 
@@ -216,7 +228,9 @@ export default function StaffReportsPage() {
             <p className="text-sm text-gray-600">Avg Order Value</p>
             <TrendingUp className="w-5 h-5 text-purple-600" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">€{(stats?.avg_order_value || 0).toFixed(2)}</p>
+          <p className="text-3xl font-bold text-gray-900">
+            €{(stats?.avg_order_value || 0).toFixed(2)}
+          </p>
           <p className="text-xs text-gray-500 mt-1">Per completed order</p>
         </div>
 
@@ -316,9 +330,7 @@ export default function StaffReportsPage() {
                     )}
                   </div>
                 </div>
-                {index % 2 === 0 && (
-                  <p className="text-xs text-gray-500 mt-2">{data.hour}:00</p>
-                )}
+                {index % 2 === 0 && <p className="text-xs text-gray-500 mt-2">{data.hour}:00</p>}
               </div>
             )
           })}

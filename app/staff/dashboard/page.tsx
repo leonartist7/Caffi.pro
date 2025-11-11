@@ -107,6 +107,7 @@ export default function KitchenDashboardPage() {
     } finally {
       setLoading(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffUser, selectedStatus])
 
   // Initial fetch
@@ -145,6 +146,7 @@ export default function KitchenDashboardPage() {
     return () => {
       supabase.removeChannel(channel)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [staffUser, soundEnabled, fetchOrders])
 
   const playNotificationSound = () => {
@@ -170,7 +172,10 @@ export default function KitchenDashboardPage() {
     try {
       const updates: any = { status: newStatus }
 
-      if (newStatus === 'preparing' && !orders.find(o => o.order_id === orderId)?.preparation_started_at) {
+      if (
+        newStatus === 'preparing' &&
+        !orders.find(o => o.order_id === orderId)?.preparation_started_at
+      ) {
         updates.preparation_started_at = new Date().toISOString()
         updates.assigned_to_staff_id = staffUser?.staff_id
       }
@@ -211,7 +216,9 @@ export default function KitchenDashboardPage() {
   }
 
   // Group orders by status
-  const activeOrders = orders.filter(o => ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status))
+  const activeOrders = orders.filter(o =>
+    ['pending', 'confirmed', 'preparing', 'ready'].includes(o.status)
+  )
   const completedOrders = orders.filter(o => ['completed', 'cancelled'].includes(o.status))
 
   if (loading) {
@@ -321,7 +328,9 @@ export default function KitchenDashboardPage() {
                 </div>
                 <div className="flex items-center text-gray-700">
                   <Clock className="w-4 h-4 mr-2 flex-shrink-0" />
-                  <span>{formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}</span>
+                  <span>
+                    {formatDistanceToNow(new Date(order.created_at), { addSuffix: true })}
+                  </span>
                 </div>
               </div>
 
@@ -342,7 +351,9 @@ export default function KitchenDashboardPage() {
               {/* Special Instructions */}
               {order.special_instructions && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 mb-3">
-                  <p className="text-xs font-semibold text-yellow-800 mb-1">Special Instructions:</p>
+                  <p className="text-xs font-semibold text-yellow-800 mb-1">
+                    Special Instructions:
+                  </p>
                   <p className="text-sm text-yellow-700">{order.special_instructions}</p>
                 </div>
               )}

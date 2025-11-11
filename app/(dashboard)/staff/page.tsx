@@ -107,6 +107,7 @@ export default function AdminStaffPage() {
       setLoading(false)
     }
     loadData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTenant])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -255,8 +256,9 @@ export default function AdminStaffPage() {
             <h3 className="font-semibold text-blue-900">Staff Portal Access</h3>
             <p className="text-sm text-blue-700 mt-1">
               Staff members can access the kitchen dashboard at{' '}
-              <code className="bg-blue-100 px-2 py-0.5 rounded">/staff/login</code> using their email and a password.
-              They'll need to create an account using their email address first via Supabase Auth.
+              <code className="bg-blue-100 px-2 py-0.5 rounded">/staff/login</code> using their
+              email and a password. They'll need to create an account using their email address
+              first via Supabase Auth.
             </p>
           </div>
         </div>
@@ -330,16 +332,24 @@ export default function AdminStaffPage() {
                 <p className="text-xs font-semibold text-gray-600 mb-1">Permissions:</p>
                 <div className="flex flex-wrap gap-1">
                   {staff.can_manage_orders && (
-                    <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">Orders</span>
+                    <span className="px-2 py-1 bg-blue-50 text-blue-700 text-xs rounded">
+                      Orders
+                    </span>
                   )}
                   {staff.can_manage_inventory && (
-                    <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded">Inventory</span>
+                    <span className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded">
+                      Inventory
+                    </span>
                   )}
                   {staff.can_manage_staff && (
-                    <span className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded">Staff</span>
+                    <span className="px-2 py-1 bg-orange-50 text-orange-700 text-xs rounded">
+                      Staff
+                    </span>
                   )}
                   {staff.can_view_reports && (
-                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Reports</span>
+                    <span className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">
+                      Reports
+                    </span>
                   )}
                 </div>
               </div>
@@ -375,7 +385,9 @@ export default function AdminStaffPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Full Name *
+                  </label>
                   <input
                     type="text"
                     required
@@ -422,10 +434,14 @@ export default function AdminStaffPage() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assigned Location</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Assigned Location
+                  </label>
                   <select
                     value={formData.assigned_location_id}
-                    onChange={e => setFormData({ ...formData, assigned_location_id: e.target.value })}
+                    onChange={e =>
+                      setFormData({ ...formData, assigned_location_id: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
                   >
                     <option value="">All Locations</option>
@@ -445,7 +461,9 @@ export default function AdminStaffPage() {
                     <input
                       type="checkbox"
                       checked={formData.can_manage_orders}
-                      onChange={e => setFormData({ ...formData, can_manage_orders: e.target.checked })}
+                      onChange={e =>
+                        setFormData({ ...formData, can_manage_orders: e.target.checked })
+                      }
                       className="rounded border-gray-300 text-coffee-700 focus:ring-coffee-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Can manage orders</span>
@@ -455,7 +473,9 @@ export default function AdminStaffPage() {
                     <input
                       type="checkbox"
                       checked={formData.can_manage_inventory}
-                      onChange={e => setFormData({ ...formData, can_manage_inventory: e.target.checked })}
+                      onChange={e =>
+                        setFormData({ ...formData, can_manage_inventory: e.target.checked })
+                      }
                       className="rounded border-gray-300 text-coffee-700 focus:ring-coffee-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Can manage inventory</span>
@@ -465,7 +485,9 @@ export default function AdminStaffPage() {
                     <input
                       type="checkbox"
                       checked={formData.can_manage_staff}
-                      onChange={e => setFormData({ ...formData, can_manage_staff: e.target.checked })}
+                      onChange={e =>
+                        setFormData({ ...formData, can_manage_staff: e.target.checked })
+                      }
                       className="rounded border-gray-300 text-coffee-700 focus:ring-coffee-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Can manage staff</span>
@@ -475,7 +497,9 @@ export default function AdminStaffPage() {
                     <input
                       type="checkbox"
                       checked={formData.can_view_reports}
-                      onChange={e => setFormData({ ...formData, can_view_reports: e.target.checked })}
+                      onChange={e =>
+                        setFormData({ ...formData, can_view_reports: e.target.checked })
+                      }
                       className="rounded border-gray-300 text-coffee-700 focus:ring-coffee-500"
                     />
                     <span className="ml-2 text-sm text-gray-700">Can view reports</span>
@@ -494,7 +518,10 @@ export default function AdminStaffPage() {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="px-4 py-2 bg-coffee-700 hover:bg-coffee-800 text-white rounded-lg">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-coffee-700 hover:bg-coffee-800 text-white rounded-lg"
+                >
                   {editingStaff ? 'Update Staff' : 'Add Staff'}
                 </button>
               </div>
