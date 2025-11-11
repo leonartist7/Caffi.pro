@@ -32,10 +32,10 @@ function StaffLayoutContent({ children }: { children: React.ReactNode }) {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coffee-700 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-900">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-gray-200 dark:bg-dark-700 rounded-full animate-pulse mx-auto"></div>
+          <div className="h-4 w-32 bg-gray-200 dark:bg-dark-700 rounded animate-pulse mx-auto"></div>
         </div>
       </div>
     )
@@ -54,7 +54,12 @@ function StaffLayoutContent({ children }: { children: React.ReactNode }) {
   const navigation = [
     { name: 'Kitchen Queue', href: '/staff/dashboard', icon: ClipboardList },
     { name: 'Orders', href: '/staff/orders', icon: Coffee },
-    { name: 'Inventory', href: '/staff/inventory', icon: Package, permission: 'can_manage_inventory' },
+    {
+      name: 'Inventory',
+      href: '/staff/inventory',
+      icon: Package,
+      permission: 'can_manage_inventory',
+    },
     { name: 'Team', href: '/staff/team', icon: Users, permission: 'can_manage_staff' },
     { name: 'Reports', href: '/staff/reports', icon: BarChart3, permission: 'can_view_reports' },
   ]
@@ -103,7 +108,10 @@ function StaffLayoutContent({ children }: { children: React.ReactNode }) {
             </button>
 
             {/* Sign Out */}
-            <button onClick={handleSignOut} className="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
+            <button
+              onClick={handleSignOut}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+            >
               <LogOut className="w-6 h-6" />
             </button>
           </div>
@@ -120,7 +128,9 @@ function StaffLayoutContent({ children }: { children: React.ReactNode }) {
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 ${
-                    isActive(item.href) ? 'bg-coffee-50 text-coffee-700 border-l-4 border-coffee-700' : 'text-gray-700'
+                    isActive(item.href)
+                      ? 'bg-coffee-50 text-coffee-700 border-l-4 border-coffee-700'
+                      : 'text-gray-700'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

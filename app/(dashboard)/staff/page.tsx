@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Plus, Edit, Trash2, Shield, Coffee } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useConfirm } from '@/hooks/useConfirm'
+import { SkeletonList } from '@/components/SkeletonLoader'
 
 interface StaffMember {
   staff_id: string
@@ -237,8 +238,15 @@ export default function AdminStaffPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-coffee-700"></div>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-8 w-64 bg-gray-200 dark:bg-dark-700 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-gray-200 dark:bg-dark-700 rounded animate-pulse" />
+          </div>
+          <div className="h-10 w-32 bg-gray-200 dark:bg-dark-700 rounded animate-pulse" />
+        </div>
+        <SkeletonList items={5} />
       </div>
     )
   }
