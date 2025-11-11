@@ -14,15 +14,24 @@ interface NotificationFormData {
   scheduled_for: string
 }
 
+interface PushCampaign extends NotificationFormData {
+  campaign_id: string
+}
+
 interface NotificationModalProps {
   isOpen: boolean
   onClose: () => void
-  campaign?: any
+  campaign?: PushCampaign
 }
 
 export function NotificationModal({ isOpen, onClose, campaign }: NotificationModalProps) {
   const queryClient = useQueryClient()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<NotificationFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<NotificationFormData>({
     defaultValues: {
       title: '',
       message: '',
@@ -41,7 +50,7 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
         image_url: campaign.image_url || '',
         deep_link: campaign.deep_link || '',
         audience: campaign.audience,
-        scheduled_for: campaign.scheduled_for 
+        scheduled_for: campaign.scheduled_for
           ? new Date(campaign.scheduled_for).toISOString().slice(0, 16)
           : '',
       })
@@ -75,13 +84,11 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
           .from('push_campaigns')
           .update(payload)
           .eq('campaign_id', campaign.campaign_id)
-        
+
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('push_campaigns')
-          .insert(payload)
-        
+        const { error } = await supabase.from('push_campaigns').insert(payload)
+
         if (error) throw error
       }
     },
@@ -91,7 +98,7 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
       onClose()
       reset()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to save campaign')
     },
   })
@@ -105,7 +112,10 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75"
+          onClick={onClose}
+        />
 
         <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           {/* Header */}
@@ -129,27 +139,23 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
                 Notification Title *
               </label>
               <input
-                {...register('title', { 
+                {...register('title', {
                   required: 'Title is required',
-                  maxLength: { value: 50, message: 'Title must be 50 characters or less' }
+                  maxLength: { value: 50, message: 'Title must be 50 characters or less' },
                 })}
                 className="input"
                 placeholder="New menu items available!"
               />
-              {errors.title && (
-                <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-              )}
+              {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>}
             </div>
 
             {/* Message */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Message *
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
               <textarea
-                {...register('message', { 
+                {...register('message', {
                   required: 'Message is required',
-                  maxLength: { value: 200, message: 'Message must be 200 characters or less' }
+                  maxLength: { value: 200, message: 'Message must be 200 characters or less' },
                 })}
                 rows={4}
                 className="input"
@@ -171,10 +177,7 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
                   className="input flex-1"
                   placeholder="https://example.com/notification-image.jpg"
                 />
-                <button
-                  type="button"
-                  className="btn btn-secondary flex items-center gap-2"
-                >
+                <button type="button" className="btn btn-secondary flex items-center gap-2">
                   <Upload className="w-4 h-4" />
                   Upload
                 </button>
@@ -189,11 +192,7 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Deep Link (Optional)
               </label>
-              <input
-                {...register('deep_link')}
-                className="input"
-                placeholder="/menu/seasonal"
-              />
+              <input {...register('deep_link')} className="input" placeholder="/menu/seasonal" />
               <p className="mt-1 text-xs text-gray-500">
                 Where users will be directed when they tap the notification
               </p>
@@ -222,14 +221,8 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Schedule For (Optional)
                 </label>
-                <input
-                  type="datetime-local"
-                  {...register('scheduled_for')}
-                  className="input"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Leave empty to send immediately
-                </p>
+                <input type="datetime-local" {...register('scheduled_for')} className="input" />
+                <p className="mt-1 text-xs text-gray-500">Leave empty to send immediately</p>
               </div>
             </div>
 
@@ -256,19 +249,15 @@ export function NotificationModal({ isOpen, onClose, campaign }: NotificationMod
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-6 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn btn-secondary"
-              >
+              <button type="button" onClick={onClose} className="btn btn-secondary">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={mutation.isPending}
-                className="btn btn-primary"
-              >
-                {mutation.isPending ? 'Saving...' : campaign ? 'Update Campaign' : 'Create Campaign'}
+              <button type="submit" disabled={mutation.isPending} className="btn btn-primary">
+                {mutation.isPending
+                  ? 'Saving...'
+                  : campaign
+                    ? 'Update Campaign'
+                    : 'Create Campaign'}
               </button>
             </div>
           </form>

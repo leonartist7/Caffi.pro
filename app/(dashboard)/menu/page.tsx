@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import {
   Coffee,
   Search,
@@ -35,7 +36,10 @@ interface MenuItem {
   price: number
   image_url: string | null
   is_active: boolean
-  modifiers: any
+  modifiers: {
+    sizes?: Array<{ name: string; price: number }>
+    addons?: Array<{ name: string; price: number }>
+  }
   tags: string[]
   created_at: string
   categories?: {
@@ -138,7 +142,7 @@ export default function MenuPage() {
 
     try {
       if (!formData.name || !formData.price || !formData.category_id) {
-        alert('Please fill in all required fields (Name, Price, Category)')
+        toast.error('Please fill in all required fields (Name, Price, Category)')
         return
       }
 
@@ -157,7 +161,7 @@ export default function MenuPage() {
           .eq('tenant_id', selectedTenant.tenant_id)
 
         if (error) throw error
-        alert('Menu item updated successfully!')
+        toast.success('Menu item updated successfully!')
       } else {
         // Create new item
         const { error } = await supabase.from('menu_items').insert({
@@ -172,14 +176,14 @@ export default function MenuPage() {
         })
 
         if (error) throw error
-        alert('Menu item created successfully!')
+        toast.success('Menu item created successfully!')
       }
 
       setShowModal(false)
       fetchData()
     } catch (error) {
       console.error('Error saving menu item:', error)
-      alert('Failed to save menu item. Please try again.')
+      toast.error('Failed to save menu item. Please try again.')
     }
   }
 
@@ -195,12 +199,12 @@ export default function MenuPage() {
 
       if (error) throw error
 
-      alert('Menu item deleted successfully!')
+      toast.success('Menu item deleted successfully!')
       setDeleteConfirm(null)
       fetchData()
     } catch (error) {
       console.error('Error deleting menu item:', error)
-      alert('Failed to delete menu item. Please try again.')
+      toast.error('Failed to delete menu item. Please try again.')
     }
   }
 

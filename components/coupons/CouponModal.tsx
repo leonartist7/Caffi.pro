@@ -16,15 +16,26 @@ interface CouponFormData {
   is_active: boolean
 }
 
+interface Coupon extends CouponFormData {
+  coupon_id: string
+  current_uses: number
+}
+
 interface CouponModalProps {
   isOpen: boolean
   onClose: () => void
-  coupon?: any
+  coupon?: Coupon
 }
 
 export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
   const queryClient = useQueryClient()
-  const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<CouponFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    formState: { errors },
+  } = useForm<CouponFormData>({
     defaultValues: {
       code: '',
       discount_type: 'percentage',
@@ -47,8 +58,12 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
         discount_value: coupon.discount_value,
         min_order_amount: coupon.min_order_amount,
         max_uses: coupon.max_uses,
-        valid_from: coupon.valid_from ? new Date(coupon.valid_from).toISOString().split('T')[0] : '',
-        valid_until: coupon.valid_until ? new Date(coupon.valid_until).toISOString().split('T')[0] : '',
+        valid_from: coupon.valid_from
+          ? new Date(coupon.valid_from).toISOString().split('T')[0]
+          : '',
+        valid_until: coupon.valid_until
+          ? new Date(coupon.valid_until).toISOString().split('T')[0]
+          : '',
         is_active: coupon.is_active,
       })
     } else {
@@ -76,13 +91,11 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
           .from('coupons')
           .update(payload)
           .eq('coupon_id', coupon.coupon_id)
-        
+
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('coupons')
-          .insert(payload)
-        
+        const { error } = await supabase.from('coupons').insert(payload)
+
         if (error) throw error
       }
     },
@@ -92,7 +105,7 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
       onClose()
       reset()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to save coupon')
     },
   })
@@ -107,7 +120,7 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
     for (let i = 0; i < 8; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length))
     }
-    reset((formValues) => ({ ...formValues, code }))
+    reset(formValues => ({ ...formValues, code }))
   }
 
   if (!isOpen) return null
@@ -115,7 +128,10 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75"
+          onClick={onClose}
+        />
 
         <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           {/* Header */}
@@ -141,28 +157,22 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
                 </label>
                 <div className="flex gap-2">
                   <input
-                    {...register('code', { 
+                    {...register('code', {
                       required: 'Code is required',
                       pattern: {
                         value: /^[A-Z0-9]+$/,
-                        message: 'Only uppercase letters and numbers allowed'
-                      }
+                        message: 'Only uppercase letters and numbers allowed',
+                      },
                     })}
                     className="input flex-1 font-mono"
                     placeholder="SUMMER2024"
                     style={{ textTransform: 'uppercase' }}
                   />
-                  <button
-                    type="button"
-                    onClick={generateCode}
-                    className="btn btn-secondary"
-                  >
+                  <button type="button" onClick={generateCode} className="btn btn-secondary">
                     Generate
                   </button>
                 </div>
-                {errors.code && (
-                  <p className="mt-1 text-sm text-red-600">{errors.code.message}</p>
-                )}
+                {errors.code && <p className="mt-1 text-sm text-red-600">{errors.code.message}</p>}
               </div>
 
               {/* Discount Type */}
@@ -188,9 +198,9 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
                 <input
                   type="number"
                   step="0.01"
-                  {...register('discount_value', { 
+                  {...register('discount_value', {
                     required: 'Value is required',
-                    min: { value: 0, message: 'Value must be positive' }
+                    min: { value: 0, message: 'Value must be positive' },
                   })}
                   className="input"
                   placeholder={discountType === 'percentage' ? '10' : '5.00'}
@@ -216,9 +226,7 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
 
               {/* Max Uses */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Maximum Uses
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Maximum Uses</label>
                 <input
                   type="number"
                   {...register('max_uses')}
@@ -229,9 +237,7 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
 
               {/* Valid From */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Valid From *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Valid From *</label>
                 <input
                   type="date"
                   {...register('valid_from', { required: 'Start date is required' })}
@@ -244,17 +250,9 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
 
               {/* Valid Until */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Valid Until
-                </label>
-                <input
-                  type="date"
-                  {...register('valid_until')}
-                  className="input"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Leave empty for no expiry
-                </p>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
+                <input type="date" {...register('valid_until')} className="input" />
+                <p className="mt-1 text-xs text-gray-500">Leave empty for no expiry</p>
               </div>
 
               {/* Is Active */}
@@ -274,18 +272,10 @@ export function CouponModal({ isOpen, onClose, coupon }: CouponModalProps) {
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-6 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn btn-secondary"
-              >
+              <button type="button" onClick={onClose} className="btn btn-secondary">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={mutation.isPending}
-                className="btn btn-primary"
-              >
+              <button type="submit" disabled={mutation.isPending} className="btn btn-primary">
                 {mutation.isPending ? 'Saving...' : coupon ? 'Update Coupon' : 'Create Coupon'}
               </button>
             </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTenant } from '@/contexts/TenantContext'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 import {
   Building2,
   Search,
@@ -19,6 +20,8 @@ import {
   X,
   Eye,
 } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Tenant {
   tenant_id: string
@@ -37,6 +40,7 @@ interface Tenant {
 
 export default function ClientsPage() {
   const { setSelectedTenant } = useTenant()
+  const { confirm, confirmState, closeConfirm } = useConfirm()
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,7 +115,6 @@ export default function ClientsPage() {
           .eq('tenant_id', editingTenant.tenant_id)
 
         // Ignore error if manifest doesn't exist yet
-        console.log('Manifest update:', manifestError)
       } else {
         // For new tenants, insert into tenants table with required fields
         const tenantPayload = {
@@ -122,8 +125,6 @@ export default function ClientsPage() {
           app_name: formData.business_name,
           bundle_id: `com.caffi.${cleanSlug}`,
         }
-
-        console.log('Creating tenant with payload:', tenantPayload)
 
         const { data: newTenant, error: tenantError } = await supabase
           .from('tenants')
@@ -179,8 +180,6 @@ export default function ClientsPage() {
             },
           }
 
-          console.log('Creating manifest with payload:', manifestPayload)
-
           const { error: manifestError } = await supabase
             .from('tenant_manifests')
             .insert(manifestPayload)
@@ -191,33 +190,38 @@ export default function ClientsPage() {
               `Failed to create manifest: ${manifestError.message || JSON.stringify(manifestError)}`
             )
           }
-
-          console.log('✅ Tenant and manifest created successfully!')
         }
       }
 
       await fetchTenants()
       closeModal()
-      alert('✅ Client created successfully!')
+      toast.success('Client created successfully!')
     } catch (error) {
       console.error('Error saving tenant:', error)
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
-      alert(`❌ Failed to save client:\n\n${errorMessage}`)
+      toast.error(`Failed to save client: ${errorMessage}`)
     }
   }
 
   async function handleDeleteTenant(tenantId: string) {
-    if (!confirm('Are you sure you want to delete this client? This action cannot be undone.'))
-      return
+    const confirmed = await confirm({
+      title: 'Delete Client',
+      message: 'Are you sure you want to delete this client? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const { error } = await supabase.from('tenants').delete().eq('tenant_id', tenantId)
 
       if (error) throw error
       fetchTenants()
+      toast.success('Client deleted successfully!')
     } catch (error) {
       console.error('Error deleting tenant:', error)
-      alert('Failed to delete client. Please try again.')
+      toast.error('Failed to delete client. Please try again.')
     }
   }
 
@@ -613,6 +617,18 @@ export default function ClientsPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

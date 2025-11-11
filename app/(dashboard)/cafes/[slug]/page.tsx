@@ -6,11 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import Badge, { type BadgeVariant } from '@/components/Badge'
 
-import {
-  PhoneIcon,
-  EnvelopeIcon,
-  CheckCircleIcon,
-} from '@heroicons/react/24/outline'
+import { PhoneIcon, EnvelopeIcon, CheckCircleIcon } from '@heroicons/react/24/outline'
 
 interface Cafe {
   tenant_id: string
@@ -21,7 +17,13 @@ interface Cafe {
   subscription_tier: string
   setup_status: string
   internal_notes: string
-  onboarding_checklist: any
+  onboarding_checklist: {
+    menu_setup?: boolean
+    location_setup?: boolean
+    payment_setup?: boolean
+    staff_setup?: boolean
+    [key: string]: boolean | undefined
+  }
   last_activity_at: string
   created_at: string
   app_name: string
@@ -47,11 +49,7 @@ export default function CafeDetailPage() {
     try {
       const supabase = createClient()
 
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('slug', slug)
-        .single()
+      const { data, error } = await supabase.from('tenants').select('*').eq('slug', slug).single()
 
       if (error) throw error
       setCafe(data)
@@ -87,7 +85,7 @@ export default function CafeDetailPage() {
 
     const newChecklist = {
       ...cafe.onboarding_checklist,
-      [key]: !cafe.onboarding_checklist[key]
+      [key]: !cafe.onboarding_checklist[key],
     }
 
     try {
@@ -253,9 +251,7 @@ export default function CafeDetailPage() {
         <div className="bg-white rounded-2xl p-6 shadow-md border border-gray-100">
           <p className="text-sm text-gray-600 mb-1">Last Activity</p>
           <p className="text-lg font-bold text-gray-900">
-            {cafe.last_activity_at
-              ? new Date(cafe.last_activity_at).toLocaleDateString()
-              : 'Never'}
+            {cafe.last_activity_at ? new Date(cafe.last_activity_at).toLocaleDateString() : 'Never'}
           </p>
           <p className="text-xs text-gray-500 mt-2">
             {cafe.last_activity_at
@@ -269,15 +265,16 @@ export default function CafeDetailPage() {
       <div className="bg-white rounded-2xl shadow-md border border-gray-100 mb-8">
         <div className="border-b border-gray-200 px-6">
           <div className="flex gap-8">
-            {tabs.map((tab) => (
+            {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`
                   flex items-center gap-2 py-4 border-b-2 transition-all
-                  ${activeTab === tab.id
-                    ? 'border-primary text-primary font-semibold'
-                    : 'border-transparent text-gray-600 hover:text-gray-900'
+                  ${
+                    activeTab === tab.id
+                      ? 'border-primary text-primary font-semibold'
+                      : 'border-transparent text-gray-600 hover:text-gray-900'
                   }
                 `}
               >
@@ -313,7 +310,7 @@ export default function CafeDetailPage() {
 
                 {/* Checklist Items */}
                 <div className="space-y-3">
-                  {checklistItems.map((item) => {
+                  {checklistItems.map(item => {
                     const isChecked = cafe.onboarding_checklist?.[item.key]
                     return (
                       <button
@@ -326,7 +323,9 @@ export default function CafeDetailPage() {
                         ) : (
                           <div className="w-6 h-6 rounded-full border-2 border-gray-300 flex-shrink-0" />
                         )}
-                        <span className={`${isChecked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                        <span
+                          className={`${isChecked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
+                        >
                           {item.label}
                         </span>
                       </button>
@@ -369,7 +368,7 @@ export default function CafeDetailPage() {
                 {editingNotes ? (
                   <textarea
                     value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
+                    onChange={e => setNotes(e.target.value)}
                     rows={6}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                     placeholder="Add private notes about this café client..."
@@ -440,9 +439,7 @@ export default function CafeDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Slug
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Slug</label>
                     <input
                       type="text"
                       value={cafe.slug}
@@ -451,9 +448,7 @@ export default function CafeDetailPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      App Name
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">App Name</label>
                     <input
                       type="text"
                       value={cafe.app_name}
@@ -476,9 +471,7 @@ export default function CafeDetailPage() {
               </div>
 
               <div className="pt-6 border-t border-gray-200">
-                <button className="text-red-600 hover:text-red-700 font-medium">
-                  Pause Café
-                </button>
+                <button className="text-red-600 hover:text-red-700 font-medium">Pause Café</button>
               </div>
             </div>
           )}

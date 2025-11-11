@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
+    "dev:local": "next dev",
     "build": "next build",
     "build:vercel": "npm run type-check && npm run lint:strict && next build",
     "type-check": "tsc --noEmit",

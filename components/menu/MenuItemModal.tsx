@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { X, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
-interface MenuItemFormData {
+export interface MenuItemFormData {
   name: string
   description: string
   category_id: string
@@ -18,19 +18,45 @@ interface MenuItemFormData {
   allergens: string
 }
 
+export interface MenuItem {
+  item_id: string
+  name: string
+  description: string | null
+  category_id: string
+  price: number
+  image_url: string | null
+  is_available: boolean
+  is_featured: boolean
+  tags: string[] | null
+  calories: number | null
+  allergens: string[] | null
+}
+
+export interface Category {
+  category_id: string
+  name: string
+  slug: string
+  tenant_id: string
+}
+
 interface MenuItemModalProps {
   isOpen: boolean
   onClose: () => void
-  item?: any
-  categories: any[]
-  onSave?: (menuItemData: any) => Promise<void>
+  item?: MenuItem
+  categories: Category[]
+  onSave?: (menuItemData: MenuItemFormData) => Promise<void>
   tenantId?: string
-  menuItem?: any
+  menuItem?: MenuItem
 }
 
 export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemModalProps) {
   const queryClient = useQueryClient()
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<MenuItemFormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<MenuItemFormData>({
     defaultValues: {
       name: '',
       description: '',
@@ -89,13 +115,11 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
           .from('menu_items')
           .update(payload)
           .eq('item_id', item.item_id)
-        
+
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('menu_items')
-          .insert(payload)
-        
+        const { error } = await supabase.from('menu_items').insert(payload)
+
         if (error) throw error
       }
     },
@@ -105,7 +129,7 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
       onClose()
       reset()
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Failed to save menu item')
     },
   })
@@ -119,7 +143,10 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75" onClick={onClose} />
+        <div
+          className="fixed inset-0 transition-opacity bg-gray-900 bg-opacity-75"
+          onClick={onClose}
+        />
 
         <div className="relative inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
           {/* Header */}
@@ -140,30 +167,24 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Name */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Item Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
                 <input
                   {...register('name', { required: 'Name is required' })}
                   className="input"
                   placeholder="e.g., Cappuccino"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
               </div>
 
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                 <select
                   {...register('category_id', { required: 'Category is required' })}
                   className="input"
                 >
                   <option value="">Select a category</option>
-                  {categories.map((cat) => (
+                  {categories.map(cat => (
                     <option key={cat.category_id} value={cat.category_id}>
                       {cat.name}
                     </option>
@@ -176,15 +197,13 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
 
               {/* Price */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Price (€) *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Price (€) *</label>
                 <input
                   type="number"
                   step="0.01"
-                  {...register('price', { 
+                  {...register('price', {
                     required: 'Price is required',
-                    min: { value: 0, message: 'Price must be positive' }
+                    min: { value: 0, message: 'Price must be positive' },
                   })}
                   className="input"
                   placeholder="4.50"
@@ -196,9 +215,7 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
 
               {/* Description */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   {...register('description')}
                   rows={3}
@@ -209,19 +226,14 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
 
               {/* Image URL */}
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Image URL
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
                 <div className="flex gap-2">
                   <input
                     {...register('image_url')}
                     className="input flex-1"
                     placeholder="https://example.com/image.jpg"
                   />
-                  <button
-                    type="button"
-                    className="btn btn-secondary flex items-center gap-2"
-                  >
+                  <button type="button" className="btn btn-secondary flex items-center gap-2">
                     <Upload className="w-4 h-4" />
                     Upload
                   </button>
@@ -233,18 +245,12 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Tags (comma-separated)
                 </label>
-                <input
-                  {...register('tags')}
-                  className="input"
-                  placeholder="vegan, hot, popular"
-                />
+                <input {...register('tags')} className="input" placeholder="vegan, hot, popular" />
               </div>
 
               {/* Calories */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Calories
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Calories</label>
                 <input
                   type="number"
                   {...register('calories')}
@@ -258,11 +264,7 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Allergens (comma-separated)
                 </label>
-                <input
-                  {...register('allergens')}
-                  className="input"
-                  placeholder="milk, nuts"
-                />
+                <input {...register('allergens')} className="input" placeholder="milk, nuts" />
               </div>
 
               {/* Checkboxes */}
@@ -273,9 +275,7 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
                     {...register('is_available')}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    Available for ordering
-                  </span>
+                  <span className="text-sm font-medium text-gray-700">Available for ordering</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -283,27 +283,17 @@ export function MenuItemModal({ isOpen, onClose, item, categories }: MenuItemMod
                     {...register('is_featured')}
                     className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <span className="text-sm font-medium text-gray-700">
-                    Featured item
-                  </span>
+                  <span className="text-sm font-medium text-gray-700">Featured item</span>
                 </label>
               </div>
             </div>
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-6 border-t">
-              <button
-                type="button"
-                onClick={onClose}
-                className="btn btn-secondary"
-              >
+              <button type="button" onClick={onClose} className="btn btn-secondary">
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={mutation.isPending}
-                className="btn btn-primary"
-              >
+              <button type="submit" disabled={mutation.isPending} className="btn btn-primary">
                 {mutation.isPending ? 'Saving...' : item ? 'Update Item' : 'Create Item'}
               </button>
             </div>

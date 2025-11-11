@@ -4,7 +4,14 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { LocationModal } from '@/components/locations/LocationModal'
 import { CategoryModal } from '@/components/menu/CategoryModal'
-import { MenuItemModal } from '@/components/menu/MenuItemModal'
+import {
+  MenuItemModal,
+  type MenuItemFormData,
+  type MenuItem as MenuItemType,
+  type Category as CategoryType,
+} from '@/components/menu/MenuItemModal'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Tenant {
   tenant_id: string
@@ -19,10 +26,13 @@ interface Location {
   name: string
   address: string
   city: string
+  state: string
   postal_code: string
   country: string
   phone: string
   email: string
+  latitude: number | null
+  longitude: number | null
   hours: Record<string, string>
   is_active: boolean
   accepts_mobile_orders: boolean
@@ -30,33 +40,23 @@ interface Location {
   estimated_prep_time: number
 }
 
-interface Category {
-  category_id: string
-  tenant_id: string
-  name: string
+interface Category extends CategoryType {
   description: string
   display_order: number
   is_active: boolean
+  image_url: string
+  icon_name: string
 }
 
-interface MenuItem {
-  item_id: string
+interface MenuItem extends MenuItemType {
   tenant_id: string
-  category_id: string
-  name: string
-  description: string
-  price: number
-  image_url: string
-  tags: string[]
-  allergens: string[]
-  calories: number | null
-  is_available: boolean
   categories?: { name: string }
 }
 
 export default function TenantDetailPage() {
   const params = useParams()
   const tenantId = params?.id as string
+  const { confirm, confirmState, closeConfirm } = useConfirm()
 
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [locations, setLocations] = useState<Location[]>([])
@@ -147,7 +147,14 @@ export default function TenantDetailPage() {
   }
 
   const handleDeleteLocation = async (locationId: string) => {
-    if (!confirm('Are you sure you want to delete this location?')) return
+    const confirmed = await confirm({
+      title: 'Delete Location',
+      message: 'Are you sure you want to delete this location? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     const res = await fetch(`/api/locations/${locationId}`, {
       method: 'DELETE',
@@ -193,7 +200,14 @@ export default function TenantDetailPage() {
   }
 
   const handleDeleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    const confirmed = await confirm({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     const res = await fetch(`/api/categories/${categoryId}`, {
       method: 'DELETE',
@@ -214,7 +228,7 @@ export default function TenantDetailPage() {
     setMenuItemModalOpen(true)
   }
 
-  const handleSaveMenuItem = async (menuItemData: Partial<MenuItem>) => {
+  const handleSaveMenuItem = async (menuItemData: MenuItemFormData) => {
     if (editingMenuItem) {
       // Update
       const res = await fetch(`/api/menu-items/${editingMenuItem.item_id}`, {
@@ -239,7 +253,14 @@ export default function TenantDetailPage() {
   }
 
   const handleDeleteMenuItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this menu item?')) return
+    const confirmed = await confirm({
+      title: 'Delete Menu Item',
+      message: 'Are you sure you want to delete this menu item? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     const res = await fetch(`/api/menu-items/${itemId}`, {
       method: 'DELETE',
@@ -486,7 +507,7 @@ export default function TenantDetailPage() {
         isOpen={locationModalOpen}
         onClose={() => setLocationModalOpen(false)}
         onSave={handleSaveLocation}
-        location={editingLocation}
+        location={editingLocation || undefined}
         tenantId={tenantId}
       />
 
@@ -494,7 +515,7 @@ export default function TenantDetailPage() {
         isOpen={categoryModalOpen}
         onClose={() => setCategoryModalOpen(false)}
         onSave={handleSaveCategory}
-        category={editingCategory}
+        category={editingCategory || undefined}
         tenantId={tenantId}
       />
 
@@ -502,9 +523,21 @@ export default function TenantDetailPage() {
         isOpen={menuItemModalOpen}
         onClose={() => setMenuItemModalOpen(false)}
         onSave={handleSaveMenuItem}
-        menuItem={editingMenuItem}
+        menuItem={editingMenuItem ?? undefined}
         tenantId={tenantId}
         categories={categories}
+      />
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
       />
     </div>
   )

@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import type { User, AuthError } from '@supabase/supabase-js'
 
 export interface CustomerProfile {
   user_id: string
@@ -16,7 +16,7 @@ export async function signUpWithEmail(
   email: string,
   password: string,
   fullName?: string
-): Promise<{ user: User | null; error: any }> {
+): Promise<{ user: User | null; error: AuthError | null }> {
   const supabase = createClient()
 
   const { data, error } = await supabase.auth.signUp({
@@ -42,7 +42,7 @@ export async function signUpWithEmail(
 export async function signInWithEmail(
   email: string,
   password: string
-): Promise<{ user: User | null; error: any }> {
+): Promise<{ user: User | null; error: AuthError | null }> {
   const supabase = createClient()
 
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -60,7 +60,7 @@ export async function signInWithEmail(
 /**
  * Sign in with phone OTP
  */
-export async function signInWithPhone(phone: string): Promise<{ error: any }> {
+export async function signInWithPhone(phone: string): Promise<{ error: AuthError | null }> {
   const supabase = createClient()
 
   const { error } = await supabase.auth.signInWithOtp({
@@ -76,7 +76,7 @@ export async function signInWithPhone(phone: string): Promise<{ error: any }> {
 export async function verifyPhoneOtp(
   phone: string,
   token: string
-): Promise<{ user: User | null; error: any }> {
+): Promise<{ user: User | null; error: AuthError | null }> {
   const supabase = createClient()
 
   const { data, error } = await supabase.auth.verifyOtp({
@@ -95,7 +95,7 @@ export async function verifyPhoneOtp(
 /**
  * Sign out the current user
  */
-export async function signOut(): Promise<{ error: any }> {
+export async function signOut(): Promise<{ error: AuthError | null }> {
   const supabase = createClient()
 
   const { error } = await supabase.auth.signOut()
@@ -132,7 +132,7 @@ export async function getSession() {
 /**
  * Reset password - Send reset email
  */
-export async function sendPasswordResetEmail(email: string): Promise<{ error: any }> {
+export async function sendPasswordResetEmail(email: string): Promise<{ error: AuthError | null }> {
   const supabase = createClient()
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -145,7 +145,7 @@ export async function sendPasswordResetEmail(email: string): Promise<{ error: an
 /**
  * Update password
  */
-export async function updatePassword(newPassword: string): Promise<{ error: any }> {
+export async function updatePassword(newPassword: string): Promise<{ error: AuthError | null }> {
   const supabase = createClient()
 
   const { error } = await supabase.auth.updateUser({
@@ -161,7 +161,7 @@ export async function updatePassword(newPassword: string): Promise<{ error: any 
 export async function updateProfile(updates: {
   full_name?: string
   phone?: string
-}): Promise<{ error: any }> {
+}): Promise<{ error: AuthError | null }> {
   const supabase = createClient()
 
   const { error } = await supabase.auth.updateUser({

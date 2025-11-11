@@ -1,52 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
 // GET all menu items for a tenant
 export async function GET(request: NextRequest) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const tenantId = searchParams.get('tenant_id');
-    const categoryId = searchParams.get('category_id');
+    const searchParams = request.nextUrl.searchParams
+    const tenantId = searchParams.get('tenant_id')
+    const categoryId = searchParams.get('category_id')
 
     if (!tenantId) {
-      return NextResponse.json(
-        { error: 'tenant_id is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'tenant_id is required' }, { status: 400 })
     }
 
-    let query = supabase
-      .from('menu_items')
-      .select('*, categories(name)')
-      .eq('tenant_id', tenantId);
+    let query = supabase.from('menu_items').select('*, categories(name)').eq('tenant_id', tenantId)
 
     if (categoryId) {
-      query = query.eq('category_id', categoryId);
+      query = query.eq('category_id', categoryId)
     }
 
     const { data, error } = await query.order('display_order', {
       ascending: true,
-    });
+    })
 
     if (error) {
-      console.error('Error fetching menu items:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Error fetching menu items:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ menu_items: data });
-  } catch (error: any) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ menu_items: data })
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
 // POST create a new menu item
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json()
     const {
       tenant_id,
       category_id,
@@ -58,21 +49,15 @@ export async function POST(request: NextRequest) {
       allergens,
       calories,
       is_available,
-    } = body;
+    } = body
 
     // Validate required fields
     if (!tenant_id || !category_id || !name || price === undefined) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     if (!supabase) {
-      return NextResponse.json(
-        { error: 'Database connection not configured' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Database connection not configured' }, { status: 500 })
     }
 
     const { data, error } = await supabase
@@ -90,19 +75,16 @@ export async function POST(request: NextRequest) {
         is_available,
       })
       .select()
-      .single();
+      .single()
 
     if (error) {
-      console.error('Error creating menu item:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('Error creating menu item:', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ menu_item: data }, { status: 201 });
-  } catch (error: any) {
-    console.error('Unexpected error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return NextResponse.json({ menu_item: data }, { status: 201 })
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

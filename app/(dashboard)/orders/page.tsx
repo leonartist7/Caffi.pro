@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import {
   ShoppingCart,
   Search,
@@ -96,7 +97,7 @@ export default function OrdersPage() {
       fetchOrders()
     } catch (error) {
       console.error('Error updating order status:', error)
-      alert('Failed to update order status')
+      toast.error('Failed to update order status')
     }
   }
 

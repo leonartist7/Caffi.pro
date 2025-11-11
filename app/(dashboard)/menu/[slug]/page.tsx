@@ -4,7 +4,10 @@ import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import { toast } from 'sonner'
 import { PlusIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { useConfirm } from '@/hooks/useConfirm'
 
 interface Category {
   category_id: string
@@ -21,7 +24,10 @@ interface MenuItem {
   price: number
   image_url: string | null
   is_active: boolean
-  modifiers: any
+  modifiers: {
+    sizes?: Array<{ name: string; price: number }>
+    addons?: Array<{ name: string; price: number }>
+  }
   tags: string[]
 }
 
@@ -35,6 +41,7 @@ export default function MenuManagementPage() {
   const params = useParams()
   const router = useRouter()
   const slug = params?.slug as string
+  const { confirm, confirmState, closeConfirm } = useConfirm()
 
   const [cafe, setCafe] = useState<Cafe | null>(null)
   const [categories, setCategories] = useState<Category[]>([])
@@ -150,23 +157,22 @@ export default function MenuManagementPage() {
 
       const supabase = createClient()
 
-      const { error } = await supabase
-        .from('categories')
-        .insert({
-          tenant_id: cafe.tenant_id,
-          name: categoryName,
-          display_order: categories.length,
-          is_active: true,
-        })
+      const { error } = await supabase.from('categories').insert({
+        tenant_id: cafe.tenant_id,
+        name: categoryName,
+        display_order: categories.length,
+        is_active: true,
+      })
 
       if (error) throw error
 
       setCategoryName('')
       setShowCategoryModal(false)
       fetchCategories()
+      toast.success('Category created successfully!')
     } catch (error) {
       console.error('Error creating category:', error)
-      alert('Failed to create category')
+      toast.error('Failed to create category')
     }
   }
 
@@ -187,61 +193,66 @@ export default function MenuManagementPage() {
       setEditingCategory(null)
       setShowCategoryModal(false)
       fetchCategories()
+      toast.success('Category updated successfully!')
     } catch (error) {
       console.error('Error updating category:', error)
-      alert('Failed to update category')
+      toast.error('Failed to update category')
     }
   }
 
   const deleteCategory = async (categoryId: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+    const confirmed = await confirm({
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const supabase = createClient()
 
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('category_id', categoryId)
+      const { error } = await supabase.from('categories').delete().eq('category_id', categoryId)
 
       if (error) throw error
       fetchCategories()
+      toast.success('Category deleted successfully!')
     } catch (error) {
       console.error('Error deleting category:', error)
-      alert('Failed to delete category')
+      toast.error('Failed to delete category')
     }
   }
 
   const createMenuItem = async () => {
     try {
       if (!cafe || !itemName || !itemPrice || !itemCategory) {
-        alert('Please fill in all required fields')
+        toast.error('Please fill in all required fields')
         return
       }
 
       const supabase = createClient()
 
-      const { error } = await supabase
-        .from('menu_items')
-        .insert({
-          tenant_id: cafe.tenant_id,
-          category_id: itemCategory,
-          name: itemName,
-          description: itemDescription,
-          price: parseFloat(itemPrice),
-          is_active: itemActive,
-          modifiers: {},
-          tags: [],
-        })
+      const { error } = await supabase.from('menu_items').insert({
+        tenant_id: cafe.tenant_id,
+        category_id: itemCategory,
+        name: itemName,
+        description: itemDescription,
+        price: parseFloat(itemPrice),
+        is_active: itemActive,
+        modifiers: {},
+        tags: [],
+      })
 
       if (error) throw error
 
       resetItemForm()
       setShowItemModal(false)
       fetchMenuItems()
+      toast.success('Menu item created successfully!')
     } catch (error) {
       console.error('Error creating menu item:', error)
-      alert('Failed to create menu item')
+      toast.error('Failed to create menu item')
     }
   }
 
@@ -268,9 +279,10 @@ export default function MenuManagementPage() {
       setEditingItem(null)
       setShowItemModal(false)
       fetchMenuItems()
+      toast.success('Menu item updated successfully!')
     } catch (error) {
       console.error('Error updating menu item:', error)
-      alert('Failed to update menu item')
+      toast.error('Failed to update menu item')
     }
   }
 
@@ -291,21 +303,26 @@ export default function MenuManagementPage() {
   }
 
   const deleteMenuItem = async (itemId: string) => {
-    if (!confirm('Are you sure you want to delete this item?')) return
+    const confirmed = await confirm({
+      title: 'Delete Menu Item',
+      message: 'Are you sure you want to delete this item? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    })
+
+    if (!confirmed) return
 
     try {
       const supabase = createClient()
 
-      const { error } = await supabase
-        .from('menu_items')
-        .delete()
-        .eq('item_id', itemId)
+      const { error } = await supabase.from('menu_items').delete().eq('item_id', itemId)
 
       if (error) throw error
       fetchMenuItems()
+      toast.success('Menu item deleted successfully!')
     } catch (error) {
       console.error('Error deleting item:', error)
-      alert('Failed to delete item')
+      toast.error('Failed to delete item')
     }
   }
 
@@ -363,7 +380,10 @@ export default function MenuManagementPage() {
     <div>
       {/* Header */}
       <div className="mb-8">
-        <Link href={`/cafes/${cafe.slug}`} className="inline-flex items-center text-gray-600 hover:text-primary mb-4">
+        <Link
+          href={`/cafes/${cafe.slug}`}
+          className="inline-flex items-center text-gray-600 hover:text-primary mb-4"
+        >
           ← Back to {cafe.business_name}
         </Link>
         <div className="flex items-center justify-between">
@@ -409,7 +429,7 @@ export default function MenuManagementPage() {
               {categories.length === 0 ? (
                 <p className="text-sm text-gray-500 text-center py-4">No categories yet</p>
               ) : (
-                categories.map((category) => (
+                categories.map(category => (
                   <div
                     key={category.category_id}
                     className={`p-3 rounded-xl cursor-pointer transition-all group ${
@@ -420,10 +440,14 @@ export default function MenuManagementPage() {
                     onClick={() => setSelectedCategory(category.category_id)}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`font-medium ${selectedCategory === category.category_id ? 'text-white' : 'text-gray-900'}`}>{category.name}</span>
+                      <span
+                        className={`font-medium ${selectedCategory === category.category_id ? 'text-white' : 'text-gray-900'}`}
+                      >
+                        {category.name}
+                      </span>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation()
                             openEditCategory(category)
                           }}
@@ -436,7 +460,7 @@ export default function MenuManagementPage() {
                           <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation()
                             deleteCategory(category.category_id)
                           }}
@@ -450,10 +474,15 @@ export default function MenuManagementPage() {
                         </button>
                       </div>
                     </div>
-                    <p className={`text-xs mt-1 ${
-                      selectedCategory === category.category_id ? 'text-white/80' : 'text-gray-500'
-                    }`}>
-                      {menuItems.filter(item => item.category_id === category.category_id).length} items
+                    <p
+                      className={`text-xs mt-1 ${
+                        selectedCategory === category.category_id
+                          ? 'text-white/80'
+                          : 'text-gray-500'
+                      }`}
+                    >
+                      {menuItems.filter(item => item.category_id === category.category_id).length}{' '}
+                      items
                     </p>
                   </div>
                 ))
@@ -490,7 +519,7 @@ export default function MenuManagementPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredItems.map((item) => (
+                {filteredItems.map(item => (
                   <div
                     key={item.item_id}
                     className={`p-4 rounded-xl border-2 transition-all ${
@@ -562,7 +591,7 @@ export default function MenuManagementPage() {
               <input
                 type="text"
                 value={categoryName}
-                onChange={(e) => setCategoryName(e.target.value)}
+                onChange={e => setCategoryName(e.target.value)}
                 placeholder="e.g., Espresso Drinks"
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
               />
@@ -602,25 +631,21 @@ export default function MenuManagementPage() {
 
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Item Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
                 <input
                   type="text"
                   value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
+                  onChange={e => setItemName(e.target.value)}
                   placeholder="e.g., Cappuccino"
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   value={itemDescription}
-                  onChange={(e) => setItemDescription(e.target.value)}
+                  onChange={e => setItemDescription(e.target.value)}
                   rows={3}
                   placeholder="Describe your item..."
                   className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
@@ -636,23 +661,21 @@ export default function MenuManagementPage() {
                     type="number"
                     step="0.01"
                     value={itemPrice}
-                    onChange={(e) => setItemPrice(e.target.value)}
+                    onChange={e => setItemPrice(e.target.value)}
                     placeholder="4.50"
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Category *
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                   <select
                     value={itemCategory}
-                    onChange={(e) => setItemCategory(e.target.value)}
+                    onChange={e => setItemCategory(e.target.value)}
                     className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none"
                   >
                     <option value="">Choose category...</option>
-                    {categories.map((category) => (
+                    {categories.map(category => (
                       <option key={category.category_id} value={category.category_id}>
                         {category.name}
                       </option>
@@ -666,7 +689,7 @@ export default function MenuManagementPage() {
                   type="checkbox"
                   id="itemActive"
                   checked={itemActive}
-                  onChange={(e) => setItemActive(e.target.checked)}
+                  onChange={e => setItemActive(e.target.checked)}
                   className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <label htmlFor="itemActive" className="text-sm font-medium text-gray-700">
@@ -696,6 +719,18 @@ export default function MenuManagementPage() {
           </div>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        onClose={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+        title={confirmState.title}
+        message={confirmState.message}
+        confirmText={confirmState.confirmText}
+        cancelText={confirmState.cancelText}
+        variant={confirmState.variant}
+      />
     </div>
   )
 }

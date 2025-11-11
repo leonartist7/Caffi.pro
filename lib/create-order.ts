@@ -1,5 +1,6 @@
 import { createClient } from '@/utils/supabase/client'
 import type { CartItem } from '@/contexts/CartContext'
+import type { PostgrestError } from '@supabase/supabase-js'
 
 export interface OrderData {
   tenant_id: string
@@ -33,6 +34,51 @@ export interface Order {
   created_at: string
 }
 
+interface Modifiers {
+  size?: {
+    name: string
+    price: number
+  }
+  addons?: Array<{
+    name: string
+    price: number
+  }>
+}
+
+export interface OrderWithRelations extends Order {
+  locations: {
+    name: string
+    address: string
+    city?: string
+    postal_code?: string
+  }
+  order_items: Array<{
+    order_item_id: string
+    order_id: string
+    item_id: string
+    item_name: string
+    item_image_url: string | null
+    quantity: number
+    unit_price: number
+    total_price: number
+    modifiers: Modifiers
+    special_instructions: string | null
+  }>
+}
+
+export interface Coupon {
+  coupon_id: string
+  tenant_id: string
+  code: string
+  discount_type: 'percentage' | 'fixed_amount'
+  discount_value: number
+  is_active: boolean
+  expires_at: string | null
+  max_uses: number | null
+  used_count: number
+  created_at: string
+}
+
 /**
  * Generate a unique order number
  */
@@ -54,7 +100,7 @@ function calculatePointsEarned(total: number, pointsPerEuro: number = 10): numbe
  */
 export async function createOrder(orderData: OrderData): Promise<{
   order: Order | null
-  error: any
+  error: PostgrestError | Error | null
 }> {
   const supabase = createClient()
 
@@ -111,13 +157,21 @@ export async function createOrder(orderData: OrderData): Promise<{
 
     if (itemsError) {
       console.error('Error creating order items:', itemsError)
-      // TODO: Rollback order creation if items fail
-      return { order: null, error: itemsError }
+      // Rollback: Delete the order that was just created
+      await supabase.from('orders').delete().eq('order_id', order.order_id)
+      return {
+        order: null,
+        error: {
+          ...itemsError,
+          message: 'Failed to create order items. Order has been cancelled.',
+        },
+      }
     }
 
     // Create loyalty transaction (points earned)
+    // Don't fail the entire order if loyalty points fail - just log the error
     if (pointsEarned > 0) {
-      await supabase.from('loyalty_transactions').insert({
+      const { error: loyaltyError } = await supabase.from('loyalty_transactions').insert({
         user_id: orderData.user_id,
         tenant_id: orderData.tenant_id,
         order_id: order.order_id,
@@ -125,12 +179,17 @@ export async function createOrder(orderData: OrderData): Promise<{
         transaction_type: 'earned',
         description: `Points earned from order ${orderNumber}`,
       })
+
+      if (loyaltyError) {
+        console.error('Warning: Failed to create loyalty transaction:', loyaltyError)
+        // Don't return error - order was created successfully
+      }
     }
 
     return { order, error: null }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Unexpected error creating order:', err)
-    return { order: null, error: err }
+    return { order: null, error: err instanceof Error ? err : new Error('Unknown error') }
   }
 }
 
@@ -138,8 +197,8 @@ export async function createOrder(orderData: OrderData): Promise<{
  * Get order by ID
  */
 export async function getOrder(orderId: string): Promise<{
-  order: any | null
-  error: any
+  order: OrderWithRelations | null
+  error: PostgrestError | Error | null
 }> {
   const supabase = createClient()
 
@@ -162,9 +221,9 @@ export async function getOrder(orderId: string): Promise<{
     }
 
     return { order, error: null }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Unexpected error fetching order:', err)
-    return { order: null, error: err }
+    return { order: null, error: err instanceof Error ? err : new Error('Unknown error') }
   }
 }
 
@@ -175,8 +234,8 @@ export async function getUserOrders(
   userId: string,
   tenantId: string
 ): Promise<{
-  orders: any[]
-  error: any
+  orders: OrderWithRelations[]
+  error: PostgrestError | Error | null
 }> {
   const supabase = createClient()
 
@@ -200,9 +259,9 @@ export async function getUserOrders(
     }
 
     return { orders: orders || [], error: null }
-  } catch (err: any) {
+  } catch (err) {
     console.error('Unexpected error fetching orders:', err)
-    return { orders: [], error: err }
+    return { orders: [], error: err instanceof Error ? err : new Error('Unknown error') }
   }
 }
 
@@ -213,8 +272,8 @@ export async function validateCoupon(
   couponCode: string,
   tenantId: string
 ): Promise<{
-  coupon: any | null
-  error: any
+  coupon: Coupon | null
+  error: string | null
 }> {
   const supabase = createClient()
 
@@ -242,7 +301,7 @@ export async function validateCoupon(
     }
 
     return { coupon, error: null }
-  } catch (err: any) {
+  } catch (err) {
     return { coupon: null, error: 'Error validating coupon' }
   }
 }
@@ -250,7 +309,7 @@ export async function validateCoupon(
 /**
  * Calculate discount from coupon
  */
-export function calculateDiscount(subtotal: number, coupon: any): number {
+export function calculateDiscount(subtotal: number, coupon: Coupon | null): number {
   if (!coupon) return 0
 
   if (coupon.discount_type === 'percentage') {

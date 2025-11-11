@@ -21,6 +21,7 @@ import {
   Gift,
   Activity,
   Menu as MenuIcon,
+  Shield,
 } from 'lucide-react'
 
 interface NavItem {
@@ -34,6 +35,7 @@ const navItems: NavItem[] = [
   { name: 'Locations', href: '/cafes', icon: MapPin },
   { name: 'Menu', href: '/menu', icon: MenuIcon },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
+  { name: 'Staff', href: '/staff', icon: Shield },
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'Activity', href: '/activity', icon: Activity },
