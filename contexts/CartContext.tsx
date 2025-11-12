@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
 export interface CartItemModifiers {
-  size?: { name: string; price_modifier: number }
+  size?: { name: string; price: number }
   addons: Array<{ name: string; price: number }>
 }
 
@@ -96,7 +96,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const calculateUnitPrice = (basePrice: number, modifiers: CartItemModifiers): number => {
     let price = basePrice
     if (modifiers.size) {
-      price += modifiers.size.price_modifier
+      price += modifiers.size.price
     }
     modifiers.addons.forEach(addon => {
       price += addon.price

@@ -1,18 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { getTenantBySlug } from '@/lib/get-tenant'
 import { Search, Coffee, Loader2 } from 'lucide-react'
 import MenuItemCard, { type MenuItem } from '@/components/shop/MenuItem'
 import CategoryFilter, { type Category } from '@/components/shop/CategoryFilter'
 import ItemDetailModal, { type ItemOptions } from '@/components/shop/ItemDetailModal'
 import { useCart } from '@/contexts/CartContext'
+import { useMenu } from '@/hooks/useMenuQueries'
 
 export default function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
@@ -22,7 +19,9 @@ export default function MenuPage() {
   const [currency, setCurrency] = useState('EUR')
 
   const { addItem } = useCart()
-  const supabase = createClient()
+
+  // Fetch menu data with React Query caching
+  const { categories, menuItems, isLoading } = useMenu(tenantId, { activeOnly: true })
 
   // Extract tenant slug from URL on mount
   useEffect(() => {
@@ -33,61 +32,30 @@ export default function MenuPage() {
     setTenantSlug(slug)
   }, [])
 
-  // Fetch tenant and data when slug is available
+  // Fetch tenant info when slug is available
   useEffect(() => {
     if (tenantSlug) {
-      fetchTenantAndData()
+      fetchTenantInfo()
     }
   }, [tenantSlug])
 
-  async function fetchTenantAndData() {
+  async function fetchTenantInfo() {
     if (!tenantSlug) return
 
     try {
-      setLoading(true)
-
-      // Get tenant info for currency
+      // Get tenant info for currency and tenant_id
       const tenant = await getTenantBySlug(tenantSlug)
       if (tenant) {
         setCurrency(tenant.currency || 'EUR')
         setTenantId(tenant.tenant_id)
       }
-
-      // Fetch categories
-      const { data: cats, error: catsError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('tenant_id', tenant?.tenant_id)
-        .eq('is_active', true)
-        .order('display_order')
-
-      if (catsError) throw catsError
-      setCategories(cats || [])
-
-      // Fetch menu items with category names
-      const { data: items, error: itemsError } = await supabase
-        .from('menu_items')
-        .select(
-          `
-          *,
-          categories!inner(name)
-        `
-        )
-        .eq('tenant_id', tenant?.tenant_id)
-        .eq('is_active', true)
-        .order('display_order')
-
-      if (itemsError) throw itemsError
-      setMenuItems(items || [])
     } catch (error) {
-      console.error('Error fetching menu data:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error fetching tenant info:', error)
     }
   }
 
   // Filter menu items
-  const filteredItems = menuItems.filter(item => {
+  const filteredItems = (menuItems.data || []).filter(item => {
     // Category filter
     if (selectedCategory !== 'all' && item.category_id !== selectedCategory) {
       return false
@@ -108,7 +76,7 @@ export default function MenuPage() {
 
   // Count items per category
   const itemCounts: Record<string, number> = {}
-  menuItems.forEach(item => {
+  ;(menuItems.data || []).forEach(item => {
     itemCounts[item.category_id] = (itemCounts[item.category_id] || 0) + 1
   })
 
@@ -184,7 +152,7 @@ export default function MenuPage() {
       </div>
 
       {/* Loading State */}
-      {loading && (
+      {isLoading && (
         <div className="flex flex-col items-center justify-center py-20">
           <Loader2 className="w-12 h-12 text-coffee-600 animate-spin mb-4" />
           <p className="text-coffee-600 dark:text-coffee-300">Loading menu...</p>
@@ -192,9 +160,9 @@ export default function MenuPage() {
       )}
 
       {/* Category Filter */}
-      {!loading && categories.length > 0 && (
+      {!isLoading && (categories.data || []).length > 0 && (
         <CategoryFilter
-          categories={categories}
+          categories={categories.data || []}
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           itemCounts={itemCounts}
@@ -202,7 +170,7 @@ export default function MenuPage() {
       )}
 
       {/* Menu Items Grid */}
-      {!loading && (
+      {!isLoading && (
         <>
           {filteredItems.length > 0 ? (
             <>

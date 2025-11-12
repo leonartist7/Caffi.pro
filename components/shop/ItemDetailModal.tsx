@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Coffee, Plus, Minus, AlertTriangle, Tag, Flame } from 'lucide-react'
+import { X, Coffee, Plus, Minus, Tag } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { MenuItem } from './MenuItem'
 
@@ -13,7 +13,7 @@ interface ItemDetailModalProps {
 }
 
 export interface ItemOptions {
-  size?: { name: string; price_modifier: number }
+  size?: { name: string; price: number }
   addons: Array<{ name: string; price: number }>
   quantity: number
   special_instructions?: string
@@ -26,9 +26,7 @@ export default function ItemDetailModal({
   onAddToCart,
   currency = 'EUR',
 }: ItemDetailModalProps) {
-  const [selectedSize, setSelectedSize] = useState<{ name: string; price_modifier: number } | null>(
-    null
-  )
+  const [selectedSize, setSelectedSize] = useState<{ name: string; price: number } | null>(null)
   const [selectedAddons, setSelectedAddons] = useState<Array<{ name: string; price: number }>>([])
   const [quantity, setQuantity] = useState(1)
   const [specialInstructions, setSpecialInstructions] = useState('')
@@ -58,7 +56,7 @@ export default function ItemDetailModal({
 
   const calculateTotalPrice = () => {
     let total = item.price
-    if (selectedSize) total += selectedSize.price_modifier
+    if (selectedSize) total += selectedSize.price
     selectedAddons.forEach(addon => (total += addon.price))
     return total * quantity
   }
@@ -109,12 +107,7 @@ export default function ItemDetailModal({
 
           {/* Badges */}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
-            {item.is_featured && (
-              <div className="bg-amber-500 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg">
-                ⭐ Featured
-              </div>
-            )}
-            {!item.is_available && (
+            {!item.is_active && (
               <div className="bg-red-500 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg">
                 Unavailable
               </div>
@@ -142,14 +135,8 @@ export default function ItemDetailModal({
             <p className="text-coffee-600 dark:text-coffee-300">{item.description}</p>
           )}
 
-          {/* Tags, Calories, Allergens */}
+          {/* Tags */}
           <div className="flex flex-wrap gap-3">
-            {item.calories && (
-              <div className="flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-3 py-1 rounded-full text-sm">
-                <Flame size={16} />
-                {item.calories} cal
-              </div>
-            )}
             {item.tags?.map(tag => (
               <div
                 key={tag}
@@ -160,24 +147,6 @@ export default function ItemDetailModal({
               </div>
             ))}
           </div>
-
-          {/* Allergens Warning */}
-          {item.allergens && item.allergens.length > 0 && (
-            <div className="flex items-start gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 p-3 rounded-lg">
-              <AlertTriangle
-                size={20}
-                className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
-              />
-              <div>
-                <div className="font-semibold text-amber-900 dark:text-amber-100 text-sm">
-                  Allergen Information
-                </div>
-                <div className="text-amber-700 dark:text-amber-300 text-sm">
-                  Contains: {item.allergens.join(', ')}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Size Selection */}
           {item.modifiers?.sizes && item.modifiers.sizes.length > 0 && (
@@ -195,10 +164,10 @@ export default function ItemDetailModal({
                     }`}
                   >
                     <div className="font-semibold text-coffee-900 dark:text-white">{size.name}</div>
-                    {size.price_modifier !== 0 && (
+                    {size.price !== 0 && (
                       <div className="text-sm text-coffee-600 dark:text-coffee-300">
-                        {size.price_modifier > 0 ? '+' : ''}
-                        {formatPrice(size.price_modifier)}
+                        {size.price > 0 ? '+' : ''}
+                        {formatPrice(size.price)}
                       </div>
                     )}
                   </button>
@@ -235,7 +204,7 @@ export default function ItemDetailModal({
           )}
 
           {/* Special Instructions */}
-          {item.is_available && (
+          {item.is_active && (
             <div>
               <h3 className="font-bold text-coffee-900 dark:text-white mb-3">
                 Special Instructions (Optional)
@@ -251,7 +220,7 @@ export default function ItemDetailModal({
           )}
 
           {/* Quantity and Add to Cart */}
-          {item.is_available && onAddToCart && (
+          {item.is_active && onAddToCart && (
             <div className="flex items-center gap-4 pt-4 border-t border-coffee-200 dark:border-dark-700">
               {/* Quantity Selector */}
               <div className="flex items-center gap-3 bg-coffee-100 dark:bg-dark-800 rounded-full p-1">

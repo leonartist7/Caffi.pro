@@ -145,7 +145,7 @@ export default function AnalyticsPage() {
 
       // Aggregate by category
       const categoryMap = new Map<string, number>()
-      orderItems?.forEach(item => {
+      orderItems?.forEach((item: any) => {
         const categoryName = item.menu_items?.categories?.name || 'Uncategorized'
         const current = categoryMap.get(categoryName) || 0
         categoryMap.set(categoryName, current + (item.total_price || 0))
@@ -156,15 +156,7 @@ export default function AnalyticsPage() {
         (acc, val) => acc + val,
         0
       )
-      const colors = [
-        '#6b3410',
-        '#c97d47',
-        '#d69f70',
-        '#e3bf9b',
-        '#9b6b3f',
-        '#8b5a2b',
-        '#a67c52',
-      ]
+      const colors = ['#6b3410', '#c97d47', '#d69f70', '#e3bf9b', '#9b6b3f', '#8b5a2b', '#a67c52']
 
       const categoryDataArray = Array.from(categoryMap.entries())
         .map(([name, revenue], index) => ({
@@ -179,8 +171,7 @@ export default function AnalyticsPage() {
       setCategoryData(categoryDataArray)
 
       // Update top category in analytics
-      const topCategoryName =
-        categoryDataArray.length > 0 ? categoryDataArray[0].name : 'N/A'
+      const topCategoryName = categoryDataArray.length > 0 ? categoryDataArray[0].name : 'N/A'
 
       analyticsData.topCategory = topCategoryName
       setAnalytics(analyticsData)
