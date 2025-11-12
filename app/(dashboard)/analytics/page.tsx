@@ -98,14 +98,15 @@ export default function AnalyticsPage() {
       const totalOrders = orders?.length || 0
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
-      setAnalytics({
+      // Temporarily set analytics (will update topCategory after fetching category data)
+      const analyticsData = {
         totalRevenue,
         totalOrders,
         totalUsers: users?.length || 0,
         activeLocations: locations?.length || 0,
         avgOrderValue,
-        topCategory: 'Coffee',
-      })
+        topCategory: '',
+      }
 
       // Generate chart data (last 7 days)
       const last7Days = Array.from({ length: 7 }, (_, i) => {
@@ -125,13 +126,64 @@ export default function AnalyticsPage() {
 
       setChartData(dailyData)
 
-      // Mock category data (would come from order_items in production)
-      setCategoryData([
-        { name: 'Coffee', value: 45, color: '#6b3410' },
-        { name: 'Pastries', value: 25, color: '#c97d47' },
-        { name: 'Sandwiches', value: 20, color: '#d69f70' },
-        { name: 'Beverages', value: 10, color: '#e3bf9b' },
-      ])
+      // Fetch real category data from order items
+      const { data: orderItems } = await supabase
+        .from('order_items')
+        .select(
+          `
+          total_price,
+          order_id,
+          orders!inner(tenant_id, created_at),
+          menu_items!inner(category_id, categories!inner(name))
+        `
+        )
+        .eq('orders.tenant_id', selectedTenant.tenant_id)
+        .gte(
+          'orders.created_at',
+          new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
+        )
+
+      // Aggregate by category
+      const categoryMap = new Map<string, number>()
+      orderItems?.forEach(item => {
+        const categoryName = item.menu_items?.categories?.name || 'Uncategorized'
+        const current = categoryMap.get(categoryName) || 0
+        categoryMap.set(categoryName, current + (item.total_price || 0))
+      })
+
+      // Convert to array and calculate percentages
+      const totalCategoryRevenue = Array.from(categoryMap.values()).reduce(
+        (acc, val) => acc + val,
+        0
+      )
+      const colors = [
+        '#6b3410',
+        '#c97d47',
+        '#d69f70',
+        '#e3bf9b',
+        '#9b6b3f',
+        '#8b5a2b',
+        '#a67c52',
+      ]
+
+      const categoryDataArray = Array.from(categoryMap.entries())
+        .map(([name, revenue], index) => ({
+          name,
+          value: totalCategoryRevenue > 0 ? Math.round((revenue / totalCategoryRevenue) * 100) : 0,
+          revenue,
+          color: colors[index % colors.length],
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6) // Top 6 categories
+
+      setCategoryData(categoryDataArray)
+
+      // Update top category in analytics
+      const topCategoryName =
+        categoryDataArray.length > 0 ? categoryDataArray[0].name : 'N/A'
+
+      analyticsData.topCategory = topCategoryName
+      setAnalytics(analyticsData)
 
       // Calculate top locations
       const locationRevenue =
