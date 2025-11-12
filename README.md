@@ -1,183 +1,264 @@
-# Supabase CLI
+# ☕ Caffi.pro - Multi-Tenant Coffee Shop Management Platform
 
-[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
-](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
+**Version:** 2.0
+**Status:** ~50% Complete (Phase 1-5 Done)
+**Tech Stack:** Next.js 14 + TypeScript + Supabase + Tailwind CSS
 
-[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
+---
 
-This repository contains all the functionality for Supabase CLI.
+## 🎯 What is Caffi.pro?
 
-- [x] Running Supabase locally
-- [x] Managing database migrations
-- [x] Creating and deploying Supabase Functions
-- [x] Generating types directly from your database schema
-- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
+Caffi.pro is a **white-label SaaS platform** that enables independent coffee shops to launch their own branded mobile ordering apps without technical knowledge. Each tenant (coffee shop) gets their own:
 
-## Getting started
+- ✅ Custom branded storefront (`app.caffi.pro/shop/their-slug`)
+- ✅ Optional custom domain (`www.theircoffeeshop.com`)
+- ✅ Full ordering, loyalty, and customer management system
+- ✅ Real-time kitchen dashboard for staff
+- ✅ Inventory management and analytics
+- ✅ PWA capabilities (install to home screen)
 
-### Install the CLI
+---
 
-Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
+## 🚀 Quick Start
 
-```bash
-npm i supabase --save-dev
-```
+### Prerequisites
+- Node.js >= 18
+- npm or yarn
+- Supabase account
 
-To install the beta release channel:
-
-```bash
-npm i supabase@beta --save-dev
-```
-
-When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
-
-```
-NODE_OPTIONS=--no-experimental-fetch yarn add supabase
-```
-
-> **Note**
-For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
-
-<details>
-  <summary><b>macOS</b></summary>
-
-  Available via [Homebrew](https://brew.sh). To install:
-
-  ```sh
-  brew install supabase/tap/supabase
-  ```
-
-  To install the beta release channel:
-  
-  ```sh
-  brew install supabase/tap/supabase-beta
-  brew link --overwrite supabase-beta
-  ```
-  
-  To upgrade:
-
-  ```sh
-  brew upgrade supabase
-  ```
-</details>
-
-<details>
-  <summary><b>Windows</b></summary>
-
-  Available via [Scoop](https://scoop.sh). To install:
-
-  ```powershell
-  scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
-  scoop install supabase
-  ```
-
-  To upgrade:
-
-  ```powershell
-  scoop update supabase
-  ```
-</details>
-
-<details>
-  <summary><b>Linux</b></summary>
-
-  Available via [Homebrew](https://brew.sh) and Linux packages.
-
-  #### via Homebrew
-
-  To install:
-
-  ```sh
-  brew install supabase/tap/supabase
-  ```
-
-  To upgrade:
-
-  ```sh
-  brew upgrade supabase
-  ```
-
-  #### via Linux packages
-
-  Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
-
-  ```sh
-  sudo apk add --allow-untrusted <...>.apk
-  ```
-
-  ```sh
-  sudo dpkg -i <...>.deb
-  ```
-
-  ```sh
-  sudo rpm -i <...>.rpm
-  ```
-
-  ```sh
-  sudo pacman -U <...>.pkg.tar.zst
-  ```
-</details>
-
-<details>
-  <summary><b>Other Platforms</b></summary>
-
-  You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
-
-  ```sh
-  go install github.com/supabase/cli@latest
-  ```
-
-  Add a symlink to the binary in `$PATH` for easier access:
-
-  ```sh
-  ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
-  ```
-
-  This works on other non-standard Linux distros.
-</details>
-
-<details>
-  <summary><b>Community Maintained Packages</b></summary>
-
-  Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
-  To install in your working directory:
-
-  ```bash
-  pkgx install supabase
-  ```
-
-  Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
-</details>
-
-### Run the CLI
+### Installation
 
 ```bash
-supabase bootstrap
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your Supabase credentials
+
+# Apply database migrations in Supabase SQL Editor
+# See MASTER_BUILD_DOCUMENT.md for migration order
+
+# Start development server
+npm run dev
+
+# Access at http://localhost:3000
 ```
 
-Or using npx:
+### Environment Variables
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-key
+```
+
+---
+
+## 📚 Documentation
+
+### Essential Reading
+
+1. **[MASTER_BUILD_DOCUMENT.md](./MASTER_BUILD_DOCUMENT.md)** - Complete build reference for AI agents
+2. **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** - Comprehensive project overview (1,150 lines)
+3. **[PROJECT_ANALYSIS_COMPREHENSIVE.md](./PROJECT_ANALYSIS_COMPREHENSIVE.md)** - Technical analysis (1,113 lines)
+
+### Setup Guides
+
+4. **[ENABLE_DEV_MODE.md](./ENABLE_DEV_MODE.md)** - Dev RLS policies setup (⚠️ Required)
+5. **[CUSTOM_DOMAIN_SETUP.md](./CUSTOM_DOMAIN_SETUP.md)** - Custom domain configuration
+6. **[MOBILE_TESTING_GUIDE.md](./MOBILE_TESTING_GUIDE.md)** - Mobile testing on Windows 11
+
+---
+
+## 🏗️ Architecture
+
+### Multi-Tenant SaaS
+
+```
+┌─────────────────────────────────────┐
+│     app.caffi.pro (Main Domain)     │
+├─────────────────────────────────────┤
+│  Admin Dashboard (/)                │
+│  - Tenant, Menu, Orders, Analytics  │
+├─────────────────────────────────────┤
+│  Customer Shop (/shop/[slug])       │
+│  - Menu, Cart, Checkout, Loyalty    │
+├─────────────────────────────────────┤
+│  Staff Portal (/staff)              │
+│  - Kitchen, Inventory, Team, Reports│
+└─────────────────────────────────────┘
+```
+
+### Tech Stack
+
+- **Frontend:** Next.js 14 (App Router) + React 18 + TypeScript (strict)
+- **Styling:** Tailwind CSS 3.4
+- **Backend:** Supabase (PostgreSQL + Auth + Storage)
+- **State:** React Context API + TanStack React Query
+- **Forms:** React Hook Form + Sonner (toasts)
+- **Charts:** Recharts
+- **Quality:** ESLint + Prettier + Husky
+
+---
+
+## ✨ Features
+
+### Phase 1-3: Foundation ✅
+- Admin dashboard with sidebar navigation
+- Multi-tenant architecture with RLS
+- Tenant management and onboarding
+
+### Phase 4: Customer Shop ✅
+- Menu browsing with categories and search
+- Shopping cart with modifiers
+- Checkout and order placement
+- Real-time order tracking (5-stage timeline)
+- Loyalty rewards and points
+- User profile management
+- Multi-domain support
+- PWA capabilities
+
+### Phase 5: Staff Operations ✅
+- Real-time kitchen dashboard (Supabase Realtime)
+- Order queue management with sound notifications
+- Inventory tracking with low stock alerts
+- Staff team management with role-based permissions
+- Reports & analytics (daily/weekly/monthly)
+- Order search and filtering
+
+### Phase 6: Payments & Integrations ⏳ (Next)
+- Stripe payment integration
+- Email notifications (SendGrid/Resend)
+- SMS notifications (Twilio)
+- Analytics (Google Analytics, Mixpanel)
+
+### Phase 7: Advanced Features ⏳
+- Customer reviews and ratings
+- Scheduled orders
+- Subscription plans
+- Gift cards
+- Referral program
+
+### Phase 8: Production Polish ⏳
+- Production authentication
+- Error boundaries
+- Rate limiting
+- Monitoring (Sentry)
+- Performance optimization
+- SEO optimization
+
+---
+
+## 🗄️ Database Schema
+
+**24 Tables:**
+- `tenants` - Coffee shop businesses
+- `locations` - Physical café locations
+- `categories` - Menu categories
+- `menu_items` - Products with modifiers
+- `customers` - Customer accounts with loyalty points
+- `orders` - Orders with status tracking
+- `order_items` - Line items with snapshots
+- `staff_users` - Staff with roles and permissions
+- `inventory_items` - Stock tracking
+- `inventory_transactions` - Inventory movements
+- `rewards`, `coupons`, `loyalty_transactions`, and more
+
+See **PROJECT_CONTEXT.md** for complete schema.
+
+---
+
+## 💻 Development
+
+### Commands
 
 ```bash
-npx supabase bootstrap
+npm run dev              # Start dev server
+npm run build            # Production build
+npm run start            # Start production server
+npm run lint             # ESLint
+npm run lint:strict      # ESLint with no warnings
+npm run type-check       # TypeScript check
 ```
 
-The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
+### Pre-commit Hooks
 
-## Docs
+Husky automatically runs on every commit:
+1. ESLint --fix
+2. TypeScript type-check
+3. Prettier format
 
-Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
+---
 
-## Breaking changes
+## ⚠️ Critical Issues
 
-We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+| Issue | Severity | Fix Time |
+|-------|----------|----------|
+| NO TEST COVERAGE (0%) | 🔴 CRITICAL | ~1 week |
+| Auth bypass in dev mode | 🔴 CRITICAL | 5 mins |
+| Hardcoded 10% tax rate | 🟡 HIGH | 30 mins |
+| Modal duplication (1,161 lines) | 🟡 HIGH | 2 hours |
 
-However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+See **PROJECT_ANALYSIS_COMPREHENSIVE.md** for complete technical debt analysis.
 
-## Developing
+---
 
-To run from source:
+## 📊 Project Metrics
 
-```sh
-# Go >= 1.22
-go run . help
-```
+- **TypeScript Files:** 85 files (~8,000 LOC)
+- **Components:** 24 reusable components
+- **Pages:** 38+ routes
+- **Database:** 24 tables (4,813 SQL lines)
+- **Test Coverage:** 0% ⚠️
+- **Type Safety:** TypeScript strict ✓
+- **Dependencies:** 11 core + 12 dev (all used, no bloat)
+
+---
+
+## 🔒 Security
+
+- Multi-tenant Row-Level Security (RLS) on all tables
+- JWT-based authentication with Supabase Auth
+- Separate auth contexts for admin, customer, and staff
+- ⚠️ Currently in dev mode (auth bypassed) - must enable for production
+
+---
+
+## 📱 PWA Support
+
+- Manifest configured (`public/manifest.json`)
+- Service worker ready (`public/sw.js`)
+- Installable to home screen
+- Offline capabilities
+- **Note:** PWA icons need to be generated (see `public/ICONS_NEEDED.md`)
+
+---
+
+## 🤝 Contributing
+
+This project uses AI agents (Claude) for development. When working on this project:
+
+1. Read **MASTER_BUILD_DOCUMENT.md** first
+2. Follow TypeScript strict mode
+3. Respect multi-tenancy (never leak data across tenants)
+4. Use existing contexts (don't create new state management)
+5. Follow naming conventions (see best practices in master doc)
+6. Run `npm run lint:strict` before committing
+7. Apply dev mode RLS migration before creating tenants
+
+---
+
+## 📝 License
+
+[Add your license here]
+
+---
+
+## 🎉 Acknowledgments
+
+Built with Next.js, Supabase, and Tailwind CSS.
+Developed with assistance from Claude (Anthropic AI).
+
+---
+
+**For complete documentation, see [MASTER_BUILD_DOCUMENT.md](./MASTER_BUILD_DOCUMENT.md)**
