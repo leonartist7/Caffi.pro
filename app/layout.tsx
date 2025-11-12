@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { QueryProvider } from '@/components/providers/QueryProvider'
 import PWARegister from '@/components/PWARegister'
 import { Toaster } from 'sonner'
 
@@ -35,10 +36,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans antialiased">
         <PWARegister />
-        <ThemeProvider>
-          <Toaster position="top-right" richColors closeButton />
-          {children}
-        </ThemeProvider>
+        <QueryProvider>
+          <ThemeProvider>
+            <Toaster position="top-right" richColors closeButton />
+            {children}
+          </ThemeProvider>
+        </QueryProvider>
       </body>
     </html>
   )

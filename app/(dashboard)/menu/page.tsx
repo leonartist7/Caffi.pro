@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
+import { useMenu } from '@/hooks/useMenuQueries'
 import {
   Coffee,
   Search,
@@ -18,40 +19,10 @@ import {
   X,
   Building2,
 } from 'lucide-react'
-
-interface Category {
-  category_id: string
-  tenant_id: string
-  name: string
-  display_order: number
-  is_active: boolean
-}
-
-interface MenuItem {
-  item_id: string
-  tenant_id: string
-  category_id: string
-  name: string
-  description: string
-  price: number
-  image_url: string | null
-  is_active: boolean
-  modifiers: {
-    sizes?: Array<{ name: string; price: number }>
-    addons?: Array<{ name: string; price: number }>
-  }
-  tags: string[]
-  created_at: string
-  categories?: {
-    name: string
-  }
-}
+import type { MenuItem, Category } from '@/hooks/useMenuQueries'
 
 export default function MenuPage() {
   const { selectedTenant } = useTenant()
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
-  const [categories, setCategories] = useState<Category[]>([])
-  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
@@ -59,6 +30,11 @@ export default function MenuPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const supabase = createClient()
+
+  // Fetch menu data with React Query caching
+  const { categories, menuItems, isLoading } = useMenu(selectedTenant?.tenant_id, {
+    activeOnly: false, // Admin needs to see all items
+  })
 
   // Form state
   const [formData, setFormData] = useState({
@@ -69,48 +45,10 @@ export default function MenuPage() {
     is_active: true,
   })
 
-  useEffect(() => {
-    if (selectedTenant) {
-      fetchData()
-    }
-  }, [selectedTenant])
-
-  async function fetchData() {
-    if (!selectedTenant) return
-
-    try {
-      setLoading(true)
-
-      // Fetch menu items with category names
-      const { data: items, error: itemsError } = await supabase
-        .from('menu_items')
-        .select(
-          `
-          *,
-          categories!inner(name)
-        `
-        )
-        .eq('tenant_id', selectedTenant.tenant_id)
-        .order('created_at', { ascending: false })
-
-      if (itemsError) throw itemsError
-
-      // Fetch categories
-      const { data: cats, error: catsError } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('tenant_id', selectedTenant.tenant_id)
-        .order('name')
-
-      if (catsError) throw catsError
-
-      setMenuItems(items || [])
-      setCategories(cats || [])
-    } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
-    }
+  // Refetch data after mutations
+  const refetchData = () => {
+    menuItems.refetch()
+    categories.refetch()
   }
 
   const openAddModal = () => {
@@ -180,7 +118,7 @@ export default function MenuPage() {
       }
 
       setShowModal(false)
-      fetchData()
+      refetchData()
     } catch (error) {
       console.error('Error saving menu item:', error)
       toast.error('Failed to save menu item. Please try again.')
@@ -201,7 +139,7 @@ export default function MenuPage() {
 
       toast.success('Menu item deleted successfully!')
       setDeleteConfirm(null)
-      fetchData()
+      refetchData()
     } catch (error) {
       console.error('Error deleting menu item:', error)
       toast.error('Failed to delete menu item. Please try again.')
@@ -219,13 +157,13 @@ export default function MenuPage() {
         .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
-      fetchData()
+      refetchData()
     } catch (error) {
       console.error('Error toggling availability:', error)
     }
   }
 
-  const filteredItems = menuItems.filter(item => {
+  const filteredItems = (menuItems.data || []).filter(item => {
     const matchesSearch =
       item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -241,12 +179,15 @@ export default function MenuPage() {
   })
 
   const stats = {
-    total: menuItems.length,
-    active: menuItems.filter(i => i.is_active).length,
-    categories: categories.length,
+    total: (menuItems.data || []).length,
+    active: (menuItems.data || []).filter(i => i.is_active).length,
+    categories: (categories.data || []).length,
     avgPrice:
-      menuItems.length > 0
-        ? (menuItems.reduce((acc, i) => acc + i.price, 0) / menuItems.length).toFixed(2)
+      (menuItems.data || []).length > 0
+        ? (
+            (menuItems.data || []).reduce((acc, i) => acc + i.price, 0) /
+            (menuItems.data || []).length
+          ).toFixed(2)
         : '0.00',
   }
 
@@ -372,7 +313,7 @@ export default function MenuPage() {
               className="px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
             >
               <option value="all">All Categories</option>
-              {categories.map(cat => (
+              {(categories.data || []).map(cat => (
                 <option key={cat.category_id} value={cat.category_id}>
                   {cat.name}
                 </option>
@@ -395,7 +336,7 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Items Grid */}
-      {loading ? (
+      {isLoading ? (
         <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-12 shadow-lg border border-coffee-200/50 dark:border-dark-700 text-center">
           <div className="inline-block w-8 h-8 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="text-coffee-600 dark:text-cream-400 mt-4">Loading menu items...</p>
@@ -570,7 +511,7 @@ export default function MenuPage() {
                     className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
                   >
                     <option value="">Select category...</option>
-                    {categories.map(cat => (
+                    {(categories.data || []).map(cat => (
                       <option key={cat.category_id} value={cat.category_id}>
                         {cat.name}
                       </option>

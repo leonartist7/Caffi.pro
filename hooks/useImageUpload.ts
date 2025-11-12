@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { uploadCafeLogo, uploadMenuItemImage } from '@/lib/storage'
+import { uploadMenuItemImage, uploadLocationImage } from '@/lib/storage'
 
-export type UploadType = 'cafe-logo' | 'menu-item'
+export type UploadType = 'location-image' | 'menu-item'
 
 interface UseImageUploadOptions {
   type: UploadType
-  entityId: string // cafe ID or menu item ID
+  entityId: string // tenant ID for uploads
   onSuccess?: (url: string) => void
   onError?: (error: string) => void
 }
@@ -22,8 +22,8 @@ export function useImageUpload(options: UseImageUploadOptions) {
     try {
       let result
 
-      if (options.type === 'cafe-logo') {
-        result = await uploadCafeLogo(file, options.entityId)
+      if (options.type === 'location-image') {
+        result = await uploadLocationImage(file, options.entityId)
       } else {
         result = await uploadMenuItemImage(file, options.entityId)
       }

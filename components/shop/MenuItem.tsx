@@ -10,13 +10,10 @@ export interface MenuItem {
   description: string | null
   price: number
   image_url: string | null
-  is_available: boolean
-  is_featured: boolean
+  is_active: boolean
   tags: string[]
-  calories: number | null
-  allergens: string[]
   modifiers: {
-    sizes?: Array<{ name: string; price_modifier: number }>
+    sizes?: Array<{ name: string; price: number }>
     addons?: Array<{ name: string; price: number }>
   }
   categories?: {
@@ -46,18 +43,11 @@ export default function MenuItemCard({
   return (
     <div
       className={`group relative bg-white/80 dark:bg-dark-800/80 backdrop-blur-lg rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden border border-coffee-200/50 dark:border-dark-700 ${
-        !item.is_available ? 'opacity-60' : 'hover:scale-105'
+        !item.is_active ? 'opacity-60' : 'hover:scale-105'
       }`}
     >
-      {/* Featured Badge */}
-      {item.is_featured && (
-        <div className="absolute top-3 left-3 z-10 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-          ⭐ Featured
-        </div>
-      )}
-
       {/* Unavailable Overlay */}
-      {!item.is_available && (
+      {!item.is_active && (
         <div className="absolute top-3 right-3 z-10 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg">
           Unavailable
         </div>
@@ -119,19 +109,12 @@ export default function MenuItemCard({
           </div>
         )}
 
-        {/* Calories */}
-        {item.calories && (
-          <div className="text-xs text-coffee-500 dark:text-coffee-400 mb-3">
-            {item.calories} cal
-          </div>
-        )}
-
         {/* Price and Add to Cart */}
         <div className="flex items-center justify-between mt-4">
           <div className="text-2xl font-bold text-coffee-700 dark:text-coffee-300">
             {formatPrice(item.price)}
           </div>
-          {item.is_available && onAddToCart && (
+          {item.is_active && onAddToCart && (
             <button
               onClick={e => {
                 e.stopPropagation()
