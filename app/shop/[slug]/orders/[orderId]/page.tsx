@@ -63,20 +63,65 @@ export default function OrderDetailPage() {
     }
   }, [user, orderId])
 
-  // Auto-refresh order status every 10 seconds if order is not completed/cancelled
+  // Real-time subscription for order updates
   useEffect(() => {
-    if (!autoRefresh || !order) return
+    if (!order || !user) return
+
+    // Stop if order is already completed/cancelled
     if (order.status === 'completed' || order.status === 'cancelled') {
       setAutoRefresh(false)
       return
     }
 
-    const interval = setInterval(() => {
-      fetchOrderDetails(true) // Silent refresh
-    }, 10000) // 10 seconds
+    async function setupRealtime() {
+      const { createClient } = await import('@/utils/supabase/client')
+      const supabase = createClient()
 
-    return () => clearInterval(interval)
-  }, [autoRefresh, order])
+      // Subscribe to changes on this specific order
+      const channel = supabase
+        .channel(`order-${orderId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `order_id=eq.${orderId}`,
+          },
+          payload => {
+            console.log('Order updated:', payload.new)
+            // Update order with new data
+            setOrder(prev => {
+              if (!prev) return null
+              return {
+                ...prev,
+                status: payload.new.status,
+                updated_at: payload.new.updated_at,
+              } as OrderWithRelations
+            })
+
+            // Stop auto-refresh if order is completed/cancelled
+            if (
+              payload.new.status === 'completed' ||
+              payload.new.status === 'cancelled'
+            ) {
+              setAutoRefresh(false)
+            }
+          }
+        )
+        .subscribe()
+
+      return () => {
+        supabase.removeChannel(channel)
+      }
+    }
+
+    const cleanup = setupRealtime()
+
+    return () => {
+      cleanup.then(fn => fn && fn())
+    }
+  }, [order, orderId, user])
 
   async function fetchOrderDetails(silent = false) {
     try {

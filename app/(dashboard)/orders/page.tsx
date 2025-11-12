@@ -49,19 +49,35 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalOrders, setTotalOrders] = useState(0)
+  const ordersPerPage = 50
   const supabase = createClient()
 
   useEffect(() => {
     if (selectedTenant) {
       fetchOrders()
     }
-  }, [selectedTenant])
+  }, [selectedTenant, currentPage])
 
   async function fetchOrders() {
     if (!selectedTenant) return
 
     try {
       setLoading(true)
+
+      // Get total count
+      const { count } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', selectedTenant.tenant_id)
+
+      setTotalOrders(count || 0)
+
+      // Get paginated data
+      const from = (currentPage - 1) * ordersPerPage
+      const to = from + ordersPerPage - 1
+
       const { data, error } = await supabase
         .from('orders')
         .select(
@@ -73,6 +89,7 @@ export default function OrdersPage() {
         )
         .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
+        .range(from, to)
 
       if (error) throw error
       setOrders(data || [])
@@ -517,6 +534,68 @@ export default function OrdersPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalOrders > ordersPerPage && (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="px-4 py-2 rounded-lg bg-white/80 dark:bg-dark-800/80 border border-coffee-200 dark:border-dark-700 text-coffee-900 dark:text-cream-100 font-medium hover:bg-coffee-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Previous
+          </button>
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.ceil(totalOrders / ordersPerPage) })
+              .map((_, i) => i + 1)
+              .filter(page => {
+                const totalPages = Math.ceil(totalOrders / ordersPerPage)
+                // Show first page, last page, current page, and pages around current
+                return (
+                  page === 1 ||
+                  page === totalPages ||
+                  (page >= currentPage - 1 && page <= currentPage + 1)
+                )
+              })
+              .map((page, index, array) => {
+                // Add ellipsis between non-consecutive pages
+                const showEllipsis = index > 0 && page - array[index - 1] > 1
+                return (
+                  <div key={page} className="flex items-center">
+                    {showEllipsis && (
+                      <span className="px-2 text-coffee-600 dark:text-cream-400">...</span>
+                    )}
+                    <button
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                        currentPage === page
+                          ? 'bg-coffee-700 text-white'
+                          : 'bg-white/80 dark:bg-dark-800/80 border border-coffee-200 dark:border-dark-700 text-coffee-900 dark:text-cream-100 hover:bg-coffee-50 dark:hover:bg-dark-700'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </div>
+                )
+              })}
+          </div>
+          <button
+            onClick={() =>
+              setCurrentPage(prev =>
+                Math.min(Math.ceil(totalOrders / ordersPerPage), prev + 1)
+              )
+            }
+            disabled={currentPage === Math.ceil(totalOrders / ordersPerPage)}
+            className="px-4 py-2 rounded-lg bg-white/80 dark:bg-dark-800/80 border border-coffee-200 dark:border-dark-700 text-coffee-900 dark:text-cream-100 font-medium hover:bg-coffee-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            Next
+          </button>
+          <div className="ml-4 text-sm text-coffee-600 dark:text-cream-400">
+            Page {currentPage} of {Math.ceil(totalOrders / ordersPerPage)} • {totalOrders} total
+            orders
+          </div>
         </div>
       )}
     </div>
