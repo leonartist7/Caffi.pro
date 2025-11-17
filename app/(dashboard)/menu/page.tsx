@@ -99,6 +99,7 @@ export default function MenuPage() {
 
         if (error) throw error
         toast.success('Category updated successfully!')
+        setShowCategoryModal(false)
       } else {
         const { error } = await supabase.from('categories').insert({
           tenant_id: selectedTenant.tenant_id,
@@ -109,9 +110,11 @@ export default function MenuPage() {
 
         if (error) throw error
         toast.success('Category created successfully!')
+        // Reset form but keep modal open for creating more categories
+        setCategoryFormData({ name: '', image_url: '', display_order: 0 })
+        setEditingCategory(null)
       }
 
-      setShowCategoryModal(false)
       refetchData()
     } catch (error) {
       console.error('Error saving category:', error)
@@ -176,6 +179,7 @@ export default function MenuPage() {
 
         if (error) throw error
         toast.success('Menu item updated successfully!')
+        setShowModal(false)
       } else {
         // Create new item
         const { error } = await supabase.from('menu_items').insert({
@@ -191,9 +195,17 @@ export default function MenuPage() {
 
         if (error) throw error
         toast.success('Menu item created successfully!')
+        // Reset form but keep modal open for creating more items
+        setFormData({
+          name: '',
+          description: '',
+          price: '',
+          category_id: formData.category_id, // Keep same category selected for convenience
+          is_active: true,
+        })
+        setEditingItem(null)
       }
 
-      setShowModal(false)
       refetchData()
     } catch (error) {
       console.error('Error saving menu item:', error)
