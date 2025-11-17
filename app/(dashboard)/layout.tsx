@@ -9,7 +9,7 @@ import { TenantProvider } from '@/contexts/TenantContext'
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <TenantProvider>
-      <div className="flex min-h-screen bg-gradient-to-br from-foam via-cream-100 to-coffee-100 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800">
+      <div className="flex min-h-screen bg-gradient-to-br from-amber-900 via-yellow-900 to-orange-900 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800">
         <Sidebar />
         <MobileNav />
 
