@@ -118,7 +118,13 @@ export default function MenuPage() {
       refetchData()
     } catch (error) {
       console.error('Error saving category:', error)
-      toast.error('Failed to save category. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const dbError = error as any
+      if (dbError?.code) {
+        toast.error(`Database error (${dbError.code}): ${dbError.message || errorMessage}`)
+      } else {
+        toast.error(`Failed to save category: ${errorMessage}`)
+      }
     }
   }
 
@@ -193,7 +199,10 @@ export default function MenuPage() {
           tags: [],
         })
 
-        if (error) throw error
+        if (error) {
+          console.error('Menu item creation error:', error)
+          throw error
+        }
         toast.success('Menu item created successfully!')
         // Reset form but keep modal open for creating more items
         setFormData({
@@ -209,7 +218,13 @@ export default function MenuPage() {
       refetchData()
     } catch (error) {
       console.error('Error saving menu item:', error)
-      toast.error('Failed to save menu item. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const dbError = error as any
+      if (dbError?.code) {
+        toast.error(`Database error (${dbError.code}): ${dbError.message || errorMessage}`)
+      } else {
+        toast.error(`Failed to save menu item: ${errorMessage}`)
+      }
     }
   }
 
