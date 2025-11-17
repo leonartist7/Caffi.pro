@@ -18,6 +18,7 @@ import {
   EyeOff,
   X,
   Building2,
+  Folder,
 } from 'lucide-react'
 import type { MenuItem, Category } from '@/hooks/useMenuQueries'
 
@@ -27,8 +28,11 @@ export default function MenuPage() {
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [showModal, setShowModal] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [categoryFormData, setCategoryFormData] = useState({ name: '', display_order: 0 })
   const supabase = createClient()
 
   // Fetch menu data with React Query caching
@@ -61,6 +65,72 @@ export default function MenuPage() {
       is_active: true,
     })
     setShowModal(true)
+  }
+
+  const openCategoryModal = () => {
+    setEditingCategory(null)
+    setCategoryFormData({ name: '', display_order: 0 })
+    setShowCategoryModal(true)
+  }
+
+  const handleSaveCategory = async () => {
+    if (!selectedTenant) return
+
+    try {
+      if (!categoryFormData.name) {
+        toast.error('Category name is required')
+        return
+      }
+
+      if (editingCategory) {
+        const { error } = await supabase
+          .from('categories')
+          .update({
+            name: categoryFormData.name,
+            display_order: categoryFormData.display_order,
+          })
+          .eq('category_id', editingCategory.category_id)
+          .eq('tenant_id', selectedTenant.tenant_id)
+
+        if (error) throw error
+        toast.success('Category updated successfully!')
+      } else {
+        const { error } = await supabase.from('categories').insert({
+          tenant_id: selectedTenant.tenant_id,
+          name: categoryFormData.name,
+          display_order: categoryFormData.display_order,
+        })
+
+        if (error) throw error
+        toast.success('Category created successfully!')
+      }
+
+      setShowCategoryModal(false)
+      refetchData()
+    } catch (error) {
+      console.error('Error saving category:', error)
+      toast.error('Failed to save category. Please try again.')
+    }
+  }
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!selectedTenant) return
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('category_id', categoryId)
+        .eq('tenant_id', selectedTenant.tenant_id)
+
+      if (error) throw error
+
+      toast.success('Category deleted successfully!')
+      refetchData()
+    } catch (error) {
+      console.error('Error deleting category:', error)
+      toast.error('Failed to delete category. Please try again.')
+    }
   }
 
   const openEditModal = (item: MenuItem) => {
@@ -223,13 +293,22 @@ export default function MenuPage() {
             Manage {selectedTenant.business_name}'s menu items and categories
           </p>
         </div>
-        <button
-          onClick={openAddModal}
-          className="self-start lg:self-auto flex items-center gap-2 px-4 lg:px-6 py-2.5 lg:py-3 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-        >
-          <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-          <span className="text-sm lg:text-base">Add Menu Item</span>
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={openCategoryModal}
+            className="self-start lg:self-auto flex items-center gap-2 px-4 lg:px-5 py-2.5 lg:py-3 bg-white dark:bg-dark-800 text-coffee-700 dark:text-cream-300 border-2 border-coffee-300 dark:border-dark-600 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300"
+          >
+            <Folder className="w-4 h-4 lg:w-5 lg:h-5" />
+            <span className="text-sm lg:text-base">Manage Categories</span>
+          </button>
+          <button
+            onClick={openAddModal}
+            className="self-start lg:self-auto flex items-center gap-2 px-4 lg:px-6 py-2.5 lg:py-3 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          >
+            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
+            <span className="text-sm lg:text-base">Add Menu Item</span>
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -547,6 +626,156 @@ export default function MenuPage() {
                 className="px-6 py-2.5 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
               >
                 {editingItem ? 'Update Item' : 'Create Item'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-coffee-200/50 dark:border-dark-700">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-coffee-200/50 dark:border-dark-700 flex items-center justify-between">
+              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
+                Manage Categories
+              </h2>
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="p-2 rounded-lg hover:bg-coffee-100 dark:hover:bg-dark-700 transition-all"
+              >
+                <X className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {/* Create New Category Form */}
+              <div className="bg-coffee-50 dark:bg-dark-900 rounded-xl p-4 mb-6">
+                <h3 className="text-sm font-semibold text-coffee-700 dark:text-cream-300 mb-3">
+                  {editingCategory ? 'Edit Category' : 'Create New Category'}
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                  <div className="lg:col-span-2">
+                    <input
+                      type="text"
+                      value={categoryFormData.name}
+                      onChange={e =>
+                        setCategoryFormData({ ...categoryFormData, name: e.target.value })
+                      }
+                      placeholder="Category name (e.g., Coffee, Pastries)"
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="number"
+                      value={categoryFormData.display_order}
+                      onChange={e =>
+                        setCategoryFormData({
+                          ...categoryFormData,
+                          display_order: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="Display order"
+                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                    />
+                  </div>
+                </div>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={handleSaveCategory}
+                    className="px-4 py-2 bg-gradient-coffee text-cream-100 rounded-lg font-semibold hover:shadow-lg transition-all"
+                  >
+                    {editingCategory ? 'Update' : 'Create'}
+                  </button>
+                  {editingCategory && (
+                    <button
+                      onClick={() => {
+                        setEditingCategory(null)
+                        setCategoryFormData({ name: '', display_order: 0 })
+                      }}
+                      className="px-4 py-2 bg-gray-200 dark:bg-dark-700 text-coffee-900 dark:text-cream-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-dark-600 transition-all"
+                    >
+                      Cancel Edit
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Categories List */}
+              <div>
+                <h3 className="text-sm font-semibold text-coffee-700 dark:text-cream-300 mb-3">
+                  Existing Categories ({(categories.data || []).length})
+                </h3>
+                {(categories.data || []).length === 0 ? (
+                  <div className="text-center py-8 text-coffee-500 dark:text-cream-500">
+                    <Folder className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No categories yet. Create one above!</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {(categories.data || [])
+                      .sort((a, b) => a.display_order - b.display_order)
+                      .map(category => (
+                        <div
+                          key={category.category_id}
+                          className="flex items-center justify-between p-3 bg-white dark:bg-dark-900 rounded-lg border border-coffee-200/50 dark:border-dark-700"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Tag className="w-5 h-5 text-coffee-600 dark:text-cream-400" />
+                            <div>
+                              <p className="font-medium text-coffee-900 dark:text-cream-100">
+                                {category.name}
+                              </p>
+                              <p className="text-xs text-coffee-500 dark:text-cream-500">
+                                Display order: {category.display_order}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingCategory(category)
+                                setCategoryFormData({
+                                  name: category.name,
+                                  display_order: category.display_order,
+                                })
+                              }}
+                              className="p-2 rounded-lg hover:bg-coffee-100 dark:hover:bg-dark-700 text-coffee-600 dark:text-cream-400 transition-all"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Delete "${category.name}"? All menu items in this category will need to be reassigned.`
+                                  )
+                                ) {
+                                  handleDeleteCategory(category.category_id)
+                                }
+                              }}
+                              className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 transition-all"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-6 border-t border-coffee-200/50 dark:border-dark-700 flex justify-end">
+              <button
+                onClick={() => setShowCategoryModal(false)}
+                className="px-6 py-2.5 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
+              >
+                Done
               </button>
             </div>
           </div>
