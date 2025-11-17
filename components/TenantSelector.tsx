@@ -133,7 +133,7 @@ export default function TenantSelector() {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute top-full mt-2 right-0 w-72 lg:w-80 bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-coffee-200/50 dark:border-dark-700 backdrop-blur-xl z-[9999] max-h-96 overflow-hidden flex flex-col">
+        <div className="fixed top-20 right-4 lg:right-8 w-72 lg:w-80 bg-white dark:bg-dark-800 rounded-2xl shadow-2xl border border-coffee-200/50 dark:border-dark-700 backdrop-blur-xl z-[99999] max-h-96 overflow-hidden flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-coffee-200/50 dark:border-dark-700">
             <p className="text-sm font-semibold text-coffee-900 dark:text-cream-100 mb-1">
