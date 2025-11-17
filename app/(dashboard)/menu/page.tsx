@@ -32,7 +32,11 @@ export default function MenuPage() {
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [categoryFormData, setCategoryFormData] = useState({ name: '', display_order: 0 })
+  const [categoryFormData, setCategoryFormData] = useState({
+    name: '',
+    image_url: '',
+    display_order: 0,
+  })
   const supabase = createClient()
 
   // Fetch menu data with React Query caching
@@ -69,7 +73,7 @@ export default function MenuPage() {
 
   const openCategoryModal = () => {
     setEditingCategory(null)
-    setCategoryFormData({ name: '', display_order: 0 })
+    setCategoryFormData({ name: '', image_url: '', display_order: 0 })
     setShowCategoryModal(true)
   }
 
@@ -87,6 +91,7 @@ export default function MenuPage() {
           .from('categories')
           .update({
             name: categoryFormData.name,
+            image_url: categoryFormData.image_url || null,
             display_order: categoryFormData.display_order,
           })
           .eq('category_id', editingCategory.category_id)
@@ -98,6 +103,7 @@ export default function MenuPage() {
         const { error } = await supabase.from('categories').insert({
           tenant_id: selectedTenant.tenant_id,
           name: categoryFormData.name,
+          image_url: categoryFormData.image_url || null,
           display_order: categoryFormData.display_order,
         })
 
@@ -656,31 +662,46 @@ export default function MenuPage() {
                 <h3 className="text-sm font-semibold text-coffee-700 dark:text-cream-300 mb-3">
                   {editingCategory ? 'Edit Category' : 'Create New Category'}
                 </h3>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-                  <div className="lg:col-span-2">
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-coffee-600 dark:text-cream-400 mb-1">
+                      Category Name *
+                    </label>
                     <input
                       type="text"
                       value={categoryFormData.name}
                       onChange={e =>
                         setCategoryFormData({ ...categoryFormData, name: e.target.value })
                       }
-                      placeholder="Category name (e.g., Coffee, Pastries)"
+                      placeholder="e.g., Coffee, Pastries, Cold Drinks"
                       className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
                     />
                   </div>
                   <div>
+                    <label className="block text-xs font-medium text-coffee-600 dark:text-cream-400 mb-1">
+                      Category Image URL (optional)
+                    </label>
                     <input
-                      type="number"
-                      value={categoryFormData.display_order}
+                      type="url"
+                      value={categoryFormData.image_url}
                       onChange={e =>
-                        setCategoryFormData({
-                          ...categoryFormData,
-                          display_order: parseInt(e.target.value) || 0,
-                        })
+                        setCategoryFormData({ ...categoryFormData, image_url: e.target.value })
                       }
-                      placeholder="Display order"
+                      placeholder="https://example.com/coffee-image.jpg"
                       className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
                     />
+                    {categoryFormData.image_url && (
+                      <div className="mt-2">
+                        <img
+                          src={categoryFormData.image_url}
+                          alt="Category preview"
+                          className="w-24 h-24 rounded-lg object-cover border border-coffee-200 dark:border-dark-600"
+                          onError={e => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="mt-3 flex gap-2">
@@ -694,7 +715,7 @@ export default function MenuPage() {
                     <button
                       onClick={() => {
                         setEditingCategory(null)
-                        setCategoryFormData({ name: '', display_order: 0 })
+                        setCategoryFormData({ name: '', image_url: '', display_order: 0 })
                       }}
                       className="px-4 py-2 bg-gray-200 dark:bg-dark-700 text-coffee-900 dark:text-cream-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-dark-600 transition-all"
                     >
@@ -724,13 +745,23 @@ export default function MenuPage() {
                           className="flex items-center justify-between p-3 bg-white dark:bg-dark-900 rounded-lg border border-coffee-200/50 dark:border-dark-700"
                         >
                           <div className="flex items-center gap-3">
-                            <Tag className="w-5 h-5 text-coffee-600 dark:text-cream-400" />
+                            {category.image_url ? (
+                              <img
+                                src={category.image_url}
+                                alt={category.name}
+                                className="w-12 h-12 rounded-lg object-cover"
+                              />
+                            ) : (
+                              <div className="w-12 h-12 rounded-lg bg-coffee-100 dark:bg-dark-700 flex items-center justify-center">
+                                <Tag className="w-6 h-6 text-coffee-600 dark:text-cream-400" />
+                              </div>
+                            )}
                             <div>
                               <p className="font-medium text-coffee-900 dark:text-cream-100">
                                 {category.name}
                               </p>
                               <p className="text-xs text-coffee-500 dark:text-cream-500">
-                                Display order: {category.display_order}
+                                {category.image_url ? 'Has image' : 'No image'}
                               </p>
                             </div>
                           </div>
@@ -740,6 +771,7 @@ export default function MenuPage() {
                                 setEditingCategory(category)
                                 setCategoryFormData({
                                   name: category.name,
+                                  image_url: category.image_url || '',
                                   display_order: category.display_order,
                                 })
                               }}
