@@ -3,7 +3,22 @@
 -- Run this directly in Supabase SQL Editor
 -- =====================================================
 
--- Step 1: Add public read access to tenant_manifests
+-- Step 0: Add logo_url column if it doesn't exist
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'tenant_manifests'
+        AND column_name = 'logo_url'
+    ) THEN
+        ALTER TABLE tenant_manifests ADD COLUMN logo_url TEXT;
+    END IF;
+END $$;
+
+-- Step 1: Drop existing public view policy if it exists
+DROP POLICY IF EXISTS "Public can view tenant manifests" ON tenant_manifests;
+
+-- Step 1b: Add public read access to tenant_manifests
 -- This allows anonymous users to view the shop page
 CREATE POLICY "Public can view tenant manifests"
     ON tenant_manifests FOR SELECT
@@ -58,7 +73,8 @@ SELECT
     )
 FROM tenants t
 LEFT JOIN tenant_manifests tm ON t.tenant_id = tm.tenant_id
-WHERE tm.tenant_id IS NULL;
+WHERE tm.tenant_id IS NULL
+ON CONFLICT (tenant_id) DO NOTHING;
 
 -- Step 3: Verify the fix - Check green-landscaping-services
 SELECT
