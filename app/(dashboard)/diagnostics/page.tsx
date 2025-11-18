@@ -20,6 +20,7 @@ export default function CoffeeShopBuilderPage() {
     slug: 'test-coffee-' + Date.now(),
     primary_color: '#6b3410',
     owner_email: '',
+    createSampleMenu: true,
   })
 
   async function runDiagnostics() {
@@ -251,14 +252,97 @@ export default function CoffeeShopBuilderPage() {
         .insert(manifestPayload)
 
       if (manifestError) {
-        alert(\`Failed to create manifest: \${manifestError.message}\`)
+        alert(`Failed to create manifest: ${manifestError.message}`)
         // Try to delete the tenant we just created
         await supabase.from('tenants').delete().eq('tenant_id', newTenant.tenant_id)
         setLoading(false)
         return
       }
 
-      alert(\`✅ Success! Shop created at /shop/\${cleanSlug}\`)
+      // Step 3: Create sample categories and menu items if requested
+      if (newShopData.createSampleMenu) {
+        const { data: categories, error: categoryError } = await supabase
+          .from('categories')
+          .insert([
+            {
+              tenant_id: newTenant.tenant_id,
+              name: 'Hot Drinks',
+              display_order: 1,
+              is_active: true,
+            },
+            {
+              tenant_id: newTenant.tenant_id,
+              name: 'Cold Drinks',
+              display_order: 2,
+              is_active: true,
+            },
+            {
+              tenant_id: newTenant.tenant_id,
+              name: 'Pastries',
+              display_order: 3,
+              is_active: true,
+            },
+          ])
+          .select()
+
+        if (categoryError) {
+          console.warn('Failed to create categories:', categoryError)
+        }
+
+        // Create sample menu items
+        if (categories && categories.length > 0) {
+          const menuItems = [
+            {
+              tenant_id: newTenant.tenant_id,
+              category_id: categories[0].category_id,
+              name: 'Espresso',
+              description: 'Rich and bold espresso shot',
+              price: 2.50,
+              is_available: true,
+              display_order: 1,
+            },
+            {
+              tenant_id: newTenant.tenant_id,
+              category_id: categories[0].category_id,
+              name: 'Cappuccino',
+              description: 'Espresso with steamed milk and foam',
+              price: 3.50,
+              is_available: true,
+              display_order: 2,
+            },
+            {
+              tenant_id: newTenant.tenant_id,
+              category_id: categories[1].category_id,
+              name: 'Iced Latte',
+              description: 'Smooth espresso with cold milk over ice',
+              price: 4.00,
+              is_available: true,
+              display_order: 1,
+            },
+            {
+              tenant_id: newTenant.tenant_id,
+              category_id: categories[2].category_id,
+              name: 'Croissant',
+              description: 'Buttery, flaky French pastry',
+              price: 2.75,
+              is_available: true,
+              display_order: 1,
+            },
+          ]
+
+          const { error: menuError } = await supabase
+            .from('menu_items')
+            .insert(menuItems)
+
+          if (menuError) {
+            console.warn('Failed to create menu items:', menuError)
+          }
+        }
+
+        alert(`✅ Success! Shop created with sample menu at /shop/${cleanSlug}`)
+      } else {
+        alert(`✅ Success! Shop created at /shop/${cleanSlug}`)
+      }
       setTestSlug(cleanSlug)
       await runDiagnostics()
     } catch (err: any) {
@@ -417,6 +501,24 @@ export default function CoffeeShopBuilderPage() {
                 className="w-full px-4 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900"
                 placeholder="owner@example.com"
               />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="createSampleMenu"
+                checked={newShopData.createSampleMenu}
+                onChange={e =>
+                  setNewShopData({ ...newShopData, createSampleMenu: e.target.checked })
+                }
+                className="w-4 h-4 rounded border-coffee-300 text-coffee-600 focus:ring-coffee-500"
+              />
+              <label
+                htmlFor="createSampleMenu"
+                className="text-sm text-coffee-700 dark:text-cream-200"
+              >
+                Create sample menu items (3 categories, 4 items) for testing
+              </label>
             </div>
 
             <button
