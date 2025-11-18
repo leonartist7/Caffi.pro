@@ -102,19 +102,38 @@ export default function ClientsPage() {
         if (tenantError) throw tenantError
 
         // Update tenant_manifests if logo or color changed
-        const { error: manifestError } = await supabase
+        // First, get the current manifest to preserve existing design_tokens
+        const { data: currentManifest } = await supabase
           .from('tenant_manifests')
-          .update({
-            logo_url: formData.logo_url || null,
-            design_tokens: supabase.rpc('jsonb_set', {
-              target: {},
-              path: '{colors,primary}',
-              new_value: JSON.stringify(formData.primary_color),
-            }),
-          })
+          .select('design_tokens')
           .eq('tenant_id', editingTenant.tenant_id)
+          .single()
 
-        // Ignore error if manifest doesn't exist yet
+        if (currentManifest) {
+          const updatedDesignTokens = {
+            ...currentManifest.design_tokens,
+            colors: {
+              ...(currentManifest.design_tokens?.colors || {}),
+              primary: formData.primary_color,
+            },
+            branding: {
+              ...(currentManifest.design_tokens?.branding || {}),
+              logo_url: formData.logo_url || null,
+            },
+          }
+
+          const { error: manifestError } = await supabase
+            .from('tenant_manifests')
+            .update({
+              logo_url: formData.logo_url || null,
+              design_tokens: updatedDesignTokens,
+            })
+            .eq('tenant_id', editingTenant.tenant_id)
+
+          if (manifestError) {
+            console.error('Error updating manifest:', manifestError)
+          }
+        }
       } else {
         // Check if slug already exists
         const { data: existingTenant } = await supabase
@@ -188,6 +207,9 @@ export default function ClientsPage() {
                 md: 8,
                 lg: 16,
                 full: 9999,
+              },
+              branding: {
+                logo_url: formData.logo_url || null,
               },
             },
           }
