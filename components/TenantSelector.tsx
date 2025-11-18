@@ -89,6 +89,15 @@ export default function TenantSelector() {
       )
 
       setTenants(tenantsWithLogos)
+
+      // Update selected tenant with fresh data if it exists
+      if (selectedTenant) {
+        const freshTenant = tenantsWithLogos.find(t => t.tenant_id === selectedTenant.tenant_id)
+        if (freshTenant) {
+          console.log('Updating selected tenant with fresh data:', freshTenant)
+          setSelectedTenant(freshTenant)
+        }
+      }
     } catch (error) {
       console.error('Error fetching tenants:', error)
     } finally {
