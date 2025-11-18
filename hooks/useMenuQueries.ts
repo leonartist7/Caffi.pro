@@ -44,6 +44,7 @@ export function useCategories(
   options?: {
     activeOnly?: boolean
     enabled?: boolean
+    staleTime?: number
   }
 ) {
   const supabase = createClient()
@@ -69,7 +70,8 @@ export function useCategories(
       return (data || []) as Category[]
     },
     enabled: !!tenantId && options?.enabled !== false,
-    staleTime: 5 * 60 * 1000, // 5 minutes - categories don't change often
+    staleTime: options?.staleTime ?? 5 * 60 * 1000, // Default 5 minutes, 0 for admin pages
+    refetchOnMount: 'always', // Always refetch on mount
   })
 }
 
@@ -84,6 +86,7 @@ export function useMenuItems(
     activeOnly?: boolean
     withCategories?: boolean
     enabled?: boolean
+    staleTime?: number
   }
 ) {
   const supabase = createClient()
@@ -116,7 +119,8 @@ export function useMenuItems(
       return (data || []) as unknown as MenuItem[]
     },
     enabled: !!tenantId && options?.enabled !== false,
-    staleTime: 3 * 60 * 1000, // 3 minutes - menu items may change more frequently
+    staleTime: options?.staleTime ?? 3 * 60 * 1000, // Default 3 minutes, 0 for admin pages
+    refetchOnMount: 'always', // Always refetch on mount
   })
 }
 
@@ -129,17 +133,20 @@ export function useMenu(
   options?: {
     activeOnly?: boolean
     enabled?: boolean
+    staleTime?: number
   }
 ) {
   const categories = useCategories(tenantId, {
     activeOnly: options?.activeOnly,
     enabled: options?.enabled,
+    staleTime: options?.staleTime,
   })
 
   const menuItems = useMenuItems(tenantId, {
     activeOnly: options?.activeOnly,
     withCategories: true,
     enabled: options?.enabled,
+    staleTime: options?.staleTime,
   })
 
   return {

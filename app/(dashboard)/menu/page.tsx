@@ -49,6 +49,7 @@ export default function MenuPage() {
   // Fetch menu data with React Query caching
   const { categories, menuItems, isLoading } = useMenu(selectedTenant?.tenant_id, {
     activeOnly: false, // Admin needs to see all items
+    staleTime: 0, // Always refetch for admin (data changes frequently)
   })
 
   // Refetch when tenant changes
