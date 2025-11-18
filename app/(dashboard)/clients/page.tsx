@@ -173,6 +173,8 @@ export default function ClientsPage() {
         if (newTenant) {
           const manifestPayload = {
             tenant_id: newTenant.tenant_id,
+            name: `${formData.business_name} App`,
+            short_name: formData.business_name.substring(0, 30),
             design_tokens: {
               colors: {
                 primary: formData.primary_color,
