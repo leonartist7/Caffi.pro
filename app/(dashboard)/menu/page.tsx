@@ -8,17 +8,17 @@ import { useMenu } from '@/hooks/useMenuQueries'
 import {
   Coffee,
   Search,
-  Filter,
   Plus,
   Edit2,
   Trash2,
   Tag,
-  DollarSign,
   Eye,
   EyeOff,
   X,
   Building2,
-  Folder,
+  Check,
+  Image as ImageIcon,
+  Save,
 } from 'lucide-react'
 import type { MenuItem, Category } from '@/hooks/useMenuQueries'
 
@@ -26,31 +26,16 @@ export default function MenuPage() {
   const { selectedTenant } = useTenant()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
-  const [showModal, setShowModal] = useState(false)
-  const [showCategoryModal, setShowCategoryModal] = useState(false)
-  const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
-  const [editingCategory, setEditingCategory] = useState<Category | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [categoryFormData, setCategoryFormData] = useState({
-    name: '',
-    image_url: '',
-    display_order: 0,
-  })
+  const [showCategorySection, setShowCategorySection] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
+  const [addingNewItem, setAddingNewItem] = useState(false)
+  const [addingNewCategory, setAddingNewCategory] = useState(false)
   const supabase = createClient()
 
   // Fetch menu data with React Query caching
   const { categories, menuItems, isLoading } = useMenu(selectedTenant?.tenant_id, {
     activeOnly: false, // Admin needs to see all items
-  })
-
-  // Form state
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: '',
-    category_id: '',
-    is_active: true,
   })
 
   // Refetch data after mutations
@@ -59,177 +44,97 @@ export default function MenuPage() {
     categories.refetch()
   }
 
-  const openAddModal = () => {
-    setEditingItem(null)
-    setFormData({
-      name: '',
-      description: '',
-      price: '',
-      category_id: '',
-      is_active: true,
-    })
-    setShowModal(true)
-  }
+  // NEW ITEM STATE
+  const [newItem, setNewItem] = useState({
+    name: '',
+    description: '',
+    price: '',
+    category_id: '',
+    is_active: true,
+  })
 
-  const openCategoryModal = () => {
-    setEditingCategory(null)
-    setCategoryFormData({ name: '', image_url: '', display_order: 0 })
-    setShowCategoryModal(true)
-  }
+  // NEW CATEGORY STATE
+  const [newCategory, setNewCategory] = useState({
+    name: '',
+    image_url: '',
+  })
 
-  const handleSaveCategory = async () => {
+  // EDITING STATES
+  const [editItem, setEditItem] = useState<Partial<MenuItem>>({})
+  const [editCategory, setEditCategory] = useState<Partial<Category>>({})
+
+  const handleAddItem = async () => {
     if (!selectedTenant) return
+    if (!newItem.name || !newItem.price || !newItem.category_id) {
+      toast.error('Please fill in Name, Price, and Category')
+      return
+    }
 
     try {
-      if (!categoryFormData.name) {
-        toast.error('Category name is required')
-        return
+      const { error } = await supabase.from('menu_items').insert({
+        tenant_id: selectedTenant.tenant_id,
+        name: newItem.name,
+        description: newItem.description,
+        price: parseFloat(newItem.price),
+        category_id: newItem.category_id,
+        is_active: newItem.is_active,
+        modifiers: {},
+        tags: [],
+      })
+
+      if (error) {
+        console.error('Menu item creation error:', error)
+        throw error
       }
 
-      if (editingCategory) {
-        const { error } = await supabase
-          .from('categories')
-          .update({
-            name: categoryFormData.name,
-            image_url: categoryFormData.image_url || null,
-            display_order: categoryFormData.display_order,
-          })
-          .eq('category_id', editingCategory.category_id)
-          .eq('tenant_id', selectedTenant.tenant_id)
-
-        if (error) throw error
-        toast.success('Category updated successfully!')
-        setShowCategoryModal(false)
-      } else {
-        const { error } = await supabase.from('categories').insert({
-          tenant_id: selectedTenant.tenant_id,
-          name: categoryFormData.name,
-          image_url: categoryFormData.image_url || null,
-          display_order: categoryFormData.display_order,
-        })
-
-        if (error) throw error
-        toast.success('Category created successfully!')
-        // Reset form but keep modal open for creating more categories
-        setCategoryFormData({ name: '', image_url: '', display_order: 0 })
-        setEditingCategory(null)
-      }
-
+      toast.success('Menu item created!')
+      setNewItem({
+        name: '',
+        description: '',
+        price: '',
+        category_id: newItem.category_id,
+        is_active: true,
+      })
       refetchData()
-    } catch (error) {
-      console.error('Error saving category:', error)
+    } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      const dbError = error as any
-      if (dbError?.code) {
-        toast.error(`Database error (${dbError.code}): ${dbError.message || errorMessage}`)
+      if (error?.code) {
+        toast.error(`Database error (${error.code}): ${error.message || errorMessage}`)
       } else {
-        toast.error(`Failed to save category: ${errorMessage}`)
+        toast.error(`Failed to save: ${errorMessage}`)
       }
     }
   }
 
-  const handleDeleteCategory = async (categoryId: string) => {
+  const handleSaveItem = async (itemId: string) => {
     if (!selectedTenant) return
 
     try {
       const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('category_id', categoryId)
+        .from('menu_items')
+        .update({
+          name: editItem.name,
+          description: editItem.description,
+          price: editItem.price,
+          category_id: editItem.category_id,
+          is_active: editItem.is_active,
+        })
+        .eq('item_id', itemId)
         .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
 
-      toast.success('Category deleted successfully!')
+      toast.success('Updated!')
+      setEditingItemId(null)
+      setEditItem({})
       refetchData()
     } catch (error) {
-      console.error('Error deleting category:', error)
-      toast.error('Failed to delete category. Please try again.')
+      toast.error('Failed to update item')
     }
   }
 
-  const openEditModal = (item: MenuItem) => {
-    setEditingItem(item)
-    setFormData({
-      name: item.name,
-      description: item.description || '',
-      price: item.price.toString(),
-      category_id: item.category_id,
-      is_active: item.is_active,
-    })
-    setShowModal(true)
-  }
-
-  const handleSubmit = async () => {
-    if (!selectedTenant) return
-
-    try {
-      if (!formData.name || !formData.price || !formData.category_id) {
-        toast.error('Please fill in all required fields (Name, Price, Category)')
-        return
-      }
-
-      if (editingItem) {
-        // Update existing item
-        const { error } = await supabase
-          .from('menu_items')
-          .update({
-            name: formData.name,
-            description: formData.description,
-            price: parseFloat(formData.price),
-            category_id: formData.category_id,
-            is_active: formData.is_active,
-          })
-          .eq('item_id', editingItem.item_id)
-          .eq('tenant_id', selectedTenant.tenant_id)
-
-        if (error) throw error
-        toast.success('Menu item updated successfully!')
-        setShowModal(false)
-      } else {
-        // Create new item
-        const { error } = await supabase.from('menu_items').insert({
-          tenant_id: selectedTenant.tenant_id,
-          name: formData.name,
-          description: formData.description,
-          price: parseFloat(formData.price),
-          category_id: formData.category_id,
-          is_active: formData.is_active,
-          modifiers: {},
-          tags: [],
-        })
-
-        if (error) {
-          console.error('Menu item creation error:', error)
-          throw error
-        }
-        toast.success('Menu item created successfully!')
-        // Reset form but keep modal open for creating more items
-        setFormData({
-          name: '',
-          description: '',
-          price: '',
-          category_id: formData.category_id, // Keep same category selected for convenience
-          is_active: true,
-        })
-        setEditingItem(null)
-      }
-
-      refetchData()
-    } catch (error) {
-      console.error('Error saving menu item:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      const dbError = error as any
-      if (dbError?.code) {
-        toast.error(`Database error (${dbError.code}): ${dbError.message || errorMessage}`)
-      } else {
-        toast.error(`Failed to save menu item: ${errorMessage}`)
-      }
-    }
-  }
-
-  const handleDelete = async (itemId: string) => {
-    if (!selectedTenant) return
+  const handleDeleteItem = async (itemId: string) => {
+    if (!selectedTenant || !confirm('Delete this item?')) return
 
     try {
       const { error } = await supabase
@@ -239,17 +144,14 @@ export default function MenuPage() {
         .eq('tenant_id', selectedTenant.tenant_id)
 
       if (error) throw error
-
-      toast.success('Menu item deleted successfully!')
-      setDeleteConfirm(null)
+      toast.success('Item deleted!')
       refetchData()
     } catch (error) {
-      console.error('Error deleting menu item:', error)
-      toast.error('Failed to delete menu item. Please try again.')
+      toast.error('Failed to delete item')
     }
   }
 
-  const toggleAvailability = async (item: MenuItem) => {
+  const handleToggleActive = async (item: MenuItem) => {
     if (!selectedTenant) return
 
     try {
@@ -262,8 +164,99 @@ export default function MenuPage() {
       if (error) throw error
       refetchData()
     } catch (error) {
-      console.error('Error toggling availability:', error)
+      toast.error('Failed to toggle status')
     }
+  }
+
+  const handleAddCategory = async () => {
+    if (!selectedTenant || !newCategory.name) {
+      toast.error('Category name is required')
+      return
+    }
+
+    try {
+      const { error } = await supabase.from('categories').insert({
+        tenant_id: selectedTenant.tenant_id,
+        name: newCategory.name,
+        image_url: newCategory.image_url || null,
+        display_order: 0,
+      })
+
+      if (error) throw error
+
+      toast.success('Category created!')
+      setNewCategory({ name: '', image_url: '' })
+      refetchData()
+    } catch (error: any) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      if (error?.code) {
+        toast.error(`Database error (${error.code}): ${error.message || errorMessage}`)
+      } else {
+        toast.error(`Failed to save category: ${errorMessage}`)
+      }
+    }
+  }
+
+  const handleSaveCategory = async (categoryId: string) => {
+    if (!selectedTenant) return
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .update({
+          name: editCategory.name,
+          image_url: editCategory.image_url || null,
+        })
+        .eq('category_id', categoryId)
+        .eq('tenant_id', selectedTenant.tenant_id)
+
+      if (error) throw error
+
+      toast.success('Category updated!')
+      setEditingCategoryId(null)
+      setEditCategory({})
+      refetchData()
+    } catch (error) {
+      toast.error('Failed to update category')
+    }
+  }
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!selectedTenant || !confirm('Delete this category? Menu items will need reassignment.'))
+      return
+
+    try {
+      const { error } = await supabase
+        .from('categories')
+        .delete()
+        .eq('category_id', categoryId)
+        .eq('tenant_id', selectedTenant.tenant_id)
+
+      if (error) throw error
+      toast.success('Category deleted!')
+      refetchData()
+    } catch (error) {
+      toast.error('Failed to delete category')
+    }
+  }
+
+  const startEditingItem = (item: MenuItem) => {
+    setEditingItemId(item.item_id)
+    setEditItem({
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      category_id: item.category_id,
+      is_active: item.is_active,
+    })
+  }
+
+  const startEditingCategory = (category: Category) => {
+    setEditingCategoryId(category.category_id)
+    setEditCategory({
+      name: category.name,
+      image_url: category.image_url || '',
+    })
   }
 
   const filteredItems = (menuItems.data || []).filter(item => {
@@ -273,26 +266,8 @@ export default function MenuPage() {
 
     const matchesCategory = filterCategory === 'all' || item.category_id === filterCategory
 
-    const matchesStatus =
-      filterStatus === 'all' ||
-      (filterStatus === 'active' && item.is_active) ||
-      (filterStatus === 'inactive' && !item.is_active)
-
-    return matchesSearch && matchesCategory && matchesStatus
+    return matchesSearch && matchesCategory
   })
-
-  const stats = {
-    total: (menuItems.data || []).length,
-    active: (menuItems.data || []).filter(i => i.is_active).length,
-    categories: (categories.data || []).length,
-    avgPrice:
-      (menuItems.data || []).length > 0
-        ? (
-            (menuItems.data || []).reduce((acc, i) => acc + i.price, 0) /
-            (menuItems.data || []).length
-          ).toFixed(2)
-        : '0.00',
-  }
 
   // No tenant selected state
   if (!selectedTenant) {
@@ -306,8 +281,7 @@ export default function MenuPage() {
             Select a Coffee Shop Client
           </h2>
           <p className="text-coffee-600 dark:text-cream-400 mb-6">
-            Please select a client from the dropdown above to manage their menu items and
-            categories.
+            Please select a client from the dropdown above to manage their menu.
           </p>
         </div>
       </div>
@@ -317,526 +291,457 @@ export default function MenuPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6 lg:mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-            Menu Management
-          </h1>
-          <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-            Manage {selectedTenant.business_name}'s menu items and categories
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={openCategoryModal}
-            className="self-start lg:self-auto flex items-center gap-2 px-4 lg:px-5 py-2.5 lg:py-3 bg-white dark:bg-dark-800 text-coffee-700 dark:text-cream-300 border-2 border-coffee-300 dark:border-dark-600 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300"
-          >
-            <Folder className="w-4 h-4 lg:w-5 lg:h-5" />
-            <span className="text-sm lg:text-base">Manage Categories</span>
-          </button>
-          <button
-            onClick={openAddModal}
-            className="self-start lg:self-auto flex items-center gap-2 px-4 lg:px-6 py-2.5 lg:py-3 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
-          >
-            <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
-            <span className="text-sm lg:text-base">Add Menu Item</span>
-          </button>
-        </div>
+      <div className="mb-6">
+        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
+          Menu Management
+        </h1>
+        <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
+          Manage {selectedTenant.business_name}'s menu
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-6 mb-6 lg:mb-8">
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Total Items
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                {stats.total}
-              </p>
-            </div>
-            <Coffee className="w-6 h-6 lg:w-8 lg:h-8 text-coffee-600 dark:text-cream-300" />
-          </div>
-        </div>
-
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Active
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                {stats.active}
-              </p>
-            </div>
-            <Eye className="w-6 h-6 lg:w-8 lg:h-8 text-green-600" />
-          </div>
-        </div>
-
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Categories
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                {stats.categories}
-              </p>
-            </div>
-            <Tag className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600" />
-          </div>
-        </div>
-
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                Avg. Price
-              </p>
-              <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                €{stats.avgPrice}
-              </p>
-            </div>
-            <DollarSign className="w-6 h-6 lg:w-8 lg:h-8 text-purple-600" />
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6 lg:mb-8">
-        <div className="flex flex-col lg:flex-row gap-4">
+      {/* Search Bar with Buttons */}
+      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6">
+        <div className="flex flex-col lg:flex-row gap-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-coffee-400 dark:text-cream-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-coffee-400" />
             <input
               type="text"
               placeholder="Search menu items..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 placeholder:text-coffee-400 dark:placeholder:text-cream-500 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
-            <select
-              value={filterCategory}
-              onChange={e => setFilterCategory(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
+          <select
+            value={filterCategory}
+            onChange={e => setFilterCategory(e.target.value)}
+            className="px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+          >
+            <option value="all">All Categories</option>
+            {(categories.data || []).map(cat => (
+              <option key={cat.category_id} value={cat.category_id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={() => setShowCategorySection(!showCategorySection)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-dark-800 text-coffee-700 dark:text-cream-300 border-2 border-coffee-300 dark:border-dark-600 rounded-xl font-semibold hover:bg-coffee-50 dark:hover:bg-dark-700 transition-all"
+          >
+            <Tag className="w-4 h-4" />
+            <span>Manage Categories</span>
+          </button>
+
+          <button
+            onClick={() => setAddingNewItem(!addingNewItem)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-gradient-coffee text-cream-100 rounded-xl font-semibold hover:shadow-lg transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Item</span>
+          </button>
+        </div>
+      </div>
+
+      {/* CATEGORY MANAGEMENT SECTION */}
+      {showCategorySection && (
+        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-coffee-900 dark:text-cream-100">Categories</h3>
+            <button
+              onClick={() => setAddingNewCategory(!addingNewCategory)}
+              className="flex items-center gap-2 px-3 py-1.5 bg-gradient-coffee text-cream-100 rounded-lg text-sm font-semibold"
             >
-              <option value="all">All Categories</option>
+              <Plus className="w-4 h-4" />
+              Add Category
+            </button>
+          </div>
+
+          {/* Add New Category Row */}
+          {addingNewCategory && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl mb-3 border-2 border-green-200 dark:border-green-700">
+              <input
+                type="text"
+                placeholder="Category name..."
+                value={newCategory.name}
+                onChange={e => setNewCategory({ ...newCategory, name: e.target.value })}
+                className="lg:col-span-4 px-3 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+              />
+              <input
+                type="url"
+                placeholder="Image URL (optional)..."
+                value={newCategory.image_url}
+                onChange={e => setNewCategory({ ...newCategory, image_url: e.target.value })}
+                className="lg:col-span-6 px-3 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+              />
+              <div className="lg:col-span-2 flex gap-2">
+                <button
+                  onClick={handleAddCategory}
+                  className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all"
+                >
+                  <Check className="w-4 h-4" />
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setAddingNewCategory(false)
+                    setNewCategory({ name: '', image_url: '' })
+                  }}
+                  className="px-3 py-2 bg-gray-200 dark:bg-dark-700 text-coffee-900 dark:text-cream-100 rounded-lg hover:bg-gray-300 transition-all"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Category List */}
+          <div className="space-y-2">
+            {(categories.data || []).map(category => {
+              const isEditing = editingCategoryId === category.category_id
+
+              return (
+                <div
+                  key={category.category_id}
+                  className={`grid grid-cols-1 lg:grid-cols-12 gap-3 p-3 rounded-xl border transition-all ${
+                    isEditing
+                      ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700'
+                      : 'bg-white dark:bg-dark-900 border-coffee-200/50 dark:border-dark-700'
+                  }`}
+                >
+                  {isEditing ? (
+                    <>
+                      <input
+                        type="text"
+                        value={editCategory.name}
+                        onChange={e => setEditCategory({ ...editCategory, name: e.target.value })}
+                        className="lg:col-span-4 px-3 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                      />
+                      <input
+                        type="url"
+                        value={editCategory.image_url || ''}
+                        onChange={e =>
+                          setEditCategory({ ...editCategory, image_url: e.target.value })
+                        }
+                        placeholder="Image URL..."
+                        className="lg:col-span-6 px-3 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                      />
+                      <div className="lg:col-span-2 flex gap-2">
+                        <button
+                          onClick={() => handleSaveCategory(category.category_id)}
+                          className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        >
+                          <Save className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingCategoryId(null)
+                            setEditCategory({})
+                          }}
+                          className="px-3 py-2 bg-gray-200 dark:bg-dark-700 rounded-lg"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="lg:col-span-10 flex items-center gap-3">
+                        {category.image_url ? (
+                          <img
+                            src={category.image_url}
+                            alt={category.name}
+                            className="w-10 h-10 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-coffee-100 dark:bg-dark-700 flex items-center justify-center">
+                            <Tag className="w-5 h-5 text-coffee-600 dark:text-cream-400" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-semibold text-coffee-900 dark:text-cream-100">
+                            {category.name}
+                          </p>
+                          <p className="text-xs text-coffee-500 dark:text-cream-500">
+                            {category.image_url ? 'Has image' : 'No image'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="lg:col-span-2 flex gap-2 justify-end">
+                        <button
+                          onClick={() => startEditingCategory(category)}
+                          className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCategory(category.category_id)}
+                          className="px-3 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ADD NEW ITEM ROW */}
+      {addingNewItem && (
+        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 shadow-lg border-2 border-green-500 dark:border-green-600 mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-bold text-coffee-900 dark:text-cream-100">
+              Add New Menu Item
+            </h3>
+            <button
+              onClick={() => setAddingNewItem(false)}
+              className="p-1 hover:bg-coffee-100 dark:hover:bg-dark-700 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3">
+            <input
+              type="text"
+              placeholder="Item name..."
+              value={newItem.name}
+              onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+              className="lg:col-span-3 px-3 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+            />
+            <input
+              type="text"
+              placeholder="Description..."
+              value={newItem.description}
+              onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+              className="lg:col-span-4 px-3 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+            />
+            <input
+              type="number"
+              step="0.01"
+              placeholder="Price..."
+              value={newItem.price}
+              onChange={e => setNewItem({ ...newItem, price: e.target.value })}
+              className="lg:col-span-2 px-3 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+            />
+            <select
+              value={newItem.category_id}
+              onChange={e => setNewItem({ ...newItem, category_id: e.target.value })}
+              className="lg:col-span-2 px-3 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+            >
+              <option value="">Category...</option>
               {(categories.data || []).map(cat => (
                 <option key={cat.category_id} value={cat.category_id}>
                   {cat.name}
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <select
-              value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
+            <button
+              onClick={handleAddItem}
+              className="lg:col-span-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-xl font-semibold hover:bg-green-700 transition-all"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active Only</option>
-              <option value="inactive">Inactive Only</option>
-            </select>
+              <Check className="w-4 h-4" />
+              Add
+            </button>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Menu Items Grid */}
+      {/* MENU ITEMS LIST */}
       {isLoading ? (
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-12 shadow-lg border border-coffee-200/50 dark:border-dark-700 text-center">
+        <div className="bg-white/80 dark:bg-dark-800/80 rounded-2xl p-12 text-center">
           <div className="inline-block w-8 h-8 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-coffee-600 dark:text-cream-400 mt-4">Loading menu items...</p>
+          <p className="text-coffee-600 dark:text-cream-400 mt-4">Loading menu...</p>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-12 shadow-lg border border-coffee-200/50 dark:border-dark-700 text-center">
-          <Coffee className="w-12 h-12 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
-          <p className="text-coffee-600 dark:text-cream-400">No menu items found</p>
+        <div className="bg-white/80 dark:bg-dark-800/80 rounded-2xl p-12 text-center">
+          <Coffee className="w-12 h-12 text-coffee-300 mx-auto mb-4" />
+          <p className="text-coffee-600 dark:text-cream-400">
+            {addingNewItem
+              ? 'Fill in the form above to add your first item!'
+              : 'No menu items found'}
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
-          {filteredItems.map(item => (
-            <div
-              key={item.item_id}
-              className={`group bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-5 shadow-lg border border-coffee-200/50 dark:border-dark-700 hover:shadow-xl hover:scale-105 transition-all duration-300 ${
-                !item.is_active && 'opacity-60'
-              }`}
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-base lg:text-lg text-coffee-900 dark:text-cream-100 truncate">
-                    {item.name}
-                  </h3>
-                  <p className="text-xs text-coffee-500 dark:text-cream-500 mt-0.5">
-                    {item.categories?.name || 'Uncategorized'}
-                  </p>
-                </div>
+        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-coffee-200/50 dark:border-dark-700 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-coffee-100 dark:bg-dark-700">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase">
+                    Item
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase hidden lg:table-cell">
+                    Description
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase">
+                    Price
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase">
+                    Category
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-coffee-700 dark:text-cream-300 uppercase">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-coffee-200/50 dark:divide-dark-700">
+                {filteredItems.map(item => {
+                  const isEditing = editingItemId === item.item_id
 
-                <button onClick={() => toggleAvailability(item)} className="ml-2 flex-shrink-0">
-                  {item.is_active ? (
-                    <Eye className="w-5 h-5 text-green-600" />
-                  ) : (
-                    <EyeOff className="w-5 h-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-
-              {/* Description */}
-              <p className="text-sm text-coffee-600 dark:text-cream-400 mb-4 line-clamp-2 min-h-[40px]">
-                {item.description || 'No description available'}
-              </p>
-
-              {/* Price */}
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-2xl font-bold text-coffee-900 dark:text-cream-100 font-mono">
-                  €{item.price.toFixed(2)}
-                </span>
-                <span
-                  className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                    item.is_active
-                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                      : 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
-                  }`}
-                >
-                  {item.is_active ? 'Available' : 'Unavailable'}
-                </span>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => openEditModal(item)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-all text-sm font-medium"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </button>
-                <button
-                  onClick={() => setDeleteConfirm(item.item_id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition-all text-sm font-medium"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
-
-              {/* Delete Confirmation */}
-              {deleteConfirm === item.item_id && (
-                <div className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
-                  <p className="text-sm text-red-900 dark:text-red-300 font-semibold mb-2">
-                    Delete this item?
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleDelete(item.item_id)}
-                      className="flex-1 px-3 py-1.5 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-all"
+                  return (
+                    <tr
+                      key={item.item_id}
+                      className={`hover:bg-coffee-50 dark:hover:bg-dark-800 transition-colors ${
+                        isEditing ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                      }`}
                     >
-                      Yes, Delete
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(null)}
-                      className="flex-1 px-3 py-1.5 bg-gray-200 dark:bg-dark-700 text-coffee-900 dark:text-cream-100 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-dark-600 transition-all"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-2xl w-full my-8 max-h-[90vh] overflow-y-auto border border-coffee-200/50 dark:border-dark-700">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white dark:bg-dark-800 rounded-t-2xl p-6 border-b border-coffee-200/50 dark:border-dark-700 flex items-center justify-between z-10">
-              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-                {editingItem ? 'Edit Menu Item' : 'Add New Menu Item'}
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 rounded-lg hover:bg-coffee-100 dark:hover:bg-dark-700 transition-all"
-              >
-                <X className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                  Item Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Cappuccino"
-                  className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                  Description
-                </label>
-                <textarea
-                  value={formData.description}
-                  onChange={e => setFormData({ ...formData, description: e.target.value })}
-                  rows={3}
-                  placeholder="Describe your menu item..."
-                  className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                    Price (€) *
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={e => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="4.50"
-                    className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
-                    Category *
-                  </label>
-                  <select
-                    value={formData.category_id}
-                    onChange={e => setFormData({ ...formData, category_id: e.target.value })}
-                    className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600"
-                  >
-                    <option value="">Select category...</option>
-                    {(categories.data || []).map(cat => (
-                      <option key={cat.category_id} value={cat.category_id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="isActive"
-                  checked={formData.is_active}
-                  onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
-                  className="w-4 h-4 rounded border-coffee-300 text-coffee-600 focus:ring-coffee-500"
-                />
-                <label htmlFor="isActive" className="text-sm text-coffee-700 dark:text-cream-300">
-                  Available for order
-                </label>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-dark-800 rounded-b-2xl p-6 border-t border-coffee-200/50 dark:border-dark-700 flex justify-end gap-3 z-10">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-6 py-2.5 rounded-xl text-coffee-700 dark:text-cream-300 hover:bg-coffee-100 dark:hover:bg-dark-700 transition-all font-semibold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-6 py-2.5 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
-              >
-                {editingItem ? 'Update Item' : 'Create Item'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Category Management Modal */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-coffee-200/50 dark:border-dark-700">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-coffee-200/50 dark:border-dark-700 flex items-center justify-between">
-              <h2 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-                Manage Categories
-              </h2>
-              <button
-                onClick={() => setShowCategoryModal(false)}
-                className="p-2 rounded-lg hover:bg-coffee-100 dark:hover:bg-dark-700 transition-all"
-              >
-                <X className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-              {/* Create New Category Form */}
-              <div className="bg-coffee-50 dark:bg-dark-900 rounded-xl p-4 mb-6">
-                <h3 className="text-sm font-semibold text-coffee-700 dark:text-cream-300 mb-3">
-                  {editingCategory ? 'Edit Category' : 'Create New Category'}
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-coffee-600 dark:text-cream-400 mb-1">
-                      Category Name *
-                    </label>
-                    <input
-                      type="text"
-                      value={categoryFormData.name}
-                      onChange={e =>
-                        setCategoryFormData({ ...categoryFormData, name: e.target.value })
-                      }
-                      placeholder="e.g., Coffee, Pastries, Cold Drinks"
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-coffee-600 dark:text-cream-400 mb-1">
-                      Category Image URL (optional)
-                    </label>
-                    <input
-                      type="url"
-                      value={categoryFormData.image_url}
-                      onChange={e =>
-                        setCategoryFormData({ ...categoryFormData, image_url: e.target.value })
-                      }
-                      placeholder="https://example.com/coffee-image.jpg"
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500"
-                    />
-                    {categoryFormData.image_url && (
-                      <div className="mt-2">
-                        <img
-                          src={categoryFormData.image_url}
-                          alt="Category preview"
-                          className="w-24 h-24 rounded-lg object-cover border border-coffee-200 dark:border-dark-600"
-                          onError={e => {
-                            e.currentTarget.style.display = 'none'
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={handleSaveCategory}
-                    className="px-4 py-2 bg-gradient-coffee text-cream-100 rounded-lg font-semibold hover:shadow-lg transition-all"
-                  >
-                    {editingCategory ? 'Update' : 'Create'}
-                  </button>
-                  {editingCategory && (
-                    <button
-                      onClick={() => {
-                        setEditingCategory(null)
-                        setCategoryFormData({ name: '', image_url: '', display_order: 0 })
-                      }}
-                      className="px-4 py-2 bg-gray-200 dark:bg-dark-700 text-coffee-900 dark:text-cream-100 rounded-lg font-semibold hover:bg-gray-300 dark:hover:bg-dark-600 transition-all"
-                    >
-                      Cancel Edit
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Existing Categories List */}
-              <div>
-                <h3 className="text-sm font-semibold text-coffee-700 dark:text-cream-300 mb-3">
-                  Existing Categories ({(categories.data || []).length})
-                </h3>
-                {(categories.data || []).length === 0 ? (
-                  <div className="text-center py-8 text-coffee-500 dark:text-cream-500">
-                    <Folder className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>No categories yet. Create one above!</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {(categories.data || [])
-                      .sort((a, b) => a.display_order - b.display_order)
-                      .map(category => (
-                        <div
-                          key={category.category_id}
-                          className="flex items-center justify-between p-3 bg-white dark:bg-dark-900 rounded-lg border border-coffee-200/50 dark:border-dark-700"
+                      <td className="px-4 py-3">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editItem.name}
+                            onChange={e => setEditItem({ ...editItem, name: e.target.value })}
+                            className="w-full px-2 py-1 rounded border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                          />
+                        ) : (
+                          <div>
+                            <p className="font-semibold text-coffee-900 dark:text-cream-100">
+                              {item.name}
+                            </p>
+                            <p className="text-xs text-coffee-500 dark:text-cream-500 lg:hidden">
+                              {item.description || 'No description'}
+                            </p>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        {isEditing ? (
+                          <input
+                            type="text"
+                            value={editItem.description || ''}
+                            onChange={e =>
+                              setEditItem({ ...editItem, description: e.target.value })
+                            }
+                            className="w-full px-2 py-1 rounded border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                          />
+                        ) : (
+                          <p className="text-sm text-coffee-600 dark:text-cream-400">
+                            {item.description || '-'}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isEditing ? (
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editItem.price}
+                            onChange={e =>
+                              setEditItem({ ...editItem, price: parseFloat(e.target.value) })
+                            }
+                            className="w-20 px-2 py-1 rounded border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                          />
+                        ) : (
+                          <p className="font-semibold text-coffee-900 dark:text-cream-100">
+                            €{item.price.toFixed(2)}
+                          </p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isEditing ? (
+                          <select
+                            value={editItem.category_id}
+                            onChange={e =>
+                              setEditItem({ ...editItem, category_id: e.target.value })
+                            }
+                            className="w-full px-2 py-1 rounded border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 focus:outline-none focus:ring-2 focus:ring-coffee-500"
+                          >
+                            {(categories.data || []).map(cat => (
+                              <option key={cat.category_id} value={cat.category_id}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="px-2 py-1 bg-coffee-100 dark:bg-dark-700 text-coffee-700 dark:text-cream-300 rounded-full text-xs font-semibold">
+                            {item.categories?.name || 'Uncategorized'}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          onClick={() => handleToggleActive(item)}
+                          className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                            item.is_active
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200'
+                              : 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400 hover:bg-gray-200'
+                          }`}
                         >
-                          <div className="flex items-center gap-3">
-                            {category.image_url ? (
-                              <img
-                                src={category.image_url}
-                                alt={category.name}
-                                className="w-12 h-12 rounded-lg object-cover"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 rounded-lg bg-coffee-100 dark:bg-dark-700 flex items-center justify-center">
-                                <Tag className="w-6 h-6 text-coffee-600 dark:text-cream-400" />
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium text-coffee-900 dark:text-cream-100">
-                                {category.name}
-                              </p>
-                              <p className="text-xs text-coffee-500 dark:text-cream-500">
-                                {category.image_url ? 'Has image' : 'No image'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => {
-                                setEditingCategory(category)
-                                setCategoryFormData({
-                                  name: category.name,
-                                  image_url: category.image_url || '',
-                                  display_order: category.display_order,
-                                })
-                              }}
-                              className="p-2 rounded-lg hover:bg-coffee-100 dark:hover:bg-dark-700 text-coffee-600 dark:text-cream-400 transition-all"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (
-                                  window.confirm(
-                                    `Delete "${category.name}"? All menu items in this category will need to be reassigned.`
-                                  )
-                                ) {
-                                  handleDeleteCategory(category.category_id)
-                                }
-                              }}
-                              className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 transition-all"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+                          {item.is_active ? (
+                            <>
+                              <Eye className="w-3 h-3 inline mr-1" />
+                              Active
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="w-3 h-3 inline mr-1" />
+                              Inactive
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2 justify-end">
+                          {isEditing ? (
+                            <>
+                              <button
+                                onClick={() => handleSaveItem(item.item_id)}
+                                className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setEditingItemId(null)
+                                  setEditItem({})
+                                }}
+                                className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEditingItem(item)}
+                                className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteItem(item.item_id)}
+                                className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-6 border-t border-coffee-200/50 dark:border-dark-700 flex justify-end">
-              <button
-                onClick={() => setShowCategoryModal(false)}
-                className="px-6 py-2.5 bg-gradient-coffee text-cream-100 rounded-xl font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
-              >
-                Done
-              </button>
-            </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
