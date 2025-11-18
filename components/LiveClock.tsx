@@ -41,6 +41,7 @@ export default function LiveClock() {
       <div className="flex items-center space-x-1 text-[10px] lg:text-xs text-coffee-400 dark:text-cream-500">
         <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-green-500 animate-pulse"></div>
         <span>Live</span>
+        <span className="text-coffee-600 dark:text-cream-300 ml-2">• Brew Excellence Daily ☕</span>
       </div>
     </div>
   )
