@@ -1,20 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Coffee, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react'
 import { signInWithEmail } from '@/lib/auth-customer'
 
 export default function LoginPage() {
   const router = useRouter()
+  const params = useParams()
+  const tenantSlug = params.slug as string
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  // Extract tenant slug from URL
-  const tenantSlug = typeof window !== 'undefined' ? window.location.pathname.split('/')[2] : ''
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

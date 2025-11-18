@@ -1,14 +1,20 @@
-const CACHE_NAME = 'caffi-pro-v1'
-const urlsToCache = ['/', '/manifest.json', '/icon-192.png', '/icon-512.png']
+const CACHE_NAME = 'caffi-pro-v2'
+const urlsToCache = [
+  '/',
+  '/manifest.json',
+  '/icon-192.svg',
+  '/icon-512.svg',
+  '/icon-maskable-512.svg',
+]
 
 // Install service worker
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('Opened cache')
       return cache.addAll(urlsToCache)
     })
   )
+  self.skipWaiting()
 })
 
 // Cache and return requests
@@ -38,4 +44,5 @@ self.addEventListener('activate', event => {
       )
     })
   )
+  event.waitUntil(self.clients.claim())
 })

@@ -73,12 +73,16 @@ export default function OrderDetailPage() {
       return
     }
 
+    let channel: ReturnType<
+      ReturnType<typeof import('@/utils/supabase/client').createClient>['channel']
+    > | null = null
+
     async function setupRealtime() {
       const { createClient } = await import('@/utils/supabase/client')
       const supabase = createClient()
 
       // Subscribe to changes on this specific order
-      const channel = supabase
+      channel = supabase
         .channel(`order-${orderId}`)
         .on(
           'postgres_changes',
@@ -89,7 +93,6 @@ export default function OrderDetailPage() {
             filter: `order_id=eq.${orderId}`,
           },
           payload => {
-            console.log('Order updated:', payload.new)
             // Update order with new data
             setOrder(prev => {
               if (!prev) return null
@@ -101,25 +104,23 @@ export default function OrderDetailPage() {
             })
 
             // Stop auto-refresh if order is completed/cancelled
-            if (
-              payload.new.status === 'completed' ||
-              payload.new.status === 'cancelled'
-            ) {
+            if (payload.new.status === 'completed' || payload.new.status === 'cancelled') {
               setAutoRefresh(false)
             }
           }
         )
         .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
     }
 
-    const cleanup = setupRealtime()
+    setupRealtime()
 
     return () => {
-      cleanup.then(fn => fn && fn())
+      if (channel) {
+        import('@/utils/supabase/client').then(({ createClient }) => {
+          const supabase = createClient()
+          supabase.removeChannel(channel!)
+        })
+      }
     }
   }, [order, orderId, user])
 
