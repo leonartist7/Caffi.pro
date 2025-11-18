@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 import { getTenantBySlug } from '@/lib/get-tenant'
 import { useCart } from '@/contexts/CartContext'
@@ -24,6 +24,9 @@ type OrderType = 'pickup' | 'dine_in' | 'delivery'
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const params = useParams()
+  const tenantSlug = params.slug as string
+
   const { items, itemCount, subtotal, tax, total, clearCart } = useCart()
   const { user, loading: authLoading } = useAuth()
   const [locations, setLocations] = useState<Location[]>([])
@@ -37,19 +40,10 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [tenantSlug, setTenantSlug] = useState<string | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [currency, setCurrency] = useState('EUR')
 
   const supabase = createClient()
-
-  // Extract tenant slug from URL
-  useEffect(() => {
-    const pathname = window.location.pathname
-    const segments = pathname.split('/').filter(Boolean)
-    const slug = segments[1]
-    setTenantSlug(slug)
-  }, [])
 
   // Redirect if not logged in
   useEffect(() => {

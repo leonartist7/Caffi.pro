@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useParams } from 'next/navigation'
 import { getTenantBySlug } from '@/lib/get-tenant'
 import { Search, Coffee, Loader2 } from 'lucide-react'
 import MenuItemCard, { type MenuItem } from '@/components/shop/MenuItem'
@@ -10,11 +11,13 @@ import { useCart } from '@/contexts/CartContext'
 import { useMenu } from '@/hooks/useMenuQueries'
 
 export default function MenuPage() {
+  const params = useParams()
+  const tenantSlug = params.slug as string
+
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [tenantSlug, setTenantSlug] = useState<string | null>(null)
   const [tenantId, setTenantId] = useState<string | null>(null)
   const [currency, setCurrency] = useState('EUR')
 
@@ -22,15 +25,6 @@ export default function MenuPage() {
 
   // Fetch menu data with React Query caching
   const { categories, menuItems, isLoading } = useMenu(tenantId, { activeOnly: true })
-
-  // Extract tenant slug from URL on mount
-  useEffect(() => {
-    const pathname = window.location.pathname
-    const segments = pathname.split('/').filter(Boolean)
-    // URL: /shop/joesbeans/menu -> segments: ['shop', 'joesbeans', 'menu']
-    const slug = segments[1]
-    setTenantSlug(slug)
-  }, [])
 
   // Fetch tenant info when slug is available
   useEffect(() => {

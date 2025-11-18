@@ -29,6 +29,9 @@ interface CartContextType {
   tax: number
   total: number
   isCartOpen: boolean
+  currency: string
+  taxRate: number
+  formatPrice: (price: number) => string
   addItem: (
     item: {
       item_id: string
@@ -52,10 +55,15 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
-const TAX_RATE = 0.1 // 10% tax (configurable per tenant in future)
 const STORAGE_KEY = 'caffi-cart'
 
-export function CartProvider({ children }: { children: ReactNode }) {
+interface CartProviderProps {
+  children: ReactNode
+  currency?: string
+  taxRate?: number
+}
+
+export function CartProvider({ children, currency = 'EUR', taxRate = 0.1 }: CartProviderProps) {
   const [items, setItems] = useState<CartItem[]>([])
   const [isCartOpen, setIsCartOpen] = useState(false)
 
@@ -80,8 +88,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Calculate totals
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0)
   const subtotal = items.reduce((sum, item) => sum + item.total_price, 0)
-  const tax = subtotal * TAX_RATE
+  const tax = subtotal * taxRate
   const total = subtotal + tax
+
+  // Format price based on currency
+  const formatPrice = (price: number): string => {
+    const formatted = price.toFixed(2)
+    if (currency === 'EUR') return `€${formatted}`
+    if (currency === 'USD') return `$${formatted}`
+    if (currency === 'GBP') return `£${formatted}`
+    return `${formatted} ${currency}`
+  }
 
   // Generate a hash for item + modifiers to identify unique cart entries
   const getModifiersHash = (modifiers: CartItemModifiers, specialInstructions?: string): string => {
@@ -208,6 +225,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         tax,
         total,
         isCartOpen,
+        currency,
+        taxRate,
+        formatPrice,
         addItem,
         removeItem,
         updateQuantity,

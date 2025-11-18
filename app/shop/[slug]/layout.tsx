@@ -34,7 +34,7 @@ export default async function ShopLayout({
 
   return (
     <AuthProvider>
-      <CartProvider>
+      <CartProvider currency={tenant.currency || 'EUR'} taxRate={0.1}>
         <ShopLayoutClient tenant={tenant}>{children}</ShopLayoutClient>
       </CartProvider>
     </AuthProvider>
