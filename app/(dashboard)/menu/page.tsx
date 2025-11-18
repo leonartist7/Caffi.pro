@@ -5,7 +5,6 @@ import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
 import { useMenu } from '@/hooks/useMenuQueries'
-import { useQueryClient } from '@tanstack/react-query'
 import {
   Coffee,
   Search,
@@ -26,8 +25,19 @@ import type { MenuItem, Category } from '@/hooks/useMenuQueries'
 
 export default function MenuPage() {
   const { selectedTenant } = useTenant()
-  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Debug: Log selected tenant to check slug
+  useEffect(() => {
+    if (selectedTenant) {
+      console.log('Selected Tenant:', {
+        business_name: selectedTenant.business_name,
+        tenant_id: selectedTenant.tenant_id,
+        slug: selectedTenant.slug,
+        hasSlug: !!selectedTenant.slug,
+      })
+    }
+  }, [selectedTenant])
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [showCategorySection, setShowCategorySection] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
@@ -43,20 +53,17 @@ export default function MenuPage() {
 
   // Refetch when tenant changes
   useEffect(() => {
-    if (selectedTenant) {
-      // Invalidate all queries for this tenant by using partial key matching
-      queryClient.invalidateQueries({ queryKey: ['categories'] })
-      queryClient.invalidateQueries({ queryKey: ['menuItems'] })
+    if (selectedTenant?.tenant_id) {
+      // Force refetch when tenant changes
+      categories.refetch()
+      menuItems.refetch()
     }
-  }, [selectedTenant?.tenant_id, queryClient])
+  }, [selectedTenant?.tenant_id])
 
   // Refetch data after mutations
   const refetchData = async () => {
-    // Invalidate all queries to ensure fresh data
-    await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['categories'] }),
-      queryClient.invalidateQueries({ queryKey: ['menuItems'] }),
-    ])
+    // Force refetch from server, bypassing cache
+    await Promise.all([categories.refetch(), menuItems.refetch()])
   }
 
   // NEW ITEM STATE
@@ -110,7 +117,8 @@ export default function MenuPage() {
         category_id: newItem.category_id,
         is_active: true,
       })
-      refetchData()
+      setAddingNewItem(false)
+      await refetchData()
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (error?.code) {
@@ -201,7 +209,8 @@ export default function MenuPage() {
 
       toast.success('Category created!')
       setNewCategory({ name: '', image_url: '' })
-      refetchData()
+      setAddingNewCategory(false)
+      await refetchData()
     } catch (error: any) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       if (error?.code) {
@@ -315,15 +324,25 @@ export default function MenuPage() {
             Manage {selectedTenant.business_name}'s menu
           </p>
         </div>
-        <a
-          href={`/shop/${selectedTenant.slug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-coffee text-cream-100 rounded-xl font-semibold hover:shadow-lg transition-all"
-        >
-          <ExternalLink className="w-4 h-4" />
-          <span className="hidden lg:inline">View Shop</span>
-        </a>
+        {selectedTenant.slug ? (
+          <a
+            href={`/shop/${selectedTenant.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-coffee text-cream-100 rounded-xl font-semibold hover:shadow-lg transition-all"
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span className="hidden lg:inline">View Shop</span>
+          </a>
+        ) : (
+          <div
+            className="flex items-center gap-2 px-4 py-2 bg-gray-400 text-white rounded-xl font-semibold cursor-not-allowed opacity-50"
+            title="No shop URL configured for this client"
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span className="hidden lg:inline">No Shop URL</span>
+          </div>
+        )}
       </div>
 
       {/* Search Bar with Buttons */}
