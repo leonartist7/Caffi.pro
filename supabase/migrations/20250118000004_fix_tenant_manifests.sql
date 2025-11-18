@@ -3,7 +3,22 @@
 -- Resolves "Coffee Shop Not Found" error
 -- =====================================================
 
--- 1. ADD PUBLIC READ ACCESS TO TENANT_MANIFESTS
+-- 0. ADD LOGO_URL COLUMN IF IT DOESN'T EXIST
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'tenant_manifests'
+        AND column_name = 'logo_url'
+    ) THEN
+        ALTER TABLE tenant_manifests ADD COLUMN logo_url TEXT;
+    END IF;
+END $$;
+
+-- 1. DROP EXISTING POLICY IF IT EXISTS
+DROP POLICY IF EXISTS "Public can view tenant manifests" ON tenant_manifests;
+
+-- 1b. ADD PUBLIC READ ACCESS TO TENANT_MANIFESTS
 -- This allows the public shop page to load tenant branding
 CREATE POLICY "Public can view tenant manifests"
     ON tenant_manifests FOR SELECT
@@ -120,7 +135,8 @@ SELECT
     )
 FROM tenants t
 LEFT JOIN tenant_manifests tm ON t.tenant_id = tm.tenant_id
-WHERE tm.tenant_id IS NULL;
+WHERE tm.tenant_id IS NULL
+ON CONFLICT (tenant_id) DO NOTHING;
 
 -- 5. ADD COMMENT
 COMMENT ON POLICY "Public can view tenant manifests" ON tenant_manifests IS

@@ -1,39 +1,26 @@
 -- =====================================================
 -- IMMEDIATE FIX FOR COFFEE SHOP NOT FOUND ERROR
+-- Works WITHOUT logo_url column (stores everything in design_tokens)
 -- Run this directly in Supabase SQL Editor
 -- =====================================================
-
--- Step 0: Add logo_url column if it doesn't exist
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'tenant_manifests'
-        AND column_name = 'logo_url'
-    ) THEN
-        ALTER TABLE tenant_manifests ADD COLUMN logo_url TEXT;
-    END IF;
-END $$;
 
 -- Step 1: Drop existing public view policy if it exists
 DROP POLICY IF EXISTS "Public can view tenant manifests" ON tenant_manifests;
 
--- Step 1b: Add public read access to tenant_manifests
+-- Step 2: Add public read access to tenant_manifests
 -- This allows anonymous users to view the shop page
 CREATE POLICY "Public can view tenant manifests"
     ON tenant_manifests FOR SELECT
     TO anon, authenticated
     USING (true);
 
--- Step 2: Backfill manifests for ALL existing tenants
+-- Step 3: Backfill manifests for ALL existing tenants (NO logo_url column)
 INSERT INTO tenant_manifests (
     tenant_id,
-    logo_url,
     design_tokens
 )
 SELECT
     t.tenant_id,
-    NULL, -- Logo URL will be set via admin panel
     jsonb_build_object(
         'colors', jsonb_build_object(
             'primary', '#6b3410',
@@ -76,19 +63,18 @@ LEFT JOIN tenant_manifests tm ON t.tenant_id = tm.tenant_id
 WHERE tm.tenant_id IS NULL
 ON CONFLICT (tenant_id) DO NOTHING;
 
--- Step 3: Verify the fix - Check green-landscaping-services
+-- Step 4: Verify the fix - Check green-landscaping-services
 SELECT
     t.tenant_id,
     t.business_name,
     t.slug,
-    tm.logo_url,
     tm.design_tokens->'colors'->>'primary' as primary_color,
-    tm.design_tokens->'branding'->>'logo_url' as branding_logo_url
+    tm.design_tokens->'branding'->>'logo_url' as logo_url
 FROM tenants t
 LEFT JOIN tenant_manifests tm ON t.tenant_id = tm.tenant_id
 WHERE t.slug = 'green-landscaping-services';
 
--- Step 4: Show all tenants with their manifest status
+-- Step 5: Show all tenants with their manifest status
 SELECT
     t.tenant_id,
     t.business_name,
@@ -96,7 +82,8 @@ SELECT
     CASE
         WHEN tm.tenant_id IS NULL THEN 'MISSING MANIFEST ❌'
         ELSE 'Has Manifest ✅'
-    END as manifest_status
+    END as manifest_status,
+    tm.design_tokens->'colors'->>'primary' as primary_color
 FROM tenants t
 LEFT JOIN tenant_manifests tm ON t.tenant_id = tm.tenant_id
 ORDER BY t.business_name;

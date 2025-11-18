@@ -125,7 +125,6 @@ export default function ClientsPage() {
           const { error: manifestError } = await supabase
             .from('tenant_manifests')
             .update({
-              logo_url: formData.logo_url || null,
               design_tokens: updatedDesignTokens,
             })
             .eq('tenant_id', editingTenant.tenant_id)
@@ -174,7 +173,8 @@ export default function ClientsPage() {
         if (newTenant) {
           const manifestPayload = {
             tenant_id: newTenant.tenant_id,
-            logo_url: formData.logo_url || null,
+            name: `${formData.business_name} App`,
+            short_name: formData.business_name.substring(0, 30),
             design_tokens: {
               colors: {
                 primary: formData.primary_color,
