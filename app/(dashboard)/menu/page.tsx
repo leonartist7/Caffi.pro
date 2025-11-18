@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
 import { useMenu } from '@/hooks/useMenuQueries'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   Coffee,
   Search,
@@ -19,11 +20,13 @@ import {
   Check,
   Image as ImageIcon,
   Save,
+  ExternalLink,
 } from 'lucide-react'
 import type { MenuItem, Category } from '@/hooks/useMenuQueries'
 
 export default function MenuPage() {
   const { selectedTenant } = useTenant()
+  const queryClient = useQueryClient()
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('all')
   const [showCategorySection, setShowCategorySection] = useState(false)
@@ -38,10 +41,22 @@ export default function MenuPage() {
     activeOnly: false, // Admin needs to see all items
   })
 
+  // Refetch when tenant changes
+  useEffect(() => {
+    if (selectedTenant) {
+      // Invalidate all queries for this tenant by using partial key matching
+      queryClient.invalidateQueries({ queryKey: ['categories'] })
+      queryClient.invalidateQueries({ queryKey: ['menuItems'] })
+    }
+  }, [selectedTenant?.tenant_id, queryClient])
+
   // Refetch data after mutations
-  const refetchData = () => {
-    menuItems.refetch()
-    categories.refetch()
+  const refetchData = async () => {
+    // Invalidate all queries to ensure fresh data
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['categories'] }),
+      queryClient.invalidateQueries({ queryKey: ['menuItems'] }),
+    ])
   }
 
   // NEW ITEM STATE
@@ -291,13 +306,24 @@ export default function MenuPage() {
   return (
     <div>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-          Menu Management
-        </h1>
-        <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-          Manage {selectedTenant.business_name}'s menu
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
+            Menu Management
+          </h1>
+          <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
+            Manage {selectedTenant.business_name}'s menu
+          </p>
+        </div>
+        <a
+          href={`/shop/${selectedTenant.slug}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-coffee text-cream-100 rounded-xl font-semibold hover:shadow-lg transition-all"
+        >
+          <ExternalLink className="w-4 h-4" />
+          <span className="hidden lg:inline">View Shop</span>
+        </a>
       </div>
 
       {/* Search Bar with Buttons */}
