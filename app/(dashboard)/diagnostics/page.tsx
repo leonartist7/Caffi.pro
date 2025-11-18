@@ -29,10 +29,7 @@ export default function CoffeeShopBuilderPage() {
 
     // TEST 1: Check if tenant_manifests table exists and its schema
     try {
-      const { data, error } = await supabase
-        .from('tenant_manifests')
-        .select('*')
-        .limit(1)
+      const { data, error } = await supabase.from('tenant_manifests').select('*').limit(1)
 
       if (error) {
         diagnostics.push({
@@ -67,21 +64,21 @@ export default function CoffeeShopBuilderPage() {
 
       if (error || !tenant) {
         diagnostics.push({
-          test: \`Tenant '\${testSlug}' exists\`,
+          test: `Tenant '${testSlug}' exists`,
           status: 'fail',
           message: error?.message || 'Tenant not found',
         })
       } else {
         diagnostics.push({
-          test: \`Tenant '\${testSlug}' exists\`,
+          test: `Tenant '${testSlug}' exists`,
           status: 'pass',
-          message: \`Found: \${tenant.business_name}\`,
+          message: `Found: ${tenant.business_name}`,
           details: tenant,
         })
       }
     } catch (err: any) {
       diagnostics.push({
-        test: \`Tenant '\${testSlug}' exists\`,
+        test: `Tenant '${testSlug}' exists`,
         status: 'fail',
         message: err.message,
       })
@@ -112,7 +109,7 @@ export default function CoffeeShopBuilderPage() {
           diagnostics.push({
             test: 'Manifest exists for tenant',
             status: 'pass',
-            message: \`Manifest found: \${manifest.name || 'unnamed'}\`,
+            message: `Manifest found: ${manifest.name || 'unnamed'}`,
             details: manifest,
           })
         }
@@ -153,17 +150,13 @@ export default function CoffeeShopBuilderPage() {
 
     // TEST 5: Detect tenant_manifests schema
     try {
-      const { data } = await supabase
-        .from('tenant_manifests')
-        .select('*')
-        .limit(1)
-        .single()
+      const { data } = await supabase.from('tenant_manifests').select('*').limit(1).single()
 
       const columns = data ? Object.keys(data) : []
       diagnostics.push({
         test: 'Detect tenant_manifests schema',
         status: 'pass',
-        message: \`Found \${columns.length} columns\`,
+        message: `Found ${columns.length} columns`,
         details: { columns, has_logo_url: columns.includes('logo_url') },
       })
     } catch (err: any) {
@@ -189,16 +182,15 @@ export default function CoffeeShopBuilderPage() {
         .insert({
           business_name: newShopData.business_name,
           slug: cleanSlug,
-          owner_email:
-            newShopData.owner_email || \`owner@\${cleanSlug}.caffi.pro\`,
+          owner_email: newShopData.owner_email || `owner@${cleanSlug}.caffi.pro`,
           app_name: newShopData.business_name,
-          bundle_id: \`com.caffi.\${cleanSlug}\`,
+          bundle_id: `com.caffi.${cleanSlug}`,
         })
         .select()
         .single()
 
       if (tenantError) {
-        alert(\`Failed to create tenant: \${tenantError.message}\`)
+        alert(`Failed to create tenant: ${tenantError.message}`)
         setLoading(false)
         return
       }
@@ -206,7 +198,7 @@ export default function CoffeeShopBuilderPage() {
       // Step 2: Create manifest
       const manifestPayload = {
         tenant_id: newTenant.tenant_id,
-        name: \`\${newShopData.business_name} App\`,
+        name: `${newShopData.business_name} App`,
         short_name: newShopData.business_name.substring(0, 30),
         design_tokens: {
           colors: {
@@ -297,7 +289,7 @@ export default function CoffeeShopBuilderPage() {
               category_id: categories[0].category_id,
               name: 'Espresso',
               description: 'Rich and bold espresso shot',
-              price: 2.50,
+              price: 2.5,
               is_available: true,
               display_order: 1,
             },
@@ -306,7 +298,7 @@ export default function CoffeeShopBuilderPage() {
               category_id: categories[0].category_id,
               name: 'Cappuccino',
               description: 'Espresso with steamed milk and foam',
-              price: 3.50,
+              price: 3.5,
               is_available: true,
               display_order: 2,
             },
@@ -315,7 +307,7 @@ export default function CoffeeShopBuilderPage() {
               category_id: categories[1].category_id,
               name: 'Iced Latte',
               description: 'Smooth espresso with cold milk over ice',
-              price: 4.00,
+              price: 4.0,
               is_available: true,
               display_order: 1,
             },
@@ -330,9 +322,7 @@ export default function CoffeeShopBuilderPage() {
             },
           ]
 
-          const { error: menuError } = await supabase
-            .from('menu_items')
-            .insert(menuItems)
+          const { error: menuError } = await supabase.from('menu_items').insert(menuItems)
 
           if (menuError) {
             console.warn('Failed to create menu items:', menuError)
@@ -346,7 +336,7 @@ export default function CoffeeShopBuilderPage() {
       setTestSlug(cleanSlug)
       await runDiagnostics()
     } catch (err: any) {
-      alert(\`Error: \${err.message}\`)
+      alert(`Error: ${err.message}`)
     }
     setLoading(false)
   }
@@ -393,13 +383,13 @@ export default function CoffeeShopBuilderPage() {
               {results.map((result, i) => (
                 <div
                   key={i}
-                  className={\`p-4 rounded-lg border-l-4 \${
+                  className={`p-4 rounded-lg border-l-4 ${
                     result.status === 'pass'
                       ? 'bg-green-50 dark:bg-green-900/20 border-green-500'
                       : result.status === 'fail'
                         ? 'bg-red-50 dark:bg-red-900/20 border-red-500'
                         : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-500'
-                  }\`}
+                  }`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -442,9 +432,7 @@ export default function CoffeeShopBuilderPage() {
               <input
                 type="text"
                 value={newShopData.business_name}
-                onChange={e =>
-                  setNewShopData({ ...newShopData, business_name: e.target.value })
-                }
+                onChange={e => setNewShopData({ ...newShopData, business_name: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900"
               />
             </div>
@@ -472,17 +460,13 @@ export default function CoffeeShopBuilderPage() {
                 <input
                   type="color"
                   value={newShopData.primary_color}
-                  onChange={e =>
-                    setNewShopData({ ...newShopData, primary_color: e.target.value })
-                  }
+                  onChange={e => setNewShopData({ ...newShopData, primary_color: e.target.value })}
                   className="h-10 w-20 rounded border border-coffee-200 dark:border-dark-600"
                 />
                 <input
                   type="text"
                   value={newShopData.primary_color}
-                  onChange={e =>
-                    setNewShopData({ ...newShopData, primary_color: e.target.value })
-                  }
+                  onChange={e => setNewShopData({ ...newShopData, primary_color: e.target.value })}
                   className="flex-1 px-4 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900"
                 />
               </div>
@@ -495,9 +479,7 @@ export default function CoffeeShopBuilderPage() {
               <input
                 type="email"
                 value={newShopData.owner_email}
-                onChange={e =>
-                  setNewShopData({ ...newShopData, owner_email: e.target.value })
-                }
+                onChange={e => setNewShopData({ ...newShopData, owner_email: e.target.value })}
                 className="w-full px-4 py-2 rounded-lg border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900"
                 placeholder="owner@example.com"
               />
@@ -533,13 +515,11 @@ export default function CoffeeShopBuilderPage() {
 
         {/* Quick Links */}
         <div className="mt-6 p-4 bg-coffee-100 dark:bg-dark-800 rounded-lg">
-          <h3 className="font-medium text-coffee-900 dark:text-cream-100 mb-2">
-            Quick Links:
-          </h3>
+          <h3 className="font-medium text-coffee-900 dark:text-cream-100 mb-2">Quick Links:</h3>
           <ul className="space-y-1 text-sm">
             <li>
               <a
-                href={\`/shop/\${testSlug}\`}
+                href={`/shop/${testSlug}`}
                 target="_blank"
                 className="text-coffee-600 dark:text-coffee-400 hover:underline"
               >
@@ -547,10 +527,7 @@ export default function CoffeeShopBuilderPage() {
               </a>
             </li>
             <li>
-              <a
-                href="/clients"
-                className="text-coffee-600 dark:text-coffee-400 hover:underline"
-              >
+              <a href="/clients" className="text-coffee-600 dark:text-coffee-400 hover:underline">
                 → Manage Clients
               </a>
             </li>
