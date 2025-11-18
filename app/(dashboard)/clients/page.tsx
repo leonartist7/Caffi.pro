@@ -206,6 +206,20 @@ export default function ClientsPage() {
       }
 
       await fetchTenants()
+
+      // Auto-select newly created tenant
+      if (!editingTenant && formData.business_name) {
+        const { data: freshTenant } = await supabase
+          .from('tenants')
+          .select('tenant_id, business_name, slug')
+          .eq('slug', formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'))
+          .single()
+
+        if (freshTenant) {
+          setSelectedTenant(freshTenant)
+        }
+      }
+
       closeModal()
       toast.success('Client created successfully!')
     } catch (error) {

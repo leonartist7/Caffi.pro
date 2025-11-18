@@ -43,20 +43,30 @@ export async function getTenantBySlug(slug: string | null): Promise<Tenant | nul
       .single()
 
     if (error) {
-      console.error('Error fetching tenant by slug:', error)
+      console.error('[getTenantBySlug] Database error:', {
+        slug,
+        errorMessage: error.message,
+        errorCode: error.code,
+        errorDetails: error.details,
+      })
+      return null
+    }
+
+    if (!data) {
+      console.warn('[getTenantBySlug] No tenant found for slug:', slug)
       return null
     }
 
     // Also get the manifest for design tokens (logo, colors, etc.)
     const { data: manifest } = await supabase
       .from('tenant_manifests')
-      .select('design_tokens')
+      .select('design_tokens, logo_url')
       .eq('tenant_id', data.tenant_id)
       .single()
 
     return {
       ...data,
-      logo_url: manifest?.design_tokens?.branding?.logo_url,
+      logo_url: manifest?.logo_url,
       primary_color: manifest?.design_tokens?.colors?.primary || '#6b3410',
     }
   } catch (err) {
@@ -91,13 +101,13 @@ export async function getTenantByDomain(domain: string): Promise<Tenant | null> 
     // Also get the manifest for design tokens
     const { data: manifest } = await supabase
       .from('tenant_manifests')
-      .select('design_tokens')
+      .select('design_tokens, logo_url')
       .eq('tenant_id', data.tenant_id)
       .single()
 
     return {
       ...data,
-      logo_url: manifest?.design_tokens?.branding?.logo_url,
+      logo_url: manifest?.logo_url,
       primary_color: manifest?.design_tokens?.colors?.primary || '#6b3410',
     }
   } catch (err) {
@@ -128,13 +138,13 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
     // Also get the manifest for design tokens
     const { data: manifest } = await supabase
       .from('tenant_manifests')
-      .select('design_tokens')
+      .select('design_tokens, logo_url')
       .eq('tenant_id', data.tenant_id)
       .single()
 
     return {
       ...data,
-      logo_url: manifest?.design_tokens?.branding?.logo_url,
+      logo_url: manifest?.logo_url,
       primary_color: manifest?.design_tokens?.colors?.primary || '#6b3410',
     }
   } catch (err) {
