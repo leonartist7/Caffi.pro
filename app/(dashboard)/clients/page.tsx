@@ -116,6 +116,18 @@ export default function ClientsPage() {
 
         // Ignore error if manifest doesn't exist yet
       } else {
+        // Check if slug already exists
+        const { data: existingTenant } = await supabase
+          .from('tenants')
+          .select('slug')
+          .eq('slug', cleanSlug)
+          .single()
+
+        if (existingTenant) {
+          toast.error(`Slug "${cleanSlug}" is already taken. Please choose a different slug.`)
+          return
+        }
+
         // For new tenants, insert into tenants table with required fields
         const tenantPayload = {
           business_name: formData.business_name,

@@ -60,6 +60,52 @@ export default function OrdersPage() {
     }
   }, [selectedTenant, currentPage])
 
+  // Real-time subscription for live order updates
+  useEffect(() => {
+    if (!selectedTenant?.tenant_id) return
+
+    // Subscribe to order changes for this tenant
+    const channel = supabase
+      .channel(`orders:tenant_id=eq.${selectedTenant.tenant_id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'orders',
+          filter: `tenant_id=eq.${selectedTenant.tenant_id}`,
+        },
+        payload => {
+          console.log('Real-time order update:', payload)
+
+          if (payload.eventType === 'INSERT') {
+            toast.success('New order received!', {
+              description: `Order #${payload.new.order_number}`,
+            })
+            fetchOrders() // Refresh to show new order
+          } else if (payload.eventType === 'UPDATE') {
+            toast.info('Order updated', {
+              description: `Order #${payload.new.order_number} → ${payload.new.status}`,
+            })
+            fetchOrders() // Refresh to show updated status
+          } else if (payload.eventType === 'DELETE') {
+            fetchOrders() // Refresh to remove deleted order
+          }
+        }
+      )
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Real-time orders subscription active')
+        }
+      })
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('🔌 Unsubscribing from orders channel')
+      supabase.removeChannel(channel)
+    }
+  }, [selectedTenant?.tenant_id])
+
   async function fetchOrders() {
     if (!selectedTenant) return
 
@@ -583,9 +629,7 @@ export default function OrdersPage() {
           </div>
           <button
             onClick={() =>
-              setCurrentPage(prev =>
-                Math.min(Math.ceil(totalOrders / ordersPerPage), prev + 1)
-              )
+              setCurrentPage(prev => Math.min(Math.ceil(totalOrders / ordersPerPage), prev + 1))
             }
             disabled={currentPage === Math.ceil(totalOrders / ordersPerPage)}
             className="px-4 py-2 rounded-lg bg-white/80 dark:bg-dark-800/80 border border-coffee-200 dark:border-dark-700 text-coffee-900 dark:text-cream-100 font-medium hover:bg-coffee-50 dark:hover:bg-dark-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"

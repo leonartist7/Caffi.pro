@@ -1,48 +1,70 @@
 {
-  "name": "Caffi.pro - Coffee Shop",
+  "name": "Caffi.pro - Coffee Shop Management",
   "short_name": "Caffi.pro",
-  "description": "Your favorite coffee shop, now in your pocket",
+  "description": "Multi-tenant coffee shop ordering and management platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#6b3410",
-  "theme_color": "#6b3410",
+  "theme_color": "#8D4004",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icon-192.svg",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/svg+xml",
+      "purpose": "any"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-512.svg",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
     }
   ],
-  "categories": ["food", "lifestyle", "shopping"],
   "shortcuts": [
     {
-      "name": "Menu",
+      "name": "Browse Menu",
       "short_name": "Menu",
-      "description": "Browse our menu",
-      "url": "/shop/menu",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "description": "View our coffee menu",
+      "url": "/menu",
+      "icons": [
+        {
+          "src": "/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
-      "name": "Orders",
+      "name": "My Orders",
       "short_name": "Orders",
-      "description": "View your orders",
-      "url": "/shop/orders",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "description": "Track your orders",
+      "url": "/orders",
+      "icons": [
+        {
+          "src": "/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Rewards",
       "short_name": "Rewards",
-      "description": "Redeem rewards",
-      "url": "/shop/rewards",
-      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+      "description": "View your rewards",
+      "url": "/rewards",
+      "icons": [
+        {
+          "src": "/icon-192.svg",
+          "sizes": "192x192"
+        }
+      ]
     }
-  ]
+  ],
+  "categories": ["food", "lifestyle", "shopping"],
+  "screenshots": []
 }

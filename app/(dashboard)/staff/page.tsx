@@ -76,7 +76,7 @@ export default function AdminStaffPage() {
           )
         `
         )
-        .eq('tenant_id', selectedTenant)
+        .eq('tenant_id', selectedTenant.tenant_id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -94,7 +94,7 @@ export default function AdminStaffPage() {
       const { data, error } = await supabase
         .from('locations')
         .select('location_id, name')
-        .eq('tenant_id', selectedTenant)
+        .eq('tenant_id', selectedTenant.tenant_id)
         .eq('is_active', true)
         .order('name')
 
@@ -123,7 +123,7 @@ export default function AdminStaffPage() {
     try {
       const payload = {
         ...formData,
-        tenant_id: selectedTenant,
+        tenant_id: selectedTenant.tenant_id,
         assigned_location_id: formData.assigned_location_id || null,
       }
 
