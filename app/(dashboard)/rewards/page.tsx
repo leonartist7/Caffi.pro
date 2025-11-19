@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import {
@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
   Star,
-  TrendingUp,
   Award,
   Package,
   Search,
@@ -65,6 +64,7 @@ export default function RewardsPage() {
     if (selectedTenant) {
       fetchRewards()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTenant])
 
   async function fetchRewards() {

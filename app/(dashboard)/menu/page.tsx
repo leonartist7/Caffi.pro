@@ -17,7 +17,6 @@ import {
   X,
   Building2,
   Check,
-  Image as ImageIcon,
   Save,
   ExternalLink,
 } from 'lucide-react'
@@ -59,6 +58,7 @@ export default function MenuPage() {
       categories.refetch()
       menuItems.refetch()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTenant?.tenant_id])
 
   // Refetch data after mutations

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
@@ -13,7 +13,6 @@ import {
   XCircle,
   DollarSign,
   Users,
-  TrendingUp,
   Package,
   Building2,
 } from 'lucide-react'
@@ -58,6 +57,7 @@ export default function OrdersPage() {
     if (selectedTenant) {
       fetchOrders()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTenant, currentPage])
 
   // Real-time subscription for live order updates
@@ -104,6 +104,7 @@ export default function OrdersPage() {
       console.log('🔌 Unsubscribing from orders channel')
       supabase.removeChannel(channel)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTenant?.tenant_id])
 
   async function fetchOrders() {

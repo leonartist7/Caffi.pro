@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useStaffAuth } from '@/contexts/StaffAuthContext'
@@ -116,7 +117,11 @@ export default function StaffLoginPage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
                     <circle
                       className="opacity-25"
                       cx="12"
@@ -150,13 +155,17 @@ export default function StaffLoginPage() {
         {/* Demo Credentials (Dev Mode) */}
         {process.env.NODE_ENV === 'development' && (
           <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <p className="text-xs font-semibold text-yellow-800 mb-2">Demo Credentials (Dev Mode):</p>
+            <p className="text-xs font-semibold text-yellow-800 mb-2">
+              Demo Credentials (Dev Mode):
+            </p>
             <p className="text-xs text-yellow-700">
               Email: staff@example.com
               <br />
               Password: password123
               <br />
-              <span className="text-yellow-600 italic">(Create staff user in admin dashboard first)</span>
+              <span className="text-yellow-600 italic">
+                (Create staff user in admin dashboard first)
+              </span>
             </p>
           </div>
         )}

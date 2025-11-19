@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
@@ -66,13 +66,7 @@ export default function LocationsPage() {
     accepts_orders: true,
   })
 
-  useEffect(() => {
-    if (selectedTenant) {
-      fetchLocations()
-    }
-  }, [selectedTenant])
-
-  async function fetchLocations() {
+  const fetchLocations = useCallback(async () => {
     if (!selectedTenant) return
 
     try {
@@ -90,7 +84,13 @@ export default function LocationsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedTenant, supabase])
+
+  useEffect(() => {
+    if (selectedTenant) {
+      fetchLocations()
+    }
+  }, [selectedTenant, fetchLocations])
 
   const openAddModal = () => {
     setEditingLocation(null)

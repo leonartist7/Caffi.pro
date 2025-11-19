@@ -14,7 +14,6 @@ import {
   Loader2,
   Tag,
   Truck,
-  Home as HomeIcon,
   UtensilsCrossed,
 } from 'lucide-react'
 import LocationSelector, { type Location } from '@/components/shop/LocationSelector'
@@ -27,7 +26,7 @@ export default function CheckoutPage() {
   const params = useParams()
   const tenantSlug = params.slug as string
 
-  const { items, itemCount, subtotal, tax, total, clearCart } = useCart()
+  const { items, itemCount, subtotal, tax, clearCart } = useCart()
   const { user, loading: authLoading } = useAuth()
   const [locations, setLocations] = useState<Location[]>([])
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null)
@@ -50,6 +49,7 @@ export default function CheckoutPage() {
     if (!authLoading && !user && tenantSlug) {
       router.push(`/shop/${tenantSlug}/login`)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, tenantSlug])
 
   // Redirect if cart is empty
@@ -57,6 +57,7 @@ export default function CheckoutPage() {
     if (itemCount === 0 && tenantSlug) {
       router.push(`/shop/${tenantSlug}/menu`)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemCount, tenantSlug])
 
   // Fetch tenant and locations
@@ -64,6 +65,7 @@ export default function CheckoutPage() {
     if (tenantSlug) {
       fetchTenantAndLocations()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantSlug])
 
   async function fetchTenantAndLocations() {

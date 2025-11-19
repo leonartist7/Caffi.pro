@@ -46,7 +46,6 @@ export default function OrderDetailPage() {
   const [currency, setCurrency] = useState('EUR')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
 
   const tenantSlug = params.slug as string
   const orderId = params.orderId as string
@@ -61,6 +60,7 @@ export default function OrderDetailPage() {
     if (user) {
       fetchOrderDetails()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, orderId])
 
   // Real-time subscription for order updates
@@ -69,7 +69,6 @@ export default function OrderDetailPage() {
 
     // Stop if order is already completed/cancelled
     if (order.status === 'completed' || order.status === 'cancelled') {
-      setAutoRefresh(false)
       return
     }
 
@@ -105,7 +104,7 @@ export default function OrderDetailPage() {
 
             // Stop auto-refresh if order is completed/cancelled
             if (payload.new.status === 'completed' || payload.new.status === 'cancelled') {
-              setAutoRefresh(false)
+              // Order no longer needs updates
             }
           }
         )

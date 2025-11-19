@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
@@ -12,7 +12,6 @@ import {
   Copy,
   Calendar,
   TrendingUp,
-  Users,
   Sparkles,
   Search,
   X,
@@ -58,13 +57,7 @@ export default function CouponsPage() {
     is_active: true,
   })
 
-  useEffect(() => {
-    if (selectedTenant) {
-      fetchCoupons()
-    }
-  }, [selectedTenant])
-
-  async function fetchCoupons() {
+  const fetchCoupons = useCallback(async () => {
     if (!selectedTenant) return
 
     try {
@@ -82,7 +75,13 @@ export default function CouponsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedTenant, supabase])
+
+  useEffect(() => {
+    if (selectedTenant) {
+      fetchCoupons()
+    }
+  }, [selectedTenant, fetchCoupons])
 
   async function handleSaveCoupon(e: React.FormEvent) {
     e.preventDefault()

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
 import {
@@ -9,7 +9,6 @@ import {
   Users,
   Store,
   TrendingUp,
-  TrendingDown,
   Download,
   Calendar,
   BarChart3,
@@ -58,13 +57,7 @@ export default function AnalyticsPage() {
 
   const supabase = createClient()
 
-  useEffect(() => {
-    if (selectedTenant) {
-      fetchAnalytics()
-    }
-  }, [dateRange, selectedTenant])
-
-  async function fetchAnalytics() {
+  const fetchAnalytics = useCallback(async () => {
     if (!selectedTenant) return
 
     try {
@@ -193,7 +186,13 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedTenant, dateRange, supabase])
+
+  useEffect(() => {
+    if (selectedTenant) {
+      fetchAnalytics()
+    }
+  }, [selectedTenant, fetchAnalytics])
 
   const handleExportCSV = () => {
     const csvContent = [

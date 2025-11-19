@@ -1,4 +1,5 @@
 import { getTenantBySlug } from '@/lib/get-tenant'
+import React from 'react'
 import Link from 'next/link'
 import { Coffee, ShoppingBag, Gift, Clock, MapPin } from 'lucide-react'
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
@@ -39,13 +39,7 @@ export default function CafeDetailPage() {
   const [notes, setNotes] = useState('')
   const [editingNotes, setEditingNotes] = useState(false)
 
-  useEffect(() => {
-    if (slug) {
-      fetchCafe()
-    }
-  }, [slug])
-
-  const fetchCafe = async () => {
+  const fetchCafe = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -59,7 +53,13 @@ export default function CafeDetailPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [slug])
+
+  useEffect(() => {
+    if (slug) {
+      fetchCafe()
+    }
+  }, [slug, fetchCafe])
 
   const saveNotes = async () => {
     if (!cafe) return

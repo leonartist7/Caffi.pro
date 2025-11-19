@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import Link from 'next/link'
 import { Home, ShoppingBag, Gift, User, Menu, LogOut, LogIn } from 'lucide-react'
 import { useCart } from '@/contexts/CartContext'

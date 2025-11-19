@@ -75,6 +75,7 @@ export default function TenantDetailPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId])
 
   const fetchData = async () => {

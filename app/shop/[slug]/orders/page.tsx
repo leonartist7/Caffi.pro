@@ -36,6 +36,7 @@ export default function OrdersPage() {
     if (user) {
       fetchOrders()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   async function fetchOrders() {

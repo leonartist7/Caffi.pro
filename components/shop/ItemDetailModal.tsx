@@ -8,6 +8,7 @@ interface ItemDetailModalProps {
   item: MenuItem | null
   isOpen: boolean
   onClose: () => void
+  // eslint-disable-next-line no-unused-vars
   onAddToCart?: (item: MenuItem, options: ItemOptions) => void
   currency?: string
 }

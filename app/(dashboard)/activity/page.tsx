@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import {
   Activity,
@@ -37,12 +37,7 @@ export default function ActivityLogPage() {
   const [filterAction, setFilterAction] = useState<string>('all')
   const [cafes, setCafes] = useState<any[]>([])
 
-  useEffect(() => {
-    fetchCafes()
-    fetchLogs()
-  }, [filterCafe, filterAction])
-
-  const fetchCafes = async () => {
+  const fetchCafes = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -56,9 +51,9 @@ export default function ActivityLogPage() {
     } catch (error) {
       console.error('Error fetching cafes:', error)
     }
-  }
+  }, [])
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -90,7 +85,12 @@ export default function ActivityLogPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [filterCafe, filterAction])
+
+  useEffect(() => {
+    fetchCafes()
+    fetchLogs()
+  }, [fetchCafes, fetchLogs])
 
   const getActionIcon = (action: string) => {
     const icons: Record<string, any> = {

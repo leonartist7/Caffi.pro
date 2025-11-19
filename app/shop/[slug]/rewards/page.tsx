@@ -54,6 +54,7 @@ export default function RewardsPage() {
     if (user) {
       fetchData()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
   async function fetchData() {

@@ -1,5 +1,6 @@
 'use client'
 
+import React from 'react'
 import { Coffee, Croissant, Cookie, IceCream, Milk, Wine } from 'lucide-react'
 
 export interface Category {

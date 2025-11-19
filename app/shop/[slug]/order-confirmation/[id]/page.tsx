@@ -50,6 +50,7 @@ export default function OrderConfirmationPage({
     if (user) {
       fetchOrderDetails()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, params.id])
 
   async function fetchOrderDetails() {

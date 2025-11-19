@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import { useTenant } from '@/contexts/TenantContext'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
@@ -10,7 +10,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  MapPin,
   Phone,
   Mail,
   Globe,
@@ -58,11 +57,7 @@ export default function ClientsPage() {
     contact_phone: '',
   })
 
-  useEffect(() => {
-    fetchTenants()
-  }, [])
-
-  async function fetchTenants() {
+  const fetchTenants = useCallback(async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -77,7 +72,11 @@ export default function ClientsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [supabase])
+
+  useEffect(() => {
+    fetchTenants()
+  }, [fetchTenants])
 
   async function handleSaveTenant(e: React.FormEvent) {
     e.preventDefault()

@@ -23,7 +23,9 @@ export interface MenuItem {
 
 interface MenuItemCardProps {
   item: MenuItem
+  // eslint-disable-next-line no-unused-vars
   onViewDetails: (item: MenuItem) => void
+  // eslint-disable-next-line no-unused-vars
   onAddToCart?: (item: MenuItem) => void
   currency?: string
 }

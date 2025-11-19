@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import React from 'react'
 import './globals.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { QueryProvider } from '@/components/providers/QueryProvider'

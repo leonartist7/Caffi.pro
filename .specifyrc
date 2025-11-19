@@ -1,0 +1,15 @@
+{
+  "ai": "claude",
+  "model": "claude-sonnet-4-5",
+  "initialized": "2025-11-19",
+  "project": "Caffi.pro",
+  "version": "1.0",
+  "paths": {
+    "memory": ".specify/memory",
+    "specs": ".specify/specs",
+    "plans": ".specify/plans",
+    "tasks": ".specify/tasks",
+    "docs": ".specify/docs"
+  },
+  "constitution": ".specify/memory/constitution.md"
+}

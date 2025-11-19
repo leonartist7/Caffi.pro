@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
@@ -39,7 +39,6 @@ interface Cafe {
 
 export default function MenuManagementPage() {
   const params = useParams()
-  const router = useRouter()
   const slug = params?.slug as string
   const { confirm, confirmState, closeConfirm } = useConfirm()
 
@@ -63,21 +62,7 @@ export default function MenuManagementPage() {
   const [itemCategory, setItemCategory] = useState('')
   const [itemActive, setItemActive] = useState(true)
 
-  useEffect(() => {
-    if (slug) {
-      fetchCafe()
-      fetchCategories()
-      fetchMenuItems()
-    }
-  }, [slug])
-
-  useEffect(() => {
-    if (categories.length > 0 && !selectedCategory) {
-      setSelectedCategory(categories[0].category_id)
-    }
-  }, [categories])
-
-  const fetchCafe = async () => {
+  const fetchCafe = useCallback(async () => {
     try {
       const supabase = createClient()
 
@@ -92,9 +77,9 @@ export default function MenuManagementPage() {
     } catch (error) {
       console.error('Error fetching cafe:', error)
     }
-  }
+  }, [slug])
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       if (!slug) return
 
@@ -122,9 +107,9 @@ export default function MenuManagementPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [slug])
 
-  const fetchMenuItems = async () => {
+  const fetchMenuItems = useCallback(async () => {
     try {
       if (!slug) return
 
@@ -149,7 +134,21 @@ export default function MenuManagementPage() {
     } catch (error) {
       console.error('Error fetching menu items:', error)
     }
-  }
+  }, [slug])
+
+  useEffect(() => {
+    if (slug) {
+      fetchCafe()
+      fetchCategories()
+      fetchMenuItems()
+    }
+  }, [slug, fetchCafe, fetchCategories, fetchMenuItems])
+
+  useEffect(() => {
+    if (categories.length > 0 && !selectedCategory) {
+      setSelectedCategory(categories[0].category_id)
+    }
+  }, [categories, selectedCategory])
 
   const createCategory = async () => {
     try {

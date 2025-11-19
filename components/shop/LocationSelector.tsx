@@ -16,6 +16,7 @@ export interface Location {
 interface LocationSelectorProps {
   locations: Location[]
   selectedLocation: string | null
+  // eslint-disable-next-line no-unused-vars
   onSelectLocation: (locationId: string) => void
 }
 

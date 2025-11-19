@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { getTenantBySlug } from '@/lib/get-tenant'
 import { Search, Coffee, Loader2 } from 'lucide-react'
 import MenuItemCard, { type MenuItem } from '@/components/shop/MenuItem'
-import CategoryFilter, { type Category } from '@/components/shop/CategoryFilter'
+import CategoryFilter from '@/components/shop/CategoryFilter'
 import ItemDetailModal, { type ItemOptions } from '@/components/shop/ItemDetailModal'
 import { useCart } from '@/contexts/CartContext'
 import { useMenu } from '@/hooks/useMenuQueries'
@@ -31,6 +31,7 @@ export default function MenuPage() {
     if (tenantSlug) {
       fetchTenantInfo()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantSlug])
 
   async function fetchTenantInfo() {
