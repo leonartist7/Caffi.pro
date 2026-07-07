@@ -1,39 +1,28 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+import DashboardShell from './layout-client'
 
-import Sidebar from '@/components/Sidebar'
-import MobileNav from '@/components/MobileNav'
-import LiveClock from '@/components/LiveClock'
-import TenantSelector from '@/components/TenantSelector'
-import ThemeToggle from '@/components/ThemeToggle'
-import { TenantProvider } from '@/contexts/TenantContext'
-import { ThemeProvider } from '@/contexts/ThemeContext'
+// Server-side auth gate: no session cookie → /login. Rendering of the
+// dashboard shell never happens for anonymous requests.
+export const dynamic = 'force-dynamic'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider>
-      <TenantProvider>
-        <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800 transition-colors duration-200">
-          <Sidebar />
-          <MobileNav />
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  let authenticated = false
+  try {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    authenticated = Boolean(user)
+  } catch (err) {
+    // Missing env or unreachable Supabase — fail CLOSED, never open.
+    console.error('[dashboard layout] auth check failed:', err)
+    authenticated = false
+  }
 
-          <main className="flex-1 ml-0 lg:ml-64 transition-all duration-500">
-            {/* Header */}
-            <header className="h-16 lg:h-20 px-4 lg:px-8 flex items-center justify-between border-b border-coffee-200/50 dark:border-dark-700 bg-white/80 dark:bg-dark-900/80 backdrop-blur-lg relative overflow-visible shadow-sm">
-              <div className="flex items-center gap-3 lg:gap-4 overflow-visible">
-                <TenantSelector />
-              </div>
+  if (!authenticated) {
+    redirect('/login')
+  }
 
-              <div className="flex items-center gap-3">
-                <ThemeToggle />
-                <LiveClock />
-              </div>
-            </header>
-
-            {/* Content */}
-            <div className="p-4 lg:p-8">{children}</div>
-          </main>
-        </div>
-      </TenantProvider>
-    </ThemeProvider>
-  )
+  return <DashboardShell>{children}</DashboardShell>
 }
