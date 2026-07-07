@@ -41,7 +41,7 @@
       venue B, anon can only read what join-page needs (nothing).
 - [x] Seed script (idempotent) for dev.
 
-**2.2 Auth & roles (§4):** magic-link + password; memberships with
+**2.2 Auth & roles (§4):** ✅ done — magic-link + password; memberships with
 owner/manager/staff/aro_admin; email invites; **shared-PIN counter login** issuing a
 short-lived staff session bound to a venue+device. Multiple owners per venue works.
 
