@@ -20,26 +20,26 @@
 
 **2.0 Security triage (day one, before any feature):**
 
-- [ ] Tell the owner to **rotate the Supabase service-role + anon keys** (burned in
+- [x] Tell the owner to **rotate the Supabase service-role + anon keys** (burned in
       git: `.env.local` @ 63d5a96). Add `.env*` to `.gitignore`, remove from tree.
-- [ ] Delete `lib/supabase.ts` placeholder-fallback; create `lib/supabase-admin.ts`
+- [x] Delete `lib/supabase.ts` placeholder-fallback; create `lib/supabase-admin.ts`
       with `import 'server-only'`. Fix the 7 client components that import the
       service-role client (route their writes through authenticated API routes or
       the anon client + RLS).
-- [ ] Add session + role checks to `/api/menu-items|categories|locations` (or fold
+- [x] Add session + role checks to `/api/menu-items|categories|locations` (or fold
       them into RLS'd client queries and delete).
-- [ ] Remove `/` auth bypass; gate `(dashboard)` and `(owner)` layouts server-side.
+- [x] Remove `/` auth bypass; gate `(dashboard)` and `(owner)` layouts server-side.
 
 **2.1 Supabase connection, done honestly:**
 
-- [ ] Fresh env wiring per ARCHITECTURE §5; `/api/check-env` retained in dev only.
-- [ ] One consolidated schema migration implementing ARCHITECTURE §3 (orgs, venues,
+- [x] Fresh env wiring per ARCHITECTURE §5; `/api/check-env` retained in dev only.
+- [x] One consolidated schema migration implementing ARCHITECTURE §3 (orgs, venues,
       memberships, members+consent, visits, points_ledger view, campaigns, messages,
       ai_drafts, leads, zones, events; drop mutable balance columns).
-- [ ] RLS rebuilt from zero; **drop every `DEV:` policy**. Write pgTAP-style or
+- [x] RLS rebuilt from zero; **drop every `DEV:` policy**. Write pgTAP-style or
       script tests proving: staff can't read member contact info, venue A can't see
       venue B, anon can only read what join-page needs (nothing).
-- [ ] Seed script (idempotent) for dev.
+- [x] Seed script (idempotent) for dev.
 
 **2.2 Auth & roles (§4):** magic-link + password; memberships with
 owner/manager/staff/aro_admin; email invites; **shared-PIN counter login** issuing a
