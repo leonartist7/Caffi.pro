@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
 import { getTenantBySlug } from '@/lib/get-tenant'
 
 interface DiagnosticResult {
@@ -12,6 +12,8 @@ interface DiagnosticResult {
 }
 
 export default function CoffeeShopBuilderPage() {
+  // Anon client + RLS: writes are authorized by the caller's session, never service role
+  const supabase = createClient()
   const [results, setResults] = useState<DiagnosticResult[]>([])
   const [loading, setLoading] = useState(false)
   const [testSlug, setTestSlug] = useState('green-landscaping-services')

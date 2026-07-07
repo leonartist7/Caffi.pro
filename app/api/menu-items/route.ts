@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { requireVenueRole } from '@/lib/authz'
 
-// GET all menu items for a tenant
+// GET all menu items for a venue (any accepted member of the venue)
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const tenantId = searchParams.get('tenant_id')
     const categoryId = searchParams.get('category_id')
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'tenant_id is required' }, { status: 400 })
-    }
+    const authz = await requireVenueRole(tenantId, ['owner', 'manager', 'staff'])
+    if (!authz.ok) return authz.response
 
+    const supabase = getSupabaseAdmin()
     let query = supabase.from('menu_items').select('*, categories(name)').eq('tenant_id', tenantId)
 
     if (categoryId) {
@@ -34,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST create a new menu item
+// POST create a new menu item (owner/manager only)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -55,11 +56,14 @@ export async function POST(request: NextRequest) {
     if (!tenant_id || !category_id || !name || price === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
-
-    if (!supabase) {
-      return NextResponse.json({ error: 'Database connection not configured' }, { status: 500 })
+    if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) {
+      return NextResponse.json({ error: 'price must be a non-negative number' }, { status: 400 })
     }
 
+    const authz = await requireVenueRole(tenant_id, ['owner', 'manager'])
+    if (!authz.ok) return authz.response
+
+    const supabase = getSupabaseAdmin()
     const { data, error } = await supabase
       .from('menu_items')
       .insert({

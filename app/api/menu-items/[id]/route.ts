@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { requireRowVenueRole } from '@/lib/authz'
 
 interface MenuItemUpdate {
   category_id?: string
@@ -13,10 +14,19 @@ interface MenuItemUpdate {
   is_available?: boolean
 }
 
-// GET a single menu item
+// GET a single menu item (any accepted member of the owning venue)
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
+
+    const authz = await requireRowVenueRole('menu_items', 'item_id', id, [
+      'owner',
+      'manager',
+      'staff',
+    ])
+    if (!authz.ok) return authz.response
+
+    const supabase = getSupabaseAdmin()
     const { data, error } = await supabase
       .from('menu_items')
       .select('*, categories(name)')
@@ -39,12 +49,15 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-// PATCH update a menu item
+// PATCH update a menu item (owner/manager only)
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
-    const body = await request.json()
 
+    const authz = await requireRowVenueRole('menu_items', 'item_id', id, ['owner', 'manager'])
+    if (!authz.ok) return authz.response
+
+    const body = await request.json()
     const {
       category_id,
       name,
@@ -68,6 +81,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     if (calories !== undefined) updateData.calories = calories
     if (is_available !== undefined) updateData.is_available = is_available
 
+    const supabase = getSupabaseAdmin()
     const { data, error } = await supabase
       .from('menu_items')
       .update(updateData)
@@ -87,10 +101,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-// DELETE a menu item
+// DELETE a menu item (owner/manager only)
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { id } = params
+
+    const authz = await requireRowVenueRole('menu_items', 'item_id', id, ['owner', 'manager'])
+    if (!authz.ok) return authz.response
+
+    const supabase = getSupabaseAdmin()
     const { error } = await supabase.from('menu_items').delete().eq('item_id', id)
 
     if (error) {

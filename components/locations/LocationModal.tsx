@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { X } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -35,6 +35,8 @@ interface LocationModalProps {
 }
 
 export function LocationModal({ isOpen, onClose, location }: LocationModalProps) {
+  // Anon client + RLS: writes are authorized by the caller's session, never service role
+  const supabase = createClient()
   const queryClient = useQueryClient()
   const {
     register,

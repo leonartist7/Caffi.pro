@@ -1,25 +1,23 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createClient } from '@/utils/supabase/middleware'
+import { updateSession } from '@/utils/supabase/middleware'
 
 /**
- * Middleware for request handling
+ * Middleware: Supabase cookie-session refresh + host-based routing.
  *
- * Routes:
- * - /dashboard, /clients, /menu, etc. → Admin dashboard
- * - /shop/[slug]/... → Customer-facing shop (slug-based routing)
- * - Custom domains → Rewrite to /shop/[slug] internally
+ * - Refreshes the auth session cookie on every matched request so
+ *   server components / route handlers always see a fresh session.
+ * - Custom domains (and later join.aro.club) are rewritten to their
+ *   slug-based internal routes.
  *
- * Custom Domain Support:
- * - If request comes from a custom domain (not the main app domain)
- * - Look up tenant by domain
- * - Rewrite URL to use /shop/[slug] internally
- * - Example: www.mycoffeeshop.com/menu → /shop/my-coffee-shop/menu
+ * AUTH GATING happens server-side in the route-group layouts
+ * (app/(dashboard)/layout.tsx etc.), not here — middleware only
+ * keeps the session fresh.
  */
 export async function middleware(request: NextRequest) {
   const { pathname, hostname } = request.nextUrl
 
-  // Skip middleware for static files, API routes, and Next.js internals
+  // Skip static files, API routes, and Next.js internals
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
@@ -30,6 +28,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  const { response, supabase } = await updateSession(request)
+
   // Main app domains (localhost, Vercel preview, production)
   const isMainDomain =
     hostname === 'localhost' ||
@@ -37,38 +37,31 @@ export async function middleware(request: NextRequest) {
     hostname.endsWith('.vercel.app') ||
     hostname === 'caffi.pro' ||
     hostname === 'www.caffi.pro' ||
-    hostname.endsWith('.caffi.pro')
+    hostname.endsWith('.caffi.pro') ||
+    hostname === 'app.aro.club'
 
-  // If not on main domain, this is a custom domain
-  if (!isMainDomain && !pathname.startsWith('/shop/')) {
+  // Custom domain → rewrite to slug-based shop routes
+  if (!isMainDomain && !pathname.startsWith('/shop/') && supabase) {
     try {
-      // Look up tenant by custom domain
-      const supabase = createClient()
-      const { data: tenant } = await supabase
-        .from('tenants')
+      const { data: venue } = await supabase
+        .from('venues')
         .select('slug')
         .eq('custom_domain', hostname)
         .single()
 
-      if (tenant?.slug) {
-        // Rewrite URL to use slug-based routing
-        // www.mycoffeeshop.com/menu → /shop/my-coffee-shop/menu
+      if (venue?.slug) {
         const url = request.nextUrl.clone()
-        url.pathname = `/shop/${tenant.slug}${pathname}`
+        url.pathname = `/shop/${venue.slug}${pathname}`
         return NextResponse.rewrite(url)
-      } else {
-        // Custom domain not found, show 404
-        return NextResponse.rewrite(new URL('/404', request.url))
       }
+      return NextResponse.rewrite(new URL('/404', request.url))
     } catch (error) {
       console.error('Error in custom domain middleware:', error)
-      return NextResponse.next()
+      return response
     }
   }
 
-  // Future: Add authentication checks, rate limiting, etc. here
-
-  return NextResponse.next()
+  return response
 }
 
 export const config = {

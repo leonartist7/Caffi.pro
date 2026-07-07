@@ -1,4 +1,25 @@
-import { supabase } from '@/lib/supabase'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+
+/**
+ * Anonymous, sessionless client for PUBLIC venue lookups only (safe in
+ * both server and client bundles — anon key + RLS). The service-role
+ * client lives in `lib/supabase-admin.ts` and is server-only.
+ */
+let anonClient: SupabaseClient | null = null
+function getAnonClient(): SupabaseClient {
+  if (anonClient) return anonClient
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!url || !anonKey) {
+    throw new Error(
+      'Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY (see .env.example).'
+    )
+  }
+  anonClient = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  return anonClient
+}
 
 export interface Tenant {
   tenant_id: string
@@ -34,6 +55,7 @@ export async function getTenantBySlug(slug: string | null): Promise<Tenant | nul
   }
 
   try {
+    const supabase = getAnonClient()
     const { data, error } = await supabase
       .from('tenants')
       .select(
@@ -85,6 +107,7 @@ export async function getTenantByDomain(domain: string): Promise<Tenant | null> 
   }
 
   try {
+    const supabase = getAnonClient()
     const { data, error } = await supabase
       .from('tenants')
       .select(
@@ -122,6 +145,7 @@ export async function getTenantByDomain(domain: string): Promise<Tenant | null> 
  */
 export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   try {
+    const supabase = getAnonClient()
     const { data, error } = await supabase
       .from('tenants')
       .select(
@@ -159,6 +183,7 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
  */
 export async function getAllTenants(): Promise<Tenant[]> {
   try {
+    const supabase = getAnonClient()
     const { data, error } = await supabase
       .from('tenants')
       .select('tenant_id, business_name, slug')

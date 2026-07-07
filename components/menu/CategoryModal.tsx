@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@/utils/supabase/client'
 import { X, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -26,6 +26,8 @@ interface CategoryModalProps {
 }
 
 export function CategoryModal({ isOpen, onClose, category }: CategoryModalProps) {
+  // Anon client + RLS: writes are authorized by the caller's session, never service role
+  const supabase = createClient()
   const queryClient = useQueryClient()
   const {
     register,
