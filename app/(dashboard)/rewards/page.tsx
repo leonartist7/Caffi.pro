@@ -9,7 +9,6 @@ import {
   Edit,
   Trash2,
   Star,
-  TrendingUp,
   Award,
   Package,
   Search,
@@ -65,6 +64,7 @@ export default function RewardsPage() {
     if (selectedTenant) {
       fetchRewards()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [selectedTenant])
 
   async function fetchRewards() {

@@ -13,7 +13,6 @@ import {
   XCircle,
   DollarSign,
   Users,
-  TrendingUp,
   Package,
   Building2,
 } from 'lucide-react'
@@ -58,6 +57,7 @@ export default function OrdersPage() {
     if (selectedTenant) {
       fetchOrders()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [selectedTenant, currentPage])
 
   // Real-time subscription for live order updates
@@ -104,6 +104,7 @@ export default function OrdersPage() {
       console.log('🔌 Unsubscribing from orders channel')
       supabase.removeChannel(channel)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [selectedTenant?.tenant_id])
 
   async function fetchOrders() {

@@ -43,6 +43,7 @@ export default function CafeDetailPage() {
     if (slug) {
       fetchCafe()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [slug])
 
   const fetchCafe = async () => {

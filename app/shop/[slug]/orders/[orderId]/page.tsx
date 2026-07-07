@@ -46,7 +46,7 @@ export default function OrderDetailPage() {
   const [currency, setCurrency] = useState('EUR')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [, setAutoRefresh] = useState(true)
 
   const tenantSlug = params.slug as string
   const orderId = params.orderId as string
@@ -61,6 +61,7 @@ export default function OrderDetailPage() {
     if (user) {
       fetchOrderDetails()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [user, orderId])
 
   // Real-time subscription for order updates

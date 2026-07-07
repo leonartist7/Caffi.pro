@@ -70,6 +70,7 @@ export default function LocationsPage() {
     if (selectedTenant) {
       fetchLocations()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [selectedTenant])
 
   async function fetchLocations() {

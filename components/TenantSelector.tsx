@@ -31,6 +31,7 @@ export default function TenantSelector() {
 
   useEffect(() => {
     fetchTenants()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [])
 
   // Calculate dropdown position when opened

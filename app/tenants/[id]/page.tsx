@@ -75,6 +75,7 @@ export default function TenantDetailPage() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [tenantId])
 
   const fetchData = async () => {

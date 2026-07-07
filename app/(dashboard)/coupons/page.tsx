@@ -12,7 +12,6 @@ import {
   Copy,
   Calendar,
   TrendingUp,
-  Users,
   Sparkles,
   Search,
   X,
@@ -62,6 +61,7 @@ export default function CouponsPage() {
     if (selectedTenant) {
       fetchCoupons()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [selectedTenant])
 
   async function fetchCoupons() {

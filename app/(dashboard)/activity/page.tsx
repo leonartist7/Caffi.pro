@@ -40,6 +40,7 @@ export default function ActivityLogPage() {
   useEffect(() => {
     fetchCafes()
     fetchLogs()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [filterCafe, filterAction])
 
   const fetchCafes = async () => {

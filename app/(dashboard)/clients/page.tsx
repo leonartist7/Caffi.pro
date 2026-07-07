@@ -10,7 +10,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  MapPin,
   Phone,
   Mail,
   Globe,
@@ -60,6 +59,7 @@ export default function ClientsPage() {
 
   useEffect(() => {
     fetchTenants()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [])
 
   async function fetchTenants() {

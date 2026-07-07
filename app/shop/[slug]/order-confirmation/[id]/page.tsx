@@ -50,6 +50,7 @@ export default function OrderConfirmationPage({
     if (user) {
       fetchOrderDetails()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [user, params.id])
 
   async function fetchOrderDetails() {

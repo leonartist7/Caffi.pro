@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
@@ -39,7 +39,6 @@ interface Cafe {
 
 export default function MenuManagementPage() {
   const params = useParams()
-  const router = useRouter()
   const slug = params?.slug as string
   const { confirm, confirmState, closeConfirm } = useConfirm()
 
@@ -69,12 +68,14 @@ export default function MenuManagementPage() {
       fetchCategories()
       fetchMenuItems()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [slug])
 
   useEffect(() => {
     if (categories.length > 0 && !selectedCategory) {
       setSelectedCategory(categories[0].category_id)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [categories])
 
   const fetchCafe = async () => {

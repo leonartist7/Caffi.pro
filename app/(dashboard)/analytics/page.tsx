@@ -9,7 +9,6 @@ import {
   Users,
   Store,
   TrendingUp,
-  TrendingDown,
   Download,
   Calendar,
   BarChart3,
@@ -62,6 +61,7 @@ export default function AnalyticsPage() {
     if (selectedTenant) {
       fetchAnalytics()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [dateRange, selectedTenant])
 
   async function fetchAnalytics() {

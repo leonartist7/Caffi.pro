@@ -41,6 +41,7 @@ export default function NotificationsPage() {
     if (selectedTenant) {
       fetchCampaigns()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [selectedTenant])
 
   async function fetchCampaigns() {
