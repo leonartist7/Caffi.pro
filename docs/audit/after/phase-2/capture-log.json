@@ -1,0 +1,52 @@
+[
+  {
+    "route": "/",
+    "status": "200",
+    "finalUrl": "http://localhost:3000/login",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ]
+  },
+  {
+    "route": "/login",
+    "status": "200",
+    "finalUrl": "http://localhost:3000/login",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "status": "200",
+    "finalUrl": "http://localhost:3000/login",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    ]
+  },
+  {
+    "route": "/counter",
+    "status": "200",
+    "finalUrl": "http://localhost:3000/counter",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+      "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+    ]
+  },
+  {
+    "route": "/join-team/00000000-0000-4000-9000-0000000000ff",
+    "status": "200",
+    "finalUrl": "http://localhost:3000/join-team/00000000-0000-4000-9000-0000000000ff",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    ]
+  },
+  {
+    "route": "/shop/demo-cafe",
+    "status": "200",
+    "finalUrl": "http://localhost:3000/shop/demo-cafe",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+    ]
+  }
+]

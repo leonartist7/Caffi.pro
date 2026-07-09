@@ -55,6 +55,14 @@ const config: Config = {
         latte: '#d69f70',
         mocha: '#6b3410',
         foam: '#fdf8f3',
+        // primary/accent were referenced all over but never defined (buttons
+        // rendered transparent). Warm placeholders until the aro token port
+        // in Phase 3 (terra/espresso/cream from AURA/app/aura-landing.css).
+        primary: {
+          DEFAULT: '#8b4513',
+          dark: '#6b3410',
+        },
+        accent: '#c97d47',
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
