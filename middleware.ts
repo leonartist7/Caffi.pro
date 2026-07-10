@@ -30,6 +30,14 @@ export async function middleware(request: NextRequest) {
 
   const { response, supabase } = await updateSession(request)
 
+  // join.aro.club/{venue} → /join/{venue} (counter QR host). Public — no
+  // auth gating; /join, /pass and /api/join are session-free by design.
+  if (hostname === 'join.aro.club' && !pathname.startsWith('/join')) {
+    const url = request.nextUrl.clone()
+    url.pathname = `/join${pathname === '/' ? '' : pathname}`
+    return NextResponse.rewrite(url)
+  }
+
   // Main app domains (localhost, Vercel preview, production)
   const isMainDomain =
     hostname === 'localhost' ||
@@ -41,7 +49,13 @@ export async function middleware(request: NextRequest) {
     hostname === 'app.aro.club'
 
   // Custom domain → rewrite to slug-based shop routes
-  if (!isMainDomain && !pathname.startsWith('/shop/') && supabase) {
+  if (
+    !isMainDomain &&
+    !pathname.startsWith('/shop/') &&
+    !pathname.startsWith('/join') &&
+    !pathname.startsWith('/pass') &&
+    supabase
+  ) {
     try {
       const { data: venue } = await supabase
         .from('venues')

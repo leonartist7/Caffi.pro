@@ -63,6 +63,33 @@ const config: Config = {
           dark: '#6b3410',
         },
         accent: '#c97d47',
+        // aro brand tokens (AURA/app/aura-landing.css §:root) — namespaced
+        // under `aro` so the legacy coffee/cream scales above keep working
+        // until every old screen is refit. New surfaces use ONLY these.
+        aro: {
+          cream: '#F3EAD7',
+          'cream-warm': '#F7F0DE',
+          sand: '#ECE0C6',
+          clay: '#DECBA6',
+          terracotta: '#C9986C',
+          espresso: '#1F1612',
+          ink: '#2A1F18',
+          'ink-soft': 'rgba(42, 31, 24, 0.78)',
+          muted: 'rgba(42, 31, 24, 0.64)',
+          hairline: 'rgba(42, 31, 24, 0.1)',
+          terra: '#D67A45',
+          rose: '#DC8B7E',
+          saffron: '#E5B14A',
+          plum: '#8D6B8D',
+          sage: '#9DAA7E',
+          honey: '#E8AC58',
+        },
+      },
+      fontFamily: {
+        display: ['var(--font-bricolage)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-instrument)', 'Georgia', 'serif'],
+        body: ['var(--font-inter)', 'system-ui', '-apple-system', 'sans-serif'],
+        mono: ['var(--font-jetbrains)', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',

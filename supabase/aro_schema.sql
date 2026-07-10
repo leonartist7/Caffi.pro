@@ -3,7 +3,8 @@
 -- = migrations/20260706000000_legacy_foundation_minimal.sql
 -- + migrations/20260707000001_aro_platform_schema.sql
 -- + migrations/20260707000002_aro_rls.sql
--- + migrations/20260710000001_security_hardening.sql   (in that order)
+-- + migrations/20260710000001_security_hardening.sql
+-- + migrations/20260710000002_pass_serials.sql   (in that order)
 --
 -- Targets a FRESH Supabase project with zero tables (the legacy-foundation
 -- migration bootstraps the empty legacy shape the aro migration expects,
@@ -11,13 +12,8 @@
 -- After applying, run supabase/tests/rls_tests.sql and expect
 -- 'ALL RLS TESTS PASSED'. Then run supabase/seed/aro_dev_seed.sql for dev data.
 --
--- GENERATED FILE — edit the four migration files, then regenerate with:
---   cat supabase/migrations/20260706000000_legacy_foundation_minimal.sql \
---       supabase/migrations/20260707000001_aro_platform_schema.sql \
---       supabase/migrations/20260707000002_aro_rls.sql \
---       supabase/migrations/20260710000001_security_hardening.sql \
---       > supabase/aro_schema.sql
---   (keeping this header)
+-- GENERATED FILE — edit the migration files, then regenerate by
+-- concatenating them in the order above (keeping this header).
 -- ============================================================================
 
 -- ============================================================================
@@ -131,6 +127,7 @@ CREATE TABLE IF NOT EXISTS rewards_catalog (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
 -- ============================================================================
 -- aro PLATFORM SCHEMA — Phase 2.1 consolidated migration
 -- Evolves the existing Caffi.pro schema to the aro Blueprint (§6) model.
@@ -705,6 +702,7 @@ BEGIN
             t, t);
     END LOOP;
 END $$;
+
 -- ============================================================================
 -- aro RLS — rebuilt from ZERO (Phase 2.1)
 --
@@ -998,6 +996,7 @@ GRANT SELECT ON tenants TO anon, authenticated;
 GRANT SELECT ON member_balances, member_status, users, loyalty_transactions, rewards_catalog
     TO authenticated;
 GRANT EXECUTE ON FUNCTION member_cadence_days(UUID) TO authenticated;
+
 -- ============================================================================
 -- SECURITY HARDENING — fixes from get_advisors() run against the live
 -- aro-platform project right after 20260707000001/2 applied cleanly.
@@ -1021,3 +1020,17 @@ ALTER FUNCTION member_cadence_days(UUID) SET search_path = public;
 REVOKE EXECUTE ON FUNCTION aro_my_venue_ids() FROM anon;
 REVOKE EXECUTE ON FUNCTION aro_my_managed_venue_ids() FROM anon;
 REVOKE EXECUTE ON FUNCTION aro_is_aro_admin() FROM anon;
+
+-- ============================================================================
+-- PASS SERIALS (Plan 2 — diner join page)
+-- Every member gets an unguessable pass serial: the bearer token printed as
+-- the web-pass QR and scanned/pasted at the counter. Never enumerable; the
+-- pass page resolves it server-side only (no anon grant on members).
+-- ============================================================================
+
+ALTER TABLE members
+    ADD COLUMN IF NOT EXISTS pass_serial UUID NOT NULL DEFAULT gen_random_uuid();
+
+-- Backfill happens implicitly via the DEFAULT on ADD COLUMN (Postgres 11+
+-- fills existing rows). Enforce uniqueness + fast lookup:
+CREATE UNIQUE INDEX IF NOT EXISTS uq_members_pass_serial ON members (pass_serial);

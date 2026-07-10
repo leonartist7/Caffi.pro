@@ -30,3 +30,24 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-coffee-400 dark:bg-dark-600;
 }
+
+/* ── aro grain overlay (ported from AURA/app/aura-landing.css) ──────────
+   Apply to a position:relative container. Keep opacity ≤ 0.18. */
+.grain::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  z-index: 2;
+}
+.grain-soft::before {
+  opacity: 0.08;
+  mix-blend-mode: multiply;
+}
+.grain-on-dark::before {
+  opacity: 0.12;
+  mix-blend-mode: screen;
+}
