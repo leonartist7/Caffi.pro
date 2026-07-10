@@ -521,7 +521,7 @@ LEFT JOIN LATERAL (
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_counter_pin(p_membership_id UUID, p_pin TEXT)
 RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 BEGIN
     IF length(p_pin) < 4 OR length(p_pin) > 8 OR p_pin !~ '^[0-9]+$' THEN
         RAISE EXCEPTION 'PIN must be 4-8 digits';
@@ -537,7 +537,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION verify_counter_pin(p_venue_id UUID, p_pin TEXT)
 RETURNS TABLE (membership_id UUID, full_name TEXT)
-LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public, extensions AS $$
     SELECT m.membership_id, m.full_name
     FROM memberships m
     WHERE m.venue_id = p_venue_id

@@ -1,19 +1,136 @@
 -- ============================================================================
--- aro CONSOLIDATED SCHEMA (Phase 2.1) — paste-ready for the Supabase SQL editor
--- = migrations/20260707000001_aro_platform_schema.sql
--- + migrations/20260707000002_aro_rls.sql   (in that order)
+-- aro CONSOLIDATED SCHEMA — paste-ready for the Supabase SQL editor
+-- = migrations/20260706000000_legacy_foundation_minimal.sql
+-- + migrations/20260707000001_aro_platform_schema.sql
+-- + migrations/20260707000002_aro_rls.sql
+-- + migrations/20260710000001_security_hardening.sql   (in that order)
 --
--- Apply to a database that already has the legacy Caffi.pro schema
--- (complete_setup.sql + staff_operations + custom_domain). Re-runnable.
+-- Targets a FRESH Supabase project with zero tables (the legacy-foundation
+-- migration bootstraps the empty legacy shape the aro migration expects,
+-- then evolves/renames it — see that file's header for why). Re-runnable.
 -- After applying, run supabase/tests/rls_tests.sql and expect
 -- 'ALL RLS TESTS PASSED'. Then run supabase/seed/aro_dev_seed.sql for dev data.
 --
--- GENERATED FILE — edit the two migration files, then regenerate with:
---   cat supabase/migrations/20260707000001_aro_platform_schema.sql \
---       supabase/migrations/20260707000002_aro_rls.sql > supabase/aro_schema.sql
+-- GENERATED FILE — edit the four migration files, then regenerate with:
+--   cat supabase/migrations/20260706000000_legacy_foundation_minimal.sql \
+--       supabase/migrations/20260707000001_aro_platform_schema.sql \
+--       supabase/migrations/20260707000002_aro_rls.sql \
+--       supabase/migrations/20260710000001_security_hardening.sql \
+--       > supabase/aro_schema.sql
 --   (keeping this header)
 -- ============================================================================
 
+-- ============================================================================
+-- LEGACY FOUNDATION (minimal) — fresh-project bootstrap
+--
+-- 20260707000001_aro_platform_schema.sql evolves the OLD Caffi.pro schema
+-- (tenants/users/tenant_manifests/loyalty_transactions/rewards_catalog) into
+-- the aro model via ALTER/RENAME. It was written against a database that
+-- already had that legacy schema and never runs standalone on an empty one.
+--
+-- The original live project (ugppbaavzevmdkblniim) was paused >90 days and
+-- is unrecoverable, so this repo now targets a brand-new Supabase project
+-- with zero data. Rather than replay 18 legacy migrations (several of which
+-- are the "DEV: USING(true)" landmines this rebuild exists to remove), this
+-- migration creates ONLY the empty legacy shape the rename-and-evolve logic
+-- needs to succeed. Zero rows ever go into these tables — they are renamed
+-- to their aro equivalents (or become compat views) in the very next
+-- migration. FK references to tables outside this minimal set (e.g. `orders`
+-- on loyalty_transactions.order_id) are intentionally dropped since ordering
+-- is parked (ORDERING_ENABLED=false) and ledger rows start empty anyway.
+-- ============================================================================
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+CREATE TABLE IF NOT EXISTS tenants (
+    tenant_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    business_name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    owner_email TEXT UNIQUE NOT NULL,
+    owner_phone TEXT,
+    app_name TEXT NOT NULL,
+    bundle_id TEXT UNIQUE NOT NULL,
+    app_store_url TEXT,
+    play_store_url TEXT,
+    pwa_url TEXT,
+    features_enabled JSONB DEFAULT '{}'::jsonb,
+    loyalty_config JSONB DEFAULT '{"points_per_euro": 10, "signup_bonus": 50}'::jsonb,
+    subscription_status TEXT DEFAULT 'trial',
+    subscription_plan TEXT DEFAULT 'starter',
+    trial_ends_at TIMESTAMPTZ,
+    timezone TEXT DEFAULT 'America/Edmonton',
+    currency TEXT DEFAULT 'CAD',
+    language TEXT DEFAULT 'en',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS tenant_manifests (
+    manifest_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID UNIQUE NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    design_tokens JSONB DEFAULT '{}'::jsonb,
+    logo_url TEXT,
+    app_icon_url TEXT,
+    splash_screen_url TEXT,
+    figma_file_key TEXT,
+    figma_last_synced TIMESTAMPTZ,
+    skin_version TEXT DEFAULT '1.0.0',
+    slot_mappings JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    auth_id UUID UNIQUE,
+    phone TEXT,
+    email TEXT,
+    full_name TEXT,
+    profile_image_url TEXT,
+    loyalty_points INTEGER DEFAULT 0,
+    loyalty_tier TEXT DEFAULT 'bronze',
+    lifetime_points INTEGER DEFAULT 0,
+    total_orders INTEGER DEFAULT 0,
+    total_spent DECIMAL(10,2) DEFAULT 0,
+    last_order_at TIMESTAMPTZ,
+    fcm_token TEXT,
+    notifications_enabled BOOLEAN DEFAULT true,
+    preferred_location_id UUID,
+    favorite_items UUID[],
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_tenant_phone UNIQUE(tenant_id, phone)
+);
+
+CREATE TABLE IF NOT EXISTS loyalty_transactions (
+    transaction_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    order_id UUID,
+    points_change INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    reason TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS rewards_catalog (
+    reward_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(tenant_id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    points_required INTEGER NOT NULL,
+    image_url TEXT,
+    reward_type TEXT NOT NULL,
+    reward_value JSONB,
+    is_active BOOLEAN DEFAULT true,
+    stock_limit INTEGER,
+    stock_remaining INTEGER,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
 -- ============================================================================
 -- aro PLATFORM SCHEMA — Phase 2.1 consolidated migration
 -- Evolves the existing Caffi.pro schema to the aro Blueprint (§6) model.
@@ -537,7 +654,7 @@ LEFT JOIN LATERAL (
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION set_counter_pin(p_membership_id UUID, p_pin TEXT)
 RETURNS void
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, extensions AS $$
 BEGIN
     IF length(p_pin) < 4 OR length(p_pin) > 8 OR p_pin !~ '^[0-9]+$' THEN
         RAISE EXCEPTION 'PIN must be 4-8 digits';
@@ -553,7 +670,7 @@ $$;
 
 CREATE OR REPLACE FUNCTION verify_counter_pin(p_venue_id UUID, p_pin TEXT)
 RETURNS TABLE (membership_id UUID, full_name TEXT)
-LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public AS $$
+LANGUAGE sql SECURITY DEFINER STABLE SET search_path = public, extensions AS $$
     SELECT m.membership_id, m.full_name
     FROM memberships m
     WHERE m.venue_id = p_venue_id
@@ -588,7 +705,6 @@ BEGIN
             t, t);
     END LOOP;
 END $$;
-
 -- ============================================================================
 -- aro RLS — rebuilt from ZERO (Phase 2.1)
 --
@@ -882,3 +998,26 @@ GRANT SELECT ON tenants TO anon, authenticated;
 GRANT SELECT ON member_balances, member_status, users, loyalty_transactions, rewards_catalog
     TO authenticated;
 GRANT EXECUTE ON FUNCTION member_cadence_days(UUID) TO authenticated;
+-- ============================================================================
+-- SECURITY HARDENING — fixes from get_advisors() run against the live
+-- aro-platform project right after 20260707000001/2 applied cleanly.
+-- ============================================================================
+
+-- Lock down mutable search_path on trigger/helper functions (linter WARN:
+-- function_search_path_mutable). Without this, a function can be tricked by
+-- a caller-controlled search_path into resolving an unqualified identifier
+-- to an attacker-created object.
+ALTER FUNCTION touch_updated_at() SET search_path = public;
+ALTER FUNCTION update_order_stats() SET search_path = public;
+ALTER FUNCTION forbid_ledger_mutation() SET search_path = public;
+ALTER FUNCTION award_order_loyalty_points() SET search_path = public;
+ALTER FUNCTION award_signup_bonus() SET search_path = public;
+ALTER FUNCTION member_cadence_days(UUID) SET search_path = public;
+
+-- These SECURITY DEFINER helpers rely on auth.uid(); anon has none, so calls
+-- return empty sets and aren't a data leak, but there is no legitimate reason
+-- for anon to call them at all. Tighten to authenticated only (linter WARN:
+-- anon_security_definer_function_executable).
+REVOKE EXECUTE ON FUNCTION aro_my_venue_ids() FROM anon;
+REVOKE EXECUTE ON FUNCTION aro_my_managed_venue_ids() FROM anon;
+REVOKE EXECUTE ON FUNCTION aro_is_aro_admin() FROM anon;

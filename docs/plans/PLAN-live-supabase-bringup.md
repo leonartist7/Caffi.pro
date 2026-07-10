@@ -1,5 +1,11 @@
 # PLAN-live-supabase-bringup — Rank 1 of 5 (do this FIRST)
 
+**Status as of 2026-07-10: steps 1–6 DONE via the Supabase MCP connector.**
+See `docs/plans/HANDOFF-live-bringup.md` for exact state, what's left (steps
+7–8, browser/Vercel verification), and the two owner-only actions blocking
+it. The rest of this file is kept as reference for what was built and why —
+read the HANDOFF doc first if you're picking this up fresh.
+
 **Goal:** the platform runs against the real Supabase project — schema applied,
 RLS enforced and _proven_, seed data visible in the browser, Vercel preview
 working end-to-end. Until this lands, every other plan produces theory.
