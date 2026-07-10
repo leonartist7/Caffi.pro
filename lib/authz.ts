@@ -152,3 +152,63 @@ export async function requireVenueRole(
     }
   }
 }
+
+/**
+ * Platform-staff gate (no venue in scope): 401 without a session, 403
+ * unless the caller holds an active aro_admin membership. Used by HQ
+ * surfaces (lead inbox) that exist above the venue level.
+ */
+export async function requireAroAdmin(): Promise<AuthzResult> {
+  let user: User | null = null
+  try {
+    const supabase = createClient()
+    const {
+      data: { user: sessionUser },
+      error,
+    } = await supabase.auth.getUser()
+    if (error || !sessionUser) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }),
+      }
+    }
+    user = sessionUser
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }),
+    }
+  }
+
+  try {
+    const admin = getSupabaseAdmin()
+    const { data: rows, error } = await admin
+      .from('memberships')
+      .select('membership_id, role, is_active')
+      .eq('user_id', user.id)
+      .eq('role', 'aro_admin')
+      .eq('is_active', true)
+      .limit(1)
+    if (error) {
+      console.error('[authz] aro_admin lookup failed:', error)
+      return {
+        ok: false,
+        response: NextResponse.json({ error: 'Authorization check failed' }, { status: 500 }),
+      }
+    }
+    if (!rows || rows.length === 0) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+      }
+    }
+    // venueId is meaningless at HQ level; empty string keeps the shape.
+    return { ok: true, ctx: { user, role: 'aro_admin', venueId: '' } }
+  } catch (err) {
+    console.error('[authz] aro_admin check failed:', err)
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Authorization check failed' }, { status: 500 }),
+    }
+  }
+}

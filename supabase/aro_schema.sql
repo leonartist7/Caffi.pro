@@ -1,10 +1,12 @@
 -- ============================================================================
 -- aro CONSOLIDATED SCHEMA — paste-ready for the Supabase SQL editor
--- = migrations/20260706000000_legacy_foundation_minimal.sql
--- + migrations/20260707000001_aro_platform_schema.sql
--- + migrations/20260707000002_aro_rls.sql
--- + migrations/20260710000001_security_hardening.sql
--- + migrations/20260710000002_pass_serials.sql   (in that order)
+-- Concatenation of, in order:
+--   20260706000000_legacy_foundation_minimal.sql
+--   20260707000001_aro_platform_schema.sql
+--   20260707000002_aro_rls.sql
+--   20260710000001_security_hardening.sql
+--   20260710000002_pass_serials.sql
+--   20260710000003_leads_status.sql
 --
 -- Targets a FRESH Supabase project with zero tables (the legacy-foundation
 -- migration bootstraps the empty legacy shape the aro migration expects,
@@ -1034,3 +1036,24 @@ ALTER TABLE members
 -- Backfill happens implicitly via the DEFAULT on ADD COLUMN (Postgres 11+
 -- fills existing rows). Enforce uniqueness + fast lookup:
 CREATE UNIQUE INDEX IF NOT EXISTS uq_members_pass_serial ON members (pass_serial);
+
+-- ============================================================================
+-- LEADS PIPELINE (Plan 5) — columns for the AURA diagnostic forward.
+-- The leads table (20260707000001 §10) already has source/name/email/phone/
+-- venue_name/city/payload/status. This adds what the webhook needs:
+--   score            — diagnostic score (0 is valid; typeof-number checks)
+--   answers          — full per-question detail for the inbox expando
+--   idempotency_key  — browser back + resubmit = one row, enforced by DB
+-- RLS stance unchanged: leads is a server-only table (no anon/authenticated
+-- grants, no policies) — writes come from the service role via /api/leads,
+-- reads go through the aro_admin-gated API only.
+-- ============================================================================
+
+ALTER TABLE leads
+    ADD COLUMN IF NOT EXISTS score INTEGER,
+    ADD COLUMN IF NOT EXISTS answers JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS idempotency_key TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_leads_idempotency_key
+    ON leads (idempotency_key)
+    WHERE idempotency_key IS NOT NULL;
