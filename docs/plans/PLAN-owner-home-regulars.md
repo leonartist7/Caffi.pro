@@ -67,6 +67,25 @@ fading_count)` to the migration, populated by the stats function on first
   point-in-time view — you cannot compute "fading count 7 days ago" retroactively. Snapshot-on-first-read keeps it cron-free for now.
 - Owner vs manager both see these screens (memberships role check allows both); staff role must get 403/redirect to `/counter` — test it.
 
+## Restolabs feature alignment (2026-07-10)
+
+Competitor scan (Restolabs) requested feature parity; decision was loyalty-first
+— defer their commerce stack, cherry-pick what already fits this plan's design:
+
+- **"Real-Time Analytics"** — Restolabs sells a broad metrics dashboard. This
+  plan deliberately does NOT do that (see Edge cases: "views don't aggregate
+  cheaply", "ONE RPC round trip"). The one-number philosophy stays; do not
+  add a metrics-dashboard tab to satisfy this. Deeper trend analytics, if
+  wanted later, is a new Phase 6+ screen — not a change to `/home`.
+- **"Customer Data Ownership"** — already exceeded by design: owner role sees
+  full member contact + history (step 4), no third party ever holds it. No
+  change needed.
+- **"Branded Loyalty Program... automated rewards and targeted promotions"**
+  — `ApprovalsInbox` (step 3) reading `ai_drafts`, plus the `campaigns` table
+  already scaffolded in the Phase 2 schema, are aro's answer to this; they
+  just aren't populated until a later AI-drafting phase. No new work here —
+  confirms the existing design already covers it.
+
 ## Acceptance criteria
 
 1. verify-live.mjs: seed a member with known visit pattern (e.g. visits every 7d, then a 12d gap, then a visit this week) → stats fn counts exactly 1 returned regular; a 2-visit newbie this week counts 0.

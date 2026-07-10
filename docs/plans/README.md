@@ -16,3 +16,12 @@ work item, push to `claude/caffi-aura-audit-plan-dgr8wy`).
 
 Order is strict for 1→2→3→4 (each consumes the previous one's output).
 5 can run in parallel with any of 2–4.
+
+## Deferred: Restolabs feature-parity request (2026-07-10)
+
+A competitor feature scan (Restolabs — ordering, delivery, POS, website,
+native app) was evaluated against this roadmap and deliberately deferred.
+Decision: stay loyalty-first, prove Plans 1–5 with real venues first. See
+[PHASE-6-COMMERCE-CANDIDATES.md](PHASE-6-COMMERCE-CANDIDATES.md) for the full
+gap list and re-evaluation trigger. Plans 2 and 4 got small alignment notes
+(no scope change) documenting which Restolabs items they already satisfy.

@@ -46,6 +46,16 @@ is real. Depends on: PLAN-live-supabase-bringup (needs live `members`/`visits`).
 - Café wifi reality: the form must work without JS hydration completing — use a plain `<form action>` POST fallback path (progressive enhancement), not an onClick-only submit.
 - Venue slug casing/trailing-slash: normalize lower + trim in lookup.
 
+## Restolabs feature alignment (2026-07-10)
+
+Competitor scan (Restolabs) requested feature parity; decision was
+loyalty-first (see `docs/plans/PHASE-6-COMMERCE-CANDIDATES.md`). One item
+overlaps this plan: **"Customer Data Ownership"** — full contact/profile
+access with no third-party intermediary. This plan already delivers that by
+construction (join writes straight into aro's own `members` table via a
+first-party API route; step 3 of Edge cases keeps it off any third-party
+rail). No scope change needed.
+
 ## Acceptance criteria
 
 1. `curl -X POST /api/join` happy path returns `{serial}`; second identical call returns same serial; DB member count unchanged (verify-live.mjs check green).
