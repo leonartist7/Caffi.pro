@@ -27,7 +27,9 @@ export default async function DashboardHome() {
     .eq('is_active', true)
 
   const roles = new Set((memberships ?? []).map(m => m.role))
+  // aro_admin first: the platform operator's home is the HQ control center
+  // (clients), even when they also hold owner memberships on demo venues.
+  if (roles.has('aro_admin')) redirect('/clients')
   if (roles.has('owner') || roles.has('manager')) redirect('/home')
-  if (roles.has('aro_admin')) redirect('/leads')
   redirect('/counter')
 }

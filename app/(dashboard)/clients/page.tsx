@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useTenant } from '@/contexts/TenantContext'
-import { createClient } from '@/utils/supabase/client'
 import { toast } from 'sonner'
 import {
   Building2,
@@ -45,7 +44,6 @@ export default function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [editingTenant, setEditingTenant] = useState<Tenant | null>(null)
-  const supabase = createClient()
 
   // Form state
   const [formData, setFormData] = useState({
@@ -65,15 +63,16 @@ export default function ClientsPage() {
   async function fetchTenants() {
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setTenants(data || [])
+      const res = await fetch('/api/clients')
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Failed to load clients (${res.status})`)
+      }
+      const { clients } = await res.json()
+      setTenants(clients || [])
     } catch (error) {
       console.error('Error fetching tenants:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to load clients')
     } finally {
       setLoading(false)
     }
@@ -83,167 +82,41 @@ export default function ClientsPage() {
     e.preventDefault()
 
     try {
-      const cleanSlug = formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-')
+      const payload = {
+        business_name: formData.business_name,
+        slug: formData.slug,
+        logo_url: formData.logo_url,
+        primary_color: formData.primary_color,
+        contact_email: formData.contact_email,
+        contact_phone: formData.contact_phone,
+      }
 
-      if (editingTenant) {
-        // For updates, only update fields that exist in tenants table
-        const tenantPayload = {
-          business_name: formData.business_name,
-          slug: cleanSlug,
-          owner_phone: formData.contact_phone || null,
-          // Note: We're not updating owner_email, app_name, bundle_id on edit as they're usually immutable
-        }
+      const res = editingTenant
+        ? await fetch(`/api/clients/${editingTenant.tenant_id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        : await fetch('/api/clients', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
 
-        const { error: tenantError } = await supabase
-          .from('tenants')
-          .update(tenantPayload)
-          .eq('tenant_id', editingTenant.tenant_id)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
+      }
 
-        if (tenantError) throw tenantError
-
-        // Update tenant_manifests if logo or color changed
-        // First, get the current manifest to preserve existing design_tokens
-        const { data: currentManifest } = await supabase
-          .from('tenant_manifests')
-          .select('design_tokens')
-          .eq('tenant_id', editingTenant.tenant_id)
-          .single()
-
-        if (currentManifest) {
-          const updatedDesignTokens = {
-            ...currentManifest.design_tokens,
-            colors: {
-              ...(currentManifest.design_tokens?.colors || {}),
-              primary: formData.primary_color,
-            },
-            branding: {
-              ...(currentManifest.design_tokens?.branding || {}),
-              logo_url: formData.logo_url || null,
-            },
-          }
-
-          const { error: manifestError } = await supabase
-            .from('tenant_manifests')
-            .update({
-              design_tokens: updatedDesignTokens,
-            })
-            .eq('tenant_id', editingTenant.tenant_id)
-
-          if (manifestError) {
-            console.error('Error updating manifest:', manifestError)
-          }
-        }
-      } else {
-        // Check if slug already exists
-        const { data: existingTenant } = await supabase
-          .from('tenants')
-          .select('slug')
-          .eq('slug', cleanSlug)
-          .single()
-
-        if (existingTenant) {
-          toast.error(`Slug "${cleanSlug}" is already taken. Please choose a different slug.`)
-          return
-        }
-
-        // For new tenants, insert into tenants table with required fields
-        const tenantPayload = {
-          business_name: formData.business_name,
-          slug: cleanSlug,
-          owner_email: formData.contact_email || `owner@${cleanSlug}.caffi.pro`,
-          owner_phone: formData.contact_phone || null,
-          app_name: formData.business_name,
-          bundle_id: `com.caffi.${cleanSlug}`,
-        }
-
-        const { data: newTenant, error: tenantError } = await supabase
-          .from('tenants')
-          .insert(tenantPayload)
-          .select()
-          .single()
-
-        if (tenantError) {
-          console.error('Tenant creation error:', tenantError)
-          throw new Error(
-            `Failed to create tenant: ${tenantError.message || JSON.stringify(tenantError)}`
-          )
-        }
-
-        // Create tenant_manifests entry with logo and primary color
-        if (newTenant) {
-          const manifestPayload = {
-            tenant_id: newTenant.tenant_id,
-            name: `${formData.business_name} App`,
-            short_name: formData.business_name.substring(0, 30),
-            design_tokens: {
-              colors: {
-                primary: formData.primary_color,
-                secondary: '#F4A259',
-                accent: '#E07A5F',
-                background: '#FFFFFF',
-                surface: '#F8F9FA',
-                error: '#DC3545',
-                success: '#28A745',
-                text_primary: '#212529',
-                text_secondary: '#6C757D',
-              },
-              typography: {
-                font_family: 'Inter',
-                heading_font: 'Poppins',
-                font_size_base: 16,
-                font_size_heading: 24,
-                font_weight_regular: 400,
-                font_weight_bold: 700,
-              },
-              spacing: {
-                xs: 4,
-                sm: 8,
-                md: 16,
-                lg: 24,
-                xl: 32,
-              },
-              border_radius: {
-                sm: 4,
-                md: 8,
-                lg: 16,
-                full: 9999,
-              },
-              branding: {
-                logo_url: formData.logo_url || null,
-              },
-            },
-          }
-
-          const { error: manifestError } = await supabase
-            .from('tenant_manifests')
-            .insert(manifestPayload)
-
-          if (manifestError) {
-            console.error('Error creating manifest:', manifestError)
-            throw new Error(
-              `Failed to create manifest: ${manifestError.message || JSON.stringify(manifestError)}`
-            )
-          }
-        }
+      // Auto-select newly created tenant
+      if (!editingTenant) {
+        const { client } = await res.json()
+        if (client) setSelectedTenant(client)
       }
 
       await fetchTenants()
-
-      // Auto-select newly created tenant
-      if (!editingTenant && formData.business_name) {
-        const { data: freshTenant } = await supabase
-          .from('tenants')
-          .select('tenant_id, business_name, slug')
-          .eq('slug', formData.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-'))
-          .single()
-
-        if (freshTenant) {
-          setSelectedTenant(freshTenant)
-        }
-      }
-
       closeModal()
-      toast.success('Client created successfully!')
+      toast.success(editingTenant ? 'Client updated successfully!' : 'Client created successfully!')
     } catch (error) {
       console.error('Error saving tenant:', error)
       const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
@@ -262,9 +135,11 @@ export default function ClientsPage() {
     if (!confirmed) return
 
     try {
-      const { error } = await supabase.from('tenants').delete().eq('tenant_id', tenantId)
-
-      if (error) throw error
+      const res = await fetch(`/api/clients/${tenantId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
+      }
       fetchTenants()
       toast.success('Client deleted successfully!')
     } catch (error) {
