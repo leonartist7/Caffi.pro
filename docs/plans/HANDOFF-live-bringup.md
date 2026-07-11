@@ -136,3 +136,10 @@ IS NULL`) — nobody can log in as them until a real Supabase Auth user
 - Don't re-run the legacy landmine SQL files — they're deleted from the repo
   now, but if anyone has a local copy floating around, do not run it against
   this project. Several of them disable RLS outright.
+
+## Redeploy log
+
+- 2026-07-11: owner added NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY
+  / SUPABASE_SERVICE_ROLE_KEY to Vercel envs. This project has "Ignored Build
+  Step" enabled, so an empty commit does NOT trigger a rebuild — needs a real
+  file diff. This line is that diff.
