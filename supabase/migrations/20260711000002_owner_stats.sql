@@ -35,7 +35,7 @@ RETURNS TABLE (
     fading_7d_ago INTEGER,
     has_any_data BOOLEAN
 )
-LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path = public AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
     v_week_start TIMESTAMPTZ;
     v_last_week_start TIMESTAMPTZ;
