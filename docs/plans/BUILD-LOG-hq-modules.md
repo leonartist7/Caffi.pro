@@ -65,3 +65,34 @@ Tracks progress against `docs/plans/PLAN-hq-control-center.md` (see plan text in
 - One commit per phase (6 total), each pushed to `claude/caffi-aura-audit-plan-dgr8wy`.
 - Every phase went through a `/code-review --level medium` self-review pass before commit; real issues found and fixed pre-commit rather than shipped: Phase 2 (silent row-cap truncation, unordered client list), Phase 3 (a pre-existing unrelated `requireRowVenueRole` bug that had silently broken the AI-drafts Approve/Skip buttons since they were built, plus a manager-privilege-escalation gap), Phase 4 (a design gap where Settings only worked for aro_admin, not real venue owners, plus a second instance of the row-cap truncation class), Phase 5 (a smaller reintroduction of the duplicate-query problem Phase 1 had just fixed).
 - Verified: `npx tsc --noEmit` clean, `npm run build` green (had to clear a stale `.next` cache still referencing the deleted diagnostics page — not a real error). Parked pages confirmed shrunk to ~174B bundles in the build output; `/tenants/[id]` (the untouched consumer) still builds clean against the 501 stubs.
+
+## Go-live polish — Phase B: invite links
+
+- `POST /api/staff` now returns a composed `invite_url`; `GET /api/staff` returns it only for pending memberships. The raw invite token remains server-only.
+- The Staff screen opens a copyable invite-link modal immediately after an invite is created, and pending invite cards expose a copy-link action. The UI explicitly says links are shared manually until email delivery ships.
+- Self-review added a guard so a missing invite token never becomes a malformed `/join-team/null` URL.
+- Verified: `npx tsc --noEmit` clean and `npm run build` green.
+
+## Go-live polish — Phase C: Members CRM
+
+- Added Members as the first live client module, with an HQ list supporting debounced search and status filters plus warm empty/loading states.
+- Added role-gated member list/profile APIs that reuse `listRegulars` and `getMemberProfile`; browser code never queries member tables directly.
+- Added the HQ member profile with visit history, points ledger, derived status context, and validated manual point adjustments. Adjustments are append-only, cannot make a balance negative, emit `points.adjusted`, and never mutate stored balances.
+- Schema review confirmed `balance_after` is nullable and the fresh-install foundation does not constrain `reason`, so `adjustment` is accepted without a migration.
+- Self-review fixed an unavailable icon export, normalized empty notes to `Manual adjustment`, and contained network failures in the adjustment UI.
+- Verified: `npx tsc --noEmit` clean, `npm run build` green, and all four Members API/page entries appear in `.next/server/app-paths-manifest.json`.
+
+## Go-live polish — Phase D: legacy retirement
+
+- Removed the dead browser-direct staff portal (`/staff/dashboard`, orders, inventory, reports, team), its layout/error boundary, and `StaffAuthContext`; `/staff/login` now redirects to the supported `/counter` experience.
+- Preserved the live HQ `/staff` module. Self-review/build caught that the plan's proposed `app/staff/page.tsx` redirect would collide with the real `(dashboard)/staff/page.tsx`; the conflicting redirect was removed before commit.
+- Replaced `/tenants/[id]` with a server redirect to `/clients`, then removed its six orphaned menu/category/location 501 API stubs after recon proved it was their only consumer.
+- The parked `/shop/**` commerce surface remains untouched.
+- Verified: legacy consumer greps are clean, `npx tsc --noEmit` passes after clearing the verified project-local `.next` cache, and `npm run build` is green with 41 routes. Removed staff subroutes and API stubs are absent; `/staff`, `/staff/login`, and `/tenants/[id]` resolve to the intended live/redirect surfaces.
+
+## Go-live polish — Phase E: live guardrail
+
+- Added `scripts/verify-live.mjs` and `npm run verify:live`: anonymous public-venue read, anonymous member-table denial, seed venue, membership count, `venue_week_stats`, and wrong counter-PIN rejection.
+- The script never prints secret values, exits `2` when required env is missing, prints one PASS/FAIL line per check, and exits `1` if any live invariant fails.
+- Self-review kept the checks aligned with explicit RLS column grants and service-only RPC signatures from the committed migrations.
+- Verified: `node --check` clean; missing-env path exits `2` as designed; `npx tsc --noEmit` clean; `npm run build` green. The real live run is deferred because this checkout intentionally has no `.env.local`/service key.

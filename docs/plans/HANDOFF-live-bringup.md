@@ -1,4 +1,4 @@
-# HANDOFF — live Supabase bring-up (2026-07-10)
+# HANDOFF — live Supabase bring-up (updated 2026-07-12)
 
 Written for whoever/whatever picks this up next (Cowork or a Sonnet
 delegate) with zero prior context. Read this file first, then
@@ -14,9 +14,30 @@ bootstrapped via the Supabase MCP connector:
   (`svemweqlxcebycqclhww`), region `eu-north-1`, free tier.
 - **URL:** `https://jjgccfrwjkwknyjtbtxa.supabase.co`
 - **Anon key** (public-safe, client-side): `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpqZ2NjZnJ3amt3a255anRidHhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2NTc5MTQsImV4cCI6MjA5OTIzMzkxNH0.nrMZ7FzjmcbqPilerVVhGjZZeNtR8ffUo5n3Y811ABs`
-- **Service-role key:** NOT retrievable via MCP by design (Supabase intentionally
-  doesn't expose secret keys to connectors). This is the one credential you
-  cannot get programmatically — see "Owner-only steps" below.
+- **Service-role key:** rotated by the owner on 2026-07-12 and confirmed in
+  Caffi.pro's Vercel Production environment. The value is intentionally not
+  recorded here.
+
+### Phase A production cutover — 2026-07-12
+
+- Caffi.pro PR #47 merged to `main` as `cb80a46`; production serves the aro
+  sign-in UI and the live Roastery join page.
+- Production smoke checks: `/login` 200 with `aro.club`; `/join/the-roastery`
+  200 with the join form; anonymous `/api/clients` 401 as required.
+- `/api/check-env` returns 404 in production by design. The merged route is
+  development-only so it cannot disclose which secrets exist on a live
+  deployment; the older acceptance step expecting an all-green production
+  response is obsolete.
+- AURA PR #2 merged to `main` as `b94d247`. Both repositories' designated
+  `claude/caffi-aura-audit-plan-dgr8wy` branches were reset to their new
+  `main` heads after merge.
+- **Open Phase A blocker:** AURA production returns
+  `{"ok":true,"queued":false}` for an idempotent smoke diagnostic after six
+  retries. The merged forwarding code is deployed, but Caffi did not accept
+  the lead. Recheck AURA Production `PLATFORM_URL` and
+  `LEADS_WEBHOOK_SECRET`, confirm the secret exactly matches Caffi Production,
+  redeploy AURA, then repeat the diagnostic and require `queued:true` before
+  marking Phase A complete.
 
 ### Schema, RLS, and seed — all live and verified
 
@@ -79,46 +100,15 @@ expected `rls_enabled_no_policy` INFO findings remain, on `leads`,
 
 ## What's NOT done — pick up here
 
-### Owner-only (cannot be done by any agent — needs dashboard access)
+1. Fix the AURA Production lead-forwarding configuration described in the
+   Phase A block above and verify one diagnostic returns `queued:true`.
+2. Run `npm run verify:live` from a trusted environment containing the three
+   Supabase variables. The verifier is implemented and its fail-fast behavior
+   is tested, but this clean checkout intentionally has no local service key,
+   so the real six-check database run remains deferred.
 
-1. **Get the service-role key**: Supabase dashboard → project `aro-platform`
-   → Settings → API → `service_role` secret. Put it in `.env.local` locally
-   AND in Vercel → Settings → Environment Variables for **all three**
-   environments (Preview, Staging, Production), alongside:
-   - `NEXT_PUBLIC_SUPABASE_URL=https://jjgccfrwjkwknyjtbtxa.supabase.co`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY=` (value above)
-   - `SUPABASE_SERVICE_ROLE_KEY=` (from dashboard, this step)
-2. **Enable Auth**: Authentication → Providers → enable **Email** (password +
-   magic link). Authentication → URL Configuration → set Site URL to the
-   Vercel preview URL, add `http://localhost:3000` to the redirect allowlist.
-3. Trigger a Vercel redeploy after step 1 (env var changes need a fresh
-   build) — an empty commit works if there's nothing else to push.
-
-### Remaining agent work (Plan 1 steps 7–8, once the above lands)
-
-7. Local/CI browser verification: `npm run build && npm start`, log in as
-   the seeded owner (bind the pending `owner@roastery.dev` membership to a
-   real Supabase Auth user first — see the seed file's header comment for
-   the exact `UPDATE memberships SET user_id = ...` command), load
-   dashboard/clients/menu, log into `/counter` with PIN `4242`. Screenshot
-   each to `docs/audit/after/phase-2-live/`.
-8. Vercel: confirm the preview deployment picks up the new envs, hit
-   `/api/check-env` to confirm all three Supabase vars load, verify login
-   works on the preview URL.
-9. `scripts/verify-live.mjs` doesn't exist yet — Plan 1 called for creating
-   it (anon + service clients, scripted version of the RLS checks already
-   done manually above). Worth writing so this isn't a one-off manual
-   verification; future migrations need a regression check.
-
-### Then: Plans 2–5 are unblocked
-
-Once steps 7–8 above are done (or even before, for local dev — the DB itself
-is fully live now), Plans 2 (diner join page), 3 (counter two-tap), 4 (owner
-home + regulars), 5 (leads pipeline) can all proceed. They were written
-against the _design_ of this schema, which is now confirmed to match reality
-byte-for-byte (the two fixes above were runtime bugs in migration mechanics,
-not schema-shape changes) — no plan content needs revision because of this
-bring-up.
+Phases B–E were completed by explicit owner direction while the AURA issue was
+kept as a non-blocking production follow-up.
 
 ## Gotchas for whoever continues
 
@@ -143,3 +133,7 @@ IS NULL`) — nobody can log in as them until a real Supabase Auth user
   / SUPABASE_SERVICE_ROLE_KEY to Vercel envs. This project has "Ignored Build
   Step" enabled, so an empty commit does NOT trigger a rebuild — needs a real
   file diff. This line is that diff.
+- 2026-07-12: owner confirmed the rotated Supabase key, Caffi/AURA Production
+  env scopes, and Supabase Auth URL configuration. Caffi production smoke
+  checks passed. AURA was merged and deployed, but its lead-forwarding smoke
+  test remains blocked with `queued:false` pending an env-value match/redeploy.

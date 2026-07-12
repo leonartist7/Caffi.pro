@@ -28,6 +28,7 @@ import {
  */
 export type ModuleKey =
   | 'loyalty'
+  | 'members'
   | 'staff'
   | 'analytics'
   | 'activity'
@@ -53,6 +54,7 @@ export interface ModuleDef {
  * toggleable nav item.
  */
 export const MODULES: ModuleDef[] = [
+  { key: 'members', label: 'Members', href: '/members', icon: Users, status: 'live' },
   { key: 'staff', label: 'Staff', href: '/staff', icon: Shield, status: 'live' },
   { key: 'rewards', label: 'Rewards', href: '/rewards', icon: Gift, status: 'live' },
   { key: 'analytics', label: 'Analytics', href: '/analytics', icon: BarChart3, status: 'live' },
