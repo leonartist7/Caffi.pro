@@ -70,12 +70,12 @@ export default function TenantSelector() {
       const rows: Tenant[] = clients || []
       setTenants(rows)
 
-      // Update selected tenant with fresh data if it exists
+      // Re-sync the stored selection against the live list: refresh it if
+      // still valid, clear it if the client was deleted (never silently
+      // fall back to picking a different one).
       if (selectedTenant) {
         const freshTenant = rows.find(t => t.tenant_id === selectedTenant.tenant_id)
-        if (freshTenant) {
-          setSelectedTenant(freshTenant)
-        }
+        setSelectedTenant(freshTenant ?? null)
       }
     } catch (error) {
       console.error('Error fetching tenants:', error)
