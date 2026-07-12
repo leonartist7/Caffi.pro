@@ -102,10 +102,13 @@ expected `rls_enabled_no_policy` INFO findings remain, on `leads`,
 
 1. Fix the AURA Production lead-forwarding configuration described in the
    Phase A block above and verify one diagnostic returns `queued:true`.
-2. Create `scripts/verify-live.mjs` in Phase E of
-   `docs/plans/PLAN-00-go-live-polish.md`; future schema phases must extend it.
-3. Continue with Phase B (invite links) only after the AURA smoke test passes,
-   preserving the plan's strict A→E order.
+2. Run `npm run verify:live` from a trusted environment containing the three
+   Supabase variables. The verifier is implemented and its fail-fast behavior
+   is tested, but this clean checkout intentionally has no local service key,
+   so the real six-check database run remains deferred.
+
+Phases B–E were completed by explicit owner direction while the AURA issue was
+kept as a non-blocking production follow-up.
 
 ## Gotchas for whoever continues
 

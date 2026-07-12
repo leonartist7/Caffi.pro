@@ -89,3 +89,10 @@ Tracks progress against `docs/plans/PLAN-hq-control-center.md` (see plan text in
 - Replaced `/tenants/[id]` with a server redirect to `/clients`, then removed its six orphaned menu/category/location 501 API stubs after recon proved it was their only consumer.
 - The parked `/shop/**` commerce surface remains untouched.
 - Verified: legacy consumer greps are clean, `npx tsc --noEmit` passes after clearing the verified project-local `.next` cache, and `npm run build` is green with 41 routes. Removed staff subroutes and API stubs are absent; `/staff`, `/staff/login`, and `/tenants/[id]` resolve to the intended live/redirect surfaces.
+
+## Go-live polish — Phase E: live guardrail
+
+- Added `scripts/verify-live.mjs` and `npm run verify:live`: anonymous public-venue read, anonymous member-table denial, seed venue, membership count, `venue_week_stats`, and wrong counter-PIN rejection.
+- The script never prints secret values, exits `2` when required env is missing, prints one PASS/FAIL line per check, and exits `1` if any live invariant fails.
+- Self-review kept the checks aligned with explicit RLS column grants and service-only RPC signatures from the committed migrations.
+- Verified: `node --check` clean; missing-env path exits `2` as designed; `npx tsc --noEmit` clean; `npm run build` green. The real live run is deferred because this checkout intentionally has no `.env.local`/service key.

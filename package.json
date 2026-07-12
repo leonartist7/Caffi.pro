@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "next lint",
     "lint:strict": "next lint --max-warnings 0",
+    "verify:live": "node scripts/verify-live.mjs",
     "prepare": "husky"
   },
   "dependencies": {
