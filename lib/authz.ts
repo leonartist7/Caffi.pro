@@ -28,20 +28,28 @@ type AuthzResult = { ok: true; ctx: VenueAuthz } | { ok: false; response: NextRe
  * that client in the calling route.
  */
 /**
- * Same gate for /[id] routes: resolves the row's tenant_id first so a
- * caller can never operate on another venue's row by guessing IDs.
+ * Same gate for /[id] routes: resolves the row's venue first so a caller
+ * can never operate on another venue's row by guessing IDs.
+ *
+ * `venueColumn` defaults to 'tenant_id' because most legacy-renamed tables
+ * (members, rewards, points_ledger) kept that column name through the
+ * tenants->venues rename. Tables created fresh in the aro schema use
+ * `venue_id` instead (ai_drafts, memberships, visits, campaigns, events,
+ * redemptions) — pass `'venue_id'` explicitly for those, or the lookup
+ * below will throw a "column does not exist" error and this always 404s.
  */
 export async function requireRowVenueRole(
   table: string,
   pkColumn: string,
   id: string,
-  allowedRoles: Role[] = ['owner', 'manager']
+  allowedRoles: Role[] = ['owner', 'manager'],
+  venueColumn: 'tenant_id' | 'venue_id' = 'tenant_id'
 ): Promise<AuthzResult> {
   try {
     const admin = getSupabaseAdmin()
     const { data: row, error } = await admin
       .from(table)
-      .select('tenant_id')
+      .select(venueColumn)
       .eq(pkColumn, id)
       .single()
 
@@ -51,7 +59,7 @@ export async function requireRowVenueRole(
         response: NextResponse.json({ error: 'Not found' }, { status: 404 }),
       }
     }
-    return requireVenueRole(row.tenant_id, allowedRoles)
+    return requireVenueRole((row as Record<string, string>)[venueColumn], allowedRoles)
   } catch (err) {
     console.error('[authz] row lookup failed:', err)
     return {

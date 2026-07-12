@@ -12,7 +12,13 @@ import { emitEvent } from '@/lib/events'
 const VALID = ['approved', 'edited', 'skipped'] as const
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const gate = await requireRowVenueRole('ai_drafts', 'draft_id', params.id, ['owner', 'manager'])
+  const gate = await requireRowVenueRole(
+    'ai_drafts',
+    'draft_id',
+    params.id,
+    ['owner', 'manager'],
+    'venue_id'
+  )
   if (!gate.ok) return gate.response
 
   let body: { status?: string; output?: string }
