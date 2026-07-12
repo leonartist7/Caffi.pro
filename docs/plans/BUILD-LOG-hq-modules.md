@@ -81,3 +81,11 @@ Tracks progress against `docs/plans/PLAN-hq-control-center.md` (see plan text in
 - Schema review confirmed `balance_after` is nullable and the fresh-install foundation does not constrain `reason`, so `adjustment` is accepted without a migration.
 - Self-review fixed an unavailable icon export, normalized empty notes to `Manual adjustment`, and contained network failures in the adjustment UI.
 - Verified: `npx tsc --noEmit` clean, `npm run build` green, and all four Members API/page entries appear in `.next/server/app-paths-manifest.json`.
+
+## Go-live polish — Phase D: legacy retirement
+
+- Removed the dead browser-direct staff portal (`/staff/dashboard`, orders, inventory, reports, team), its layout/error boundary, and `StaffAuthContext`; `/staff/login` now redirects to the supported `/counter` experience.
+- Preserved the live HQ `/staff` module. Self-review/build caught that the plan's proposed `app/staff/page.tsx` redirect would collide with the real `(dashboard)/staff/page.tsx`; the conflicting redirect was removed before commit.
+- Replaced `/tenants/[id]` with a server redirect to `/clients`, then removed its six orphaned menu/category/location 501 API stubs after recon proved it was their only consumer.
+- The parked `/shop/**` commerce surface remains untouched.
+- Verified: legacy consumer greps are clean, `npx tsc --noEmit` passes after clearing the verified project-local `.next` cache, and `npm run build` is green with 41 routes. Removed staff subroutes and API stubs are absent; `/staff`, `/staff/login`, and `/tenants/[id]` resolve to the intended live/redirect surfaces.
