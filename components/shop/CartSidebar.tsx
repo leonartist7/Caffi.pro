@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useCallback, useMemo } from 'react'
+import { memo, useCallback } from 'react'
 import { X, ShoppingBag, ArrowRight, Trash2 } from 'lucide-react'
 import { useCart, type CartItem } from '@/contexts/CartContext'
 import CartItemComponent from './CartItem'

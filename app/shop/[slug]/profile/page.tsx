@@ -53,6 +53,7 @@ export default function ProfilePage() {
     if (user) {
       fetchProfile()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [user])
 
   async function fetchProfile() {

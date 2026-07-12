@@ -1,0 +1,184 @@
+[
+  {
+    "route": "/",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/login",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/dashboard",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/clients",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }",
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…ashboard)/clients/page-993acb7688c41be4.js:1:845), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/cafes",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/menu",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/orders",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/coupons",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/rewards",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/notifications",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/analytics",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/activity",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }",
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching cafes: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…shboard)/activity/page-50bad857277ae873.js:1:890), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/staff",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/settings",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/diagnostics",
+    "status": "200",
+    "consoleErrors": [
+      "Failed to load resource: net::ERR_FAILED",
+      "Error fetching tenants: {message: TypeError: Failed to fetch, details: TypeError: Failed to fetch\n    at http://localhost…p/(dashboard)/layout-24ad49674449666d.js:1:11460), hint: , code: }"
+    ]
+  },
+  {
+    "route": "/staff/login",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/staff/dashboard",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/staff/orders",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/staff/inventory",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/staff/reports",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/staff/team",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/shop/demo-cafe",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/shop/demo-cafe/menu",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/shop/demo-cafe/login",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/shop/demo-cafe/signup",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/shop/demo-cafe/rewards",
+    "status": "200",
+    "consoleErrors": []
+  },
+  {
+    "route": "/shop/demo-cafe/checkout",
+    "status": "200",
+    "consoleErrors": []
+  }
+]

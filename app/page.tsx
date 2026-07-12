@@ -1,23 +1,22 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+// Server component: authenticated users go to the dashboard, everyone
+// else goes to /login. The old "DEVELOPMENT MODE: skip login" client
+// redirect is gone — there is no auth bypass.
+export const dynamic = 'force-dynamic'
 
-export default function Home() {
-  const router = useRouter()
+export default async function Home() {
+  let authenticated = false
+  try {
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    authenticated = Boolean(user)
+  } catch {
+    authenticated = false
+  }
 
-  useEffect(() => {
-    // DEVELOPMENT MODE: Skip login, go directly to dashboard
-    // TODO: Re-enable authentication by changing this to '/login'
-    router.push('/dashboard')
-  }, [router])
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary to-accent flex items-center justify-center p-8">
-      <div className="text-center text-white">
-        <div className="text-6xl mb-4">☕</div>
-        <p className="text-xl">Redirecting to dashboard...</p>
-      </div>
-    </div>
-  )
+  redirect(authenticated ? '/dashboard' : '/login')
 }

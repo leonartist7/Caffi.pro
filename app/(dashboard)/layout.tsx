@@ -1,39 +1,48 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { createClient } from '@/utils/supabase/server'
+import { isAroAdminUser } from '@/lib/authz'
+import DashboardShell from './layout-client'
 
-import Sidebar from '@/components/Sidebar'
-import MobileNav from '@/components/MobileNav'
-import LiveClock from '@/components/LiveClock'
-import TenantSelector from '@/components/TenantSelector'
-import ThemeToggle from '@/components/ThemeToggle'
-import { TenantProvider } from '@/contexts/TenantContext'
-import { ThemeProvider } from '@/contexts/ThemeContext'
+// Server-side auth gate: no session cookie → /login. Rendering of the
+// dashboard shell never happens for anonymous requests.
+//
+// Uses getSession() (cookie-local, no network) rather than getUser() —
+// middleware.ts already called getUser() against Supabase Auth earlier in
+// this same request and refreshed the session cookie, so that's the
+// authoritative per-request check. This is just a UX gate for rendering
+// the shell; every actual data access is separately authorized in its own
+// API route or server component (requireVenueRole/requireAroAdmin), which
+// never trust this layout's check alone.
+export const dynamic = 'force-dynamic'
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider>
-      <TenantProvider>
-        <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800 transition-colors duration-200">
-          <Sidebar />
-          <MobileNav />
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  let userId: string | null = null
+  try {
+    const supabase = createClient()
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+    userId = session?.user?.id ?? null
+  } catch (err) {
+    // Missing env or unreachable Supabase — fail CLOSED, never open.
+    console.error('[dashboard layout] auth check failed:', err)
+    userId = null
+  }
 
-          <main className="flex-1 ml-0 lg:ml-64 transition-all duration-500">
-            {/* Header */}
-            <header className="h-16 lg:h-20 px-4 lg:px-8 flex items-center justify-between border-b border-coffee-200/50 dark:border-dark-700 bg-white/80 dark:bg-dark-900/80 backdrop-blur-lg relative overflow-visible shadow-sm">
-              <div className="flex items-center gap-3 lg:gap-4 overflow-visible">
-                <TenantSelector />
-              </div>
+  if (!userId) {
+    redirect('/login')
+  }
 
-              <div className="flex items-center gap-3">
-                <ThemeToggle />
-                <LiveClock />
-              </div>
-            </header>
+  // Nav-only role check (which sidebar items to render, not an authz
+  // decision — every page/route under here re-checks its own access).
+  // isAroAdminUser is React-cache()'d per request, so dashboard/page.tsx's
+  // own role dispatch reuses this result instead of querying again.
+  let isAroAdmin = false
+  try {
+    isAroAdmin = await isAroAdminUser(userId)
+  } catch (err) {
+    console.error('[dashboard layout] role check failed:', err)
+  }
 
-            {/* Content */}
-            <div className="p-4 lg:p-8">{children}</div>
-          </main>
-        </div>
-      </TenantProvider>
-    </ThemeProvider>
-  )
+  return <DashboardShell isAroAdmin={isAroAdmin}>{children}</DashboardShell>
 }

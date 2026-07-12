@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useTenant } from '@/contexts/TenantContext'
-import { createClient } from '@/utils/supabase/client'
 import { Building2, ChevronDown, Check } from 'lucide-react'
 import Link from 'next/link'
 
@@ -23,7 +22,6 @@ export default function TenantSelector() {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
-  const supabase = createClient()
 
   useEffect(() => {
     setMounted(true)
@@ -31,6 +29,7 @@ export default function TenantSelector() {
 
   useEffect(() => {
     fetchTenants()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
   }, [])
 
   // Calculate dropdown position when opened
@@ -65,38 +64,18 @@ export default function TenantSelector() {
 
   async function fetchTenants() {
     try {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('tenant_id, business_name, slug')
-        .order('business_name')
+      const res = await fetch('/api/clients')
+      if (!res.ok) throw new Error(`Failed to load clients (${res.status})`)
+      const { clients } = await res.json()
+      const rows: Tenant[] = clients || []
+      setTenants(rows)
 
-      if (error) throw error
-
-      // Fetch logo URLs from tenant_manifests
-      const tenantsWithLogos = await Promise.all(
-        (data || []).map(async tenant => {
-          const { data: manifest } = await supabase
-            .from('tenant_manifests')
-            .select('logo_url')
-            .eq('tenant_id', tenant.tenant_id)
-            .single()
-
-          return {
-            ...tenant,
-            logo_url: manifest?.logo_url || null,
-          }
-        })
-      )
-
-      setTenants(tenantsWithLogos)
-
-      // Update selected tenant with fresh data if it exists
+      // Re-sync the stored selection against the live list: refresh it if
+      // still valid, clear it if the client was deleted (never silently
+      // fall back to picking a different one).
       if (selectedTenant) {
-        const freshTenant = tenantsWithLogos.find(t => t.tenant_id === selectedTenant.tenant_id)
-        if (freshTenant) {
-          console.log('Updating selected tenant with fresh data:', freshTenant)
-          setSelectedTenant(freshTenant)
-        }
+        const freshTenant = rows.find(t => t.tenant_id === selectedTenant.tenant_id)
+        setSelectedTenant(freshTenant ?? null)
       }
     } catch (error) {
       console.error('Error fetching tenants:', error)

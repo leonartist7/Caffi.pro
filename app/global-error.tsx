@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { AlertTriangle } from 'lucide-react'
+import {} from 'lucide-react'
 
 export default function GlobalError({
   error,
