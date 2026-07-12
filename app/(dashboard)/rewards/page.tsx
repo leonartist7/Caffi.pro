@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import {
   Gift,
   Plus,
@@ -46,7 +46,6 @@ export default function RewardsPage() {
   const [showModal, setShowModal] = useState(false)
   const [editingReward, setEditingReward] = useState<Reward | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const supabase = createClient()
 
   // Form state
   const [formData, setFormData] = useState({
@@ -72,16 +71,16 @@ export default function RewardsPage() {
 
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('rewards_catalog')
-        .select('*')
-        .eq('tenant_id', selectedTenant.tenant_id)
-        .order('points_required', { ascending: true })
-
-      if (error) throw error
+      const res = await fetch(`/api/rewards?venue_id=${selectedTenant.tenant_id}`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Failed to load rewards (${res.status})`)
+      }
+      const { rewards: data } = await res.json()
       setRewards(data || [])
     } catch (error) {
       console.error('Error fetching rewards:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to load rewards')
     } finally {
       setLoading(false)
     }
@@ -98,33 +97,36 @@ export default function RewardsPage() {
         points_required: formData.points_required,
         image_url: formData.image_url || null,
         reward_type: formData.reward_type,
-        reward_value: {},
         stock_limit: formData.stock_limit,
         stock_remaining: formData.stock_remaining,
         is_active: formData.is_active,
       }
 
-      if (editingReward) {
-        const { error } = await supabase
-          .from('rewards_catalog')
-          .update(payload)
-          .eq('reward_id', editingReward.reward_id)
-          .eq('tenant_id', selectedTenant.tenant_id)
+      const res = editingReward
+        ? await fetch(`/api/rewards/${editingReward.reward_id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        : await fetch('/api/rewards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...payload, venue_id: selectedTenant.tenant_id }),
+          })
 
-        if (error) throw error
-      } else {
-        const { error } = await supabase.from('rewards_catalog').insert({
-          ...payload,
-          tenant_id: selectedTenant.tenant_id,
-        })
-
-        if (error) throw error
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
       }
 
-      fetchRewards()
+      await fetchRewards()
       closeModal()
+      toast.success(editingReward ? 'Reward updated!' : 'Reward created!')
     } catch (error) {
       console.error('Error saving reward:', error)
+      toast.error(
+        `Failed to save reward: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -137,19 +139,20 @@ export default function RewardsPage() {
     })
 
     if (!confirmed) return
-    if (!selectedTenant) return
 
     try {
-      const { error } = await supabase
-        .from('rewards_catalog')
-        .delete()
-        .eq('reward_id', rewardId)
-        .eq('tenant_id', selectedTenant.tenant_id)
-
-      if (error) throw error
-      fetchRewards()
+      const res = await fetch(`/api/rewards/${rewardId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
+      }
+      await fetchRewards()
+      toast.success('Reward deleted.')
     } catch (error) {
       console.error('Error deleting reward:', error)
+      toast.error(
+        `Failed to delete reward: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 

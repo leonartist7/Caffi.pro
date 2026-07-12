@@ -1,12 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
-import { requireAroAdmin } from '@/lib/authz'
+import { requireAroAdmin, requireRowVenueRole } from '@/lib/authz'
 import { emitEvent } from '@/lib/events'
+import { CLIENT_COLUMNS, toTenantShape } from '@/lib/clients'
 
-/** PATCH/DELETE for a single HQ client (venue). aro_admin only. */
+/**
+ * GET/PATCH for a single client (venue) — venue's own owner/manager or
+ * aro_admin, since Settings' General tab uses this to let a real café
+ * owner manage their own brand profile, not just HQ operators managing
+ * clients on their behalf. DELETE stays aro_admin-only: removing a whole
+ * venue is a platform-operator action, not something an owner triggers
+ * via a single API call.
+ */
+
+export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+  const gate = await requireRowVenueRole(
+    'venues',
+    'venue_id',
+    params.id,
+    ['owner', 'manager'],
+    'venue_id'
+  )
+  if (!gate.ok) return gate.response
+
+  const admin = getSupabaseAdmin()
+  const { data, error } = await admin
+    .from('venues')
+    .select(CLIENT_COLUMNS)
+    .eq('venue_id', params.id)
+    .single()
+  if (error || !data) {
+    return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+  }
+  return NextResponse.json({ client: toTenantShape(data) })
+}
 
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
-  const gate = await requireAroAdmin()
+  const gate = await requireRowVenueRole(
+    'venues',
+    'venue_id',
+    params.id,
+    ['owner', 'manager'],
+    'venue_id'
+  )
   if (!gate.ok) return gate.response
 
   let body: {

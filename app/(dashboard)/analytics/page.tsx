@@ -1,18 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import { useTenant } from '@/contexts/TenantContext'
+import { toast } from 'sonner'
 import {
-  DollarSign,
-  ShoppingCart,
   Users,
-  Store,
+  Activity,
+  Gift,
   TrendingUp,
   Download,
   Calendar,
-  BarChart3,
   Building2,
+  Award,
 } from 'lucide-react'
 import {
   LineChart,
@@ -30,38 +29,49 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
-interface AnalyticsData {
-  totalRevenue: number
-  totalOrders: number
-  totalUsers: number
-  activeLocations: number
-  avgOrderValue: number
-  topCategory: string
+interface AnalyticsResponse {
+  totals: {
+    totalMembers: number
+    visitsInRange: number
+    pointsIssued: number
+    pointsRedeemed: number
+  }
+  memberGrowth: { name: string; newMembers: number }[]
+  visitsByWeek: { name: string; visits: number }[]
+  statusBreakdown: { status: string; count: number }[]
+  topMembers: { memberId: string; fullName: string; visitCount: number }[]
+  mostActiveDay: string | null
+  regularsRate: number | null
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  new: '#8b5cf6',
+  regular: '#22c55e',
+  fading: '#f59e0b',
+  lost: '#9ca3af',
+}
+
+const EMPTY: AnalyticsResponse = {
+  totals: { totalMembers: 0, visitsInRange: 0, pointsIssued: 0, pointsRedeemed: 0 },
+  memberGrowth: [],
+  visitsByWeek: [],
+  statusBreakdown: [],
+  topMembers: [],
+  mostActiveDay: null,
+  regularsRate: null,
 }
 
 export default function AnalyticsPage() {
   const { selectedTenant } = useTenant()
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState('30')
-  const [analytics, setAnalytics] = useState<AnalyticsData>({
-    totalRevenue: 0,
-    totalOrders: 0,
-    totalUsers: 0,
-    activeLocations: 0,
-    avgOrderValue: 0,
-    topCategory: '',
-  })
-  const [chartData, setChartData] = useState<any[]>([])
-  const [categoryData, setCategoryData] = useState<any[]>([])
-  const [topLocations, setTopLocations] = useState<any[]>([])
-
-  const supabase = createClient()
+  const [data, setData] = useState<AnalyticsResponse>(EMPTY)
 
   useEffect(() => {
     if (selectedTenant) {
       fetchAnalytics()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- legacy effect; refit to TanStack Query in Phase 3
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dateRange, selectedTenant])
 
   async function fetchAnalytics() {
@@ -69,127 +79,17 @@ export default function AnalyticsPage() {
 
     try {
       setLoading(true)
-
-      // Fetch orders
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('tenant_id', selectedTenant.tenant_id)
-        .gte(
-          'created_at',
-          new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
-        )
-
-      // Fetch users (customers of this tenant)
-      const { data: users } = await supabase
-        .from('users')
-        .select('user_id')
-        .eq('tenant_id', selectedTenant.tenant_id)
-
-      // Fetch locations
-      const { data: locations } = await supabase
-        .from('locations')
-        .select('*')
-        .eq('tenant_id', selectedTenant.tenant_id)
-        .eq('is_active', true)
-
-      // Calculate analytics
-      const totalRevenue = orders?.reduce((acc, o) => acc + (o.total_amount || 0), 0) || 0
-      const totalOrders = orders?.length || 0
-      const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
-
-      // Temporarily set analytics (will update topCategory after fetching category data)
-      const analyticsData = {
-        totalRevenue,
-        totalOrders,
-        totalUsers: users?.length || 0,
-        activeLocations: locations?.length || 0,
-        avgOrderValue,
-        topCategory: '',
-      }
-
-      // Generate chart data (last 7 days)
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date()
-        date.setDate(date.getDate() - (6 - i))
-        return date.toISOString().split('T')[0]
-      })
-
-      const dailyData = last7Days.map(date => {
-        const dayOrders = orders?.filter(o => o.created_at?.startsWith(date)) || []
-        return {
-          name: new Date(date).toLocaleDateString('en-US', { weekday: 'short' }),
-          revenue: dayOrders.reduce((acc, o) => acc + (o.total_amount || 0), 0),
-          orders: dayOrders.length,
-        }
-      })
-
-      setChartData(dailyData)
-
-      // Fetch real category data from order items
-      const { data: orderItems } = await supabase
-        .from('order_items')
-        .select(
-          `
-          total_price,
-          order_id,
-          orders!inner(tenant_id, created_at),
-          menu_items!inner(category_id, categories!inner(name))
-        `
-        )
-        .eq('orders.tenant_id', selectedTenant.tenant_id)
-        .gte(
-          'orders.created_at',
-          new Date(Date.now() - parseInt(dateRange) * 24 * 60 * 60 * 1000).toISOString()
-        )
-
-      // Aggregate by category
-      const categoryMap = new Map<string, number>()
-      orderItems?.forEach((item: any) => {
-        const categoryName = item.menu_items?.categories?.name || 'Uncategorized'
-        const current = categoryMap.get(categoryName) || 0
-        categoryMap.set(categoryName, current + (item.total_price || 0))
-      })
-
-      // Convert to array and calculate percentages
-      const totalCategoryRevenue = Array.from(categoryMap.values()).reduce(
-        (acc, val) => acc + val,
-        0
+      const res = await fetch(
+        `/api/analytics?venue_id=${selectedTenant.tenant_id}&days=${dateRange}`
       )
-      const colors = ['#6b3410', '#c97d47', '#d69f70', '#e3bf9b', '#9b6b3f', '#8b5a2b', '#a67c52']
-
-      const categoryDataArray = Array.from(categoryMap.entries())
-        .map(([name, revenue], index) => ({
-          name,
-          value: totalCategoryRevenue > 0 ? Math.round((revenue / totalCategoryRevenue) * 100) : 0,
-          revenue,
-          color: colors[index % colors.length],
-        }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 6) // Top 6 categories
-
-      setCategoryData(categoryDataArray)
-
-      // Update top category in analytics
-      const topCategoryName = categoryDataArray.length > 0 ? categoryDataArray[0].name : 'N/A'
-
-      analyticsData.topCategory = topCategoryName
-      setAnalytics(analyticsData)
-
-      // Calculate top locations
-      const locationRevenue =
-        locations?.map(loc => {
-          const locOrders = orders?.filter(o => o.location_id === loc.location_id) || []
-          return {
-            name: loc.name,
-            revenue: locOrders.reduce((acc, o) => acc + (o.total_amount || 0), 0),
-            orders: locOrders.length,
-          }
-        }) || []
-
-      setTopLocations(locationRevenue.sort((a, b) => b.revenue - a.revenue).slice(0, 5))
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Failed to load analytics (${res.status})`)
+      }
+      setData(await res.json())
     } catch (error) {
       console.error('Error fetching analytics:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to load analytics')
     } finally {
       setLoading(false)
     }
@@ -198,11 +98,10 @@ export default function AnalyticsPage() {
   const handleExportCSV = () => {
     const csvContent = [
       ['Metric', 'Value'],
-      ['Total Revenue', `€${analytics.totalRevenue.toFixed(2)}`],
-      ['Total Orders', analytics.totalOrders],
-      ['Total Users', analytics.totalUsers],
-      ['Active Locations', analytics.activeLocations],
-      ['Avg Order Value', `€${analytics.avgOrderValue.toFixed(2)}`],
+      ['Total Members', data.totals.totalMembers],
+      [`Visits (last ${dateRange} days)`, data.totals.visitsInRange],
+      [`Points Issued (last ${dateRange} days)`, data.totals.pointsIssued],
+      [`Points Redeemed (last ${dateRange} days)`, data.totals.pointsRedeemed],
     ]
       .map(row => row.join(','))
       .join('\n')
@@ -215,6 +114,11 @@ export default function AnalyticsPage() {
     a.click()
     window.URL.revokeObjectURL(url)
   }
+
+  const redemptionRate =
+    data.totals.pointsIssued > 0
+      ? Math.round((data.totals.pointsRedeemed / data.totals.pointsIssued) * 100)
+      : null
 
   // No tenant selected state
   if (!selectedTenant) {
@@ -244,7 +148,7 @@ export default function AnalyticsPage() {
             Analytics & Insights
           </h1>
           <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
-            Track performance and trends for {selectedTenant.business_name}
+            Loyalty performance for {selectedTenant.business_name}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -284,53 +188,27 @@ export default function AnalyticsPage() {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                    Total Revenue
-                  </p>
-                  <p className="text-xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1 font-mono">
-                    €{analytics.totalRevenue.toFixed(2)}
-                  </p>
-                </div>
-                <DollarSign className="w-6 h-6 lg:w-8 lg:h-8 text-green-600" />
-              </div>
-              <div className="flex items-center gap-1 text-xs lg:text-sm text-green-600 dark:text-green-400">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-semibold">+12.5%</span>
-              </div>
-            </div>
-
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                    Total Orders
+                    Total Members
                   </p>
                   <p className="text-xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                    {analytics.totalOrders}
-                  </p>
-                </div>
-                <ShoppingCart className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600" />
-              </div>
-              <div className="flex items-center gap-1 text-xs lg:text-sm text-green-600 dark:text-green-400">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-semibold">+8.3%</span>
-              </div>
-            </div>
-
-            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                    Total Users
-                  </p>
-                  <p className="text-xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
-                    {analytics.totalUsers}
+                    {data.totals.totalMembers}
                   </p>
                 </div>
                 <Users className="w-6 h-6 lg:w-8 lg:h-8 text-purple-600" />
               </div>
-              <div className="flex items-center gap-1 text-xs lg:text-sm text-green-600 dark:text-green-400">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-semibold">+15.2%</span>
+            </div>
+
+            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
+                    Visits ({dateRange}d)
+                  </p>
+                  <p className="text-xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1">
+                    {data.totals.visitsInRange}
+                  </p>
+                </div>
+                <Activity className="w-6 h-6 lg:w-8 lg:h-8 text-blue-600" />
               </div>
             </div>
 
@@ -338,33 +216,43 @@ export default function AnalyticsPage() {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
-                    Avg Order Value
+                    Points Issued ({dateRange}d)
                   </p>
                   <p className="text-xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1 font-mono">
-                    €{analytics.avgOrderValue.toFixed(2)}
+                    {data.totals.pointsIssued}
                   </p>
                 </div>
-                <BarChart3 className="w-6 h-6 lg:w-8 lg:h-8 text-coffee-600 dark:text-cream-300" />
+                <TrendingUp className="w-6 h-6 lg:w-8 lg:h-8 text-green-600" />
               </div>
-              <div className="flex items-center gap-1 text-xs lg:text-sm text-green-600 dark:text-green-400">
-                <TrendingUp className="w-4 h-4" />
-                <span className="font-semibold">+€2.40</span>
+            </div>
+
+            <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 uppercase tracking-wide">
+                    Points Redeemed ({dateRange}d)
+                  </p>
+                  <p className="text-xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mt-1 font-mono">
+                    {data.totals.pointsRedeemed}
+                  </p>
+                </div>
+                <Gift className="w-6 h-6 lg:w-8 lg:h-8 text-coffee-600 dark:text-cream-300" />
               </div>
             </div>
           </div>
 
           {/* Charts Row 1 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
-            {/* Revenue Trend */}
+            {/* Member Growth */}
             <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
               <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100 mb-4 lg:mb-6">
-                Revenue Trend (7 Days)
+                Member Growth (12 Weeks)
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
+                <LineChart data={data.memberGrowth}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" stroke="#8b7249" />
-                  <YAxis stroke="#8b7249" />
+                  <YAxis stroke="#8b7249" allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#fff',
@@ -376,7 +264,8 @@ export default function AnalyticsPage() {
                   <Legend />
                   <Line
                     type="monotone"
-                    dataKey="revenue"
+                    dataKey="newMembers"
+                    name="New members"
                     stroke="#6b3410"
                     strokeWidth={3}
                     dot={{ fill: '#6b3410', r: 5 }}
@@ -386,16 +275,16 @@ export default function AnalyticsPage() {
               </ResponsiveContainer>
             </div>
 
-            {/* Orders */}
+            {/* Visits */}
             <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
               <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100 mb-4 lg:mb-6">
-                Orders (7 Days)
+                Visits (12 Weeks)
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={chartData}>
+                <BarChart data={data.visitsByWeek}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis dataKey="name" stroke="#8b7249" />
-                  <YAxis stroke="#8b7249" />
+                  <YAxis stroke="#8b7249" allowDecimals={false} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#fff',
@@ -405,7 +294,7 @@ export default function AnalyticsPage() {
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="orders" fill="#c97d47" radius={[8, 8, 0, 0]} />
+                  <Bar dataKey="visits" fill="#c97d47" radius={[8, 8, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -413,67 +302,72 @@ export default function AnalyticsPage() {
 
           {/* Charts Row 2 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
-            {/* Category Distribution */}
+            {/* Member Status Breakdown */}
             <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
               <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100 mb-4 lg:mb-6">
-                Sales by Category
+                Member Status
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}%`}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {data.statusBreakdown.every(s => s.count === 0) ? (
+                <div className="text-center py-12 text-coffee-400 dark:text-cream-600">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No members yet</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={data.statusBreakdown.filter(s => s.count > 0)}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ status, count }) => `${status}: ${count}`}
+                      outerRadius={100}
+                      dataKey="count"
+                      nameKey="status"
+                    >
+                      {data.statusBreakdown
+                        .filter(s => s.count > 0)
+                        .map(entry => (
+                          <Cell
+                            key={entry.status}
+                            fill={STATUS_COLORS[entry.status] ?? '#9ca3af'}
+                          />
+                        ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
 
-            {/* Top Performing Locations */}
+            {/* Top Members */}
             <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
               <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100 mb-4 lg:mb-6">
-                Top Performing Locations
+                Top Members by Visits
               </h2>
-              {topLocations.length === 0 ? (
+              {data.topMembers.length === 0 ? (
                 <div className="text-center py-12 text-coffee-400 dark:text-cream-600">
-                  <Store className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">No location data available</p>
+                  <Award className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No visit data yet</p>
                 </div>
               ) : (
                 <div className="space-y-3 lg:space-y-4">
-                  {topLocations.map((location, index) => (
+                  {data.topMembers.map((member, index) => (
                     <div
-                      key={location.name}
+                      key={member.memberId}
                       className="flex items-center justify-between p-3 lg:p-4 rounded-xl bg-coffee-50 dark:bg-dark-900 hover:bg-coffee-100 dark:hover:bg-dark-700 transition-all"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-gradient-coffee text-cream-100 flex items-center justify-center font-bold text-sm">
                           {index + 1}
                         </div>
-                        <div>
-                          <p className="font-semibold text-coffee-900 dark:text-cream-100">
-                            {location.name}
-                          </p>
-                          <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400">
-                            {location.orders} orders
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-coffee-900 dark:text-cream-100 font-mono">
-                          €{location.revenue.toFixed(2)}
+                        <p className="font-semibold text-coffee-900 dark:text-cream-100">
+                          {member.fullName}
                         </p>
                       </div>
+                      <p className="font-bold text-coffee-900 dark:text-cream-100">
+                        {member.visitCount} visits
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -490,30 +384,31 @@ export default function AnalyticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 lg:gap-4">
               <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm rounded-xl p-4">
                 <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 mb-1">
-                  Best Performing Day
+                  Most Active Day
                 </p>
                 <p className="text-base lg:text-lg font-bold text-coffee-900 dark:text-cream-100">
-                  Saturday
+                  {data.mostActiveDay ?? 'Not enough data yet'}
                 </p>
-                <p className="text-xs text-green-600 dark:text-green-400">+23% vs average</p>
               </div>
               <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm rounded-xl p-4">
                 <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 mb-1">
-                  Peak Hours
+                  Regulars Rate
                 </p>
                 <p className="text-base lg:text-lg font-bold text-coffee-900 dark:text-cream-100">
-                  8-10 AM
+                  {data.regularsRate !== null ? `${data.regularsRate}%` : 'Not enough data yet'}
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">Morning rush</p>
+                <p className="text-xs text-green-600 dark:text-green-400">of members</p>
               </div>
               <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-sm rounded-xl p-4">
                 <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400 mb-1">
-                  Top Category
+                  Redemption Rate
                 </p>
                 <p className="text-base lg:text-lg font-bold text-coffee-900 dark:text-cream-100">
-                  {analytics.topCategory}
+                  {redemptionRate !== null ? `${redemptionRate}%` : 'Not enough data yet'}
                 </p>
-                <p className="text-xs text-purple-600 dark:text-purple-400">45% of sales</p>
+                <p className="text-xs text-purple-600 dark:text-purple-400">
+                  of points issued, redeemed
+                </p>
               </div>
             </div>
           </div>

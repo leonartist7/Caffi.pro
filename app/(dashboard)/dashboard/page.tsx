@@ -4,6 +4,7 @@ import { Building2, Users, Activity, Inbox, Plus, ArrowRight } from 'lucide-reac
 import { createClient } from '@/utils/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { mondayStartInTz } from '@/lib/owner-stats'
+import { eventLabel } from '@/lib/events'
 
 /**
  * Role dispatch: owner/manager -> the real (owner)/home; anyone else
@@ -18,34 +19,6 @@ export const dynamic = 'force-dynamic'
 // aggregate view (individual venues use their own timezone on their own
 // /home page — this page reports across all of them at once).
 const HQ_REFERENCE_TZ = 'America/Edmonton'
-
-const EVENT_LABELS: Record<string, string> = {
-  'member.joined': 'New member joined',
-  'visit.recorded': 'Visit recorded',
-  'reward.redeemed': 'Reward redeemed',
-  'points.adjusted': 'Points adjusted',
-  'campaign.created': 'Campaign created',
-  'campaign.autopilot_toggled': 'Campaign autopilot toggled',
-  'message.sent': 'Message sent',
-  'ai_draft.created': 'AI draft created',
-  'ai_draft.approved': 'AI draft approved',
-  'invite.created': 'Staff invited',
-  'invite.accepted': 'Staff invite accepted',
-  'counter.login': 'Counter login',
-  'client.created': 'Client created',
-  'client.updated': 'Client updated',
-  'client.deleted': 'Client deleted',
-  'staff.updated': 'Staff member updated',
-  'staff.deactivated': 'Staff member deactivated',
-  'staff.pin_set': 'Counter PIN set',
-  'lead.received': 'New lead received',
-  'seed.applied': 'Seed data applied',
-  'sentry.test': 'Sentry test event',
-}
-
-function eventLabel(type: string): string {
-  return EVENT_LABELS[type] ?? type
-}
 
 interface EventRow {
   event_id: string

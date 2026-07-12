@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/utils/supabase/client'
 import {
   Activity,
   Plus,
@@ -45,15 +44,10 @@ export default function ActivityLogPage() {
 
   const fetchCafes = async () => {
     try {
-      const supabase = createClient()
-
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('tenant_id, business_name, slug')
-        .order('business_name')
-
-      if (error) throw error
-      setCafes(data || [])
+      const res = await fetch('/api/clients')
+      if (!res.ok) throw new Error(`Failed to load clients (${res.status})`)
+      const { clients } = await res.json()
+      setCafes(clients || [])
     } catch (error) {
       console.error('Error fetching cafes:', error)
     }
@@ -61,31 +55,18 @@ export default function ActivityLogPage() {
 
   const fetchLogs = async () => {
     try {
-      const supabase = createClient()
+      const params = new URLSearchParams({ limit: '100' })
+      if (filterCafe !== 'all') params.set('venue_id', filterCafe)
 
-      let query = supabase
-        .from('admin_activity_log')
-        .select(
-          `
-          *,
-          tenants (business_name)
-        `
-        )
-        .order('created_at', { ascending: false })
-        .limit(100)
-
-      if (filterCafe !== 'all') {
-        query = query.eq('tenant_id', filterCafe)
-      }
-
-      if (filterAction !== 'all') {
-        query = query.eq('action', filterAction)
-      }
-
-      const { data, error } = await query
-
-      if (error) throw error
-      setLogs(data || [])
+      const res = await fetch(`/api/activity?${params}`)
+      if (!res.ok) throw new Error(`Failed to load activity (${res.status})`)
+      const { logs: data } = await res.json()
+      // Action filtering stays client-side — the underlying events table
+      // has no server-side action index, and a fetched page (<=100 rows)
+      // is cheap to filter in the browser.
+      setLogs(
+        filterAction === 'all' ? data : data.filter((l: ActivityLog) => l.action === filterAction)
+      )
     } catch (error) {
       console.error('Error fetching activity logs:', error)
     } finally {
