@@ -8,13 +8,19 @@ import ThemeToggle from '@/components/ThemeToggle'
 import { TenantProvider } from '@/contexts/TenantContext'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
+export default function DashboardShell({
+  children,
+  isAroAdmin,
+}: {
+  children: React.ReactNode
+  isAroAdmin: boolean
+}) {
   return (
     <ThemeProvider>
       <TenantProvider>
         <div className="flex min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 dark:from-dark-950 dark:via-dark-900 dark:to-dark-800 transition-colors duration-200">
-          <Sidebar />
-          <MobileNav />
+          <Sidebar isAroAdmin={isAroAdmin} />
+          <MobileNav isAroAdmin={isAroAdmin} />
 
           <main className="flex-1 ml-0 lg:ml-64 transition-all duration-500">
             {/* Header */}

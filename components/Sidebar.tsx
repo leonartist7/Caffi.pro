@@ -4,51 +4,34 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
-import {
-  LayoutDashboard,
-  Coffee,
-  MapPin,
-  Users,
-  ShoppingCart,
-  BarChart3,
-  Bell,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  Sun,
-  Moon,
-  Tag,
-  Gift,
-  Activity,
-  Menu as MenuIcon,
-  Shield,
-} from 'lucide-react'
+import { Coffee, ChevronLeft, ChevronRight, Sun, Moon } from 'lucide-react'
+import { MODULES, HQ_ITEMS } from '@/lib/modules'
 
 interface NavItem {
   name: string
   href: string
   icon: React.ElementType
+  soon?: boolean
 }
 
-const navItems: NavItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Locations', href: '/cafes', icon: MapPin },
-  { name: 'Menu', href: '/menu', icon: MenuIcon },
-  { name: 'Orders', href: '/orders', icon: ShoppingCart },
-  { name: 'Staff', href: '/staff', icon: Shield },
-  { name: 'Clients', href: '/clients', icon: Users },
-  { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'Activity', href: '/activity', icon: Activity },
-  { name: 'Coupons', href: '/coupons', icon: Tag },
-  { name: 'Rewards', href: '/rewards', icon: Gift },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
-  { name: 'Settings', href: '/settings', icon: Settings },
-]
+function buildNavItems(isAroAdmin: boolean): NavItem[] {
+  const hq: NavItem[] = isAroAdmin
+    ? HQ_ITEMS.map(i => ({ name: i.label, href: i.href, icon: i.icon }))
+    : []
+  const modules: NavItem[] = MODULES.map(m => ({
+    name: m.label,
+    href: m.href,
+    icon: m.icon,
+    soon: m.status === 'coming_soon',
+  }))
+  return [...hq, ...modules]
+}
 
-export default function Sidebar() {
+export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const { theme, toggleTheme } = useTheme()
   const pathname = usePathname()
+  const navItems = buildNavItems(isAroAdmin)
 
   return (
     <aside
@@ -120,15 +103,27 @@ export default function Sidebar() {
 
               <span
                 className={`
-                  font-medium transition-all duration-300
+                  flex-1 font-medium transition-all duration-300
                   ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}
                 `}
               >
                 {item.name}
               </span>
 
+              {item.soon && !isCollapsed && (
+                <span
+                  className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
+                    isActive
+                      ? 'bg-cream-100/20 text-cream-100'
+                      : 'bg-coffee-200/60 dark:bg-dark-700 text-coffee-500 dark:text-cream-500'
+                  }`}
+                >
+                  Soon
+                </span>
+              )}
+
               {/* Active indicator */}
-              {isActive && (
+              {isActive && !item.soon && (
                 <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-cream-100 animate-pulse" />
               )}
 

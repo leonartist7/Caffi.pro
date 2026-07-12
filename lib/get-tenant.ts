@@ -45,6 +45,43 @@ export interface Tenant {
   timezone?: string
 }
 
+// Matches the exact column list anon is granted on `venues` (see
+// supabase/migrations/20260707000002_aro_rls.sql, "public identity
+// readable by anyone") — contact/billing columns are deliberately not
+// selectable here.
+const VENUE_PUBLIC_COLUMNS =
+  'venue_id, business_name, slug, custom_domain, app_name, features_enabled, loyalty_config, currency, timezone, brand_kit'
+
+interface VenueRow {
+  venue_id: string
+  business_name: string
+  slug: string
+  custom_domain: string | null
+  app_name: string | null
+  features_enabled: Tenant['features_enabled'] | null
+  loyalty_config: Tenant['loyalty_config'] | null
+  currency: string | null
+  timezone: string | null
+  brand_kit: Record<string, unknown> | null
+}
+
+function toTenant(v: VenueRow): Tenant {
+  const kit = v.brand_kit ?? {}
+  return {
+    tenant_id: v.venue_id,
+    business_name: v.business_name,
+    slug: v.slug,
+    custom_domain: v.custom_domain ?? undefined,
+    app_name: v.app_name ?? undefined,
+    features_enabled: v.features_enabled ?? undefined,
+    loyalty_config: v.loyalty_config ?? undefined,
+    currency: v.currency ?? undefined,
+    timezone: v.timezone ?? undefined,
+    logo_url: (kit.logo_url as string | undefined) ?? undefined,
+    primary_color: (kit.primary as string | undefined) ?? '#6b3410',
+  }
+}
+
 /**
  * Get tenant by slug (e.g., 'joesbeans')
  * Used for customer-facing shop routes
@@ -57,40 +94,17 @@ export async function getTenantBySlug(slug: string | null): Promise<Tenant | nul
   try {
     const supabase = getAnonClient()
     const { data, error } = await supabase
-      .from('tenants')
-      .select(
-        'tenant_id, business_name, slug, custom_domain, app_name, features_enabled, loyalty_config, currency, timezone'
-      )
+      .from('venues')
+      .select(VENUE_PUBLIC_COLUMNS)
       .eq('slug', slug)
       .single()
 
-    if (error) {
-      console.error('[getTenantBySlug] Database error:', {
-        slug,
-        errorMessage: error.message,
-        errorCode: error.code,
-        errorDetails: error.details,
-      })
+    if (error || !data) {
+      console.error('[getTenantBySlug] lookup failed:', { slug, error: error?.message })
       return null
     }
 
-    if (!data) {
-      console.warn('[getTenantBySlug] No tenant found for slug:', slug)
-      return null
-    }
-
-    // Also get the manifest for design tokens (logo, colors, etc.)
-    const { data: manifest } = await supabase
-      .from('tenant_manifests')
-      .select('design_tokens, logo_url')
-      .eq('tenant_id', data.tenant_id)
-      .single()
-
-    return {
-      ...data,
-      logo_url: manifest?.logo_url,
-      primary_color: manifest?.design_tokens?.colors?.primary || '#6b3410',
-    }
+    return toTenant(data as unknown as VenueRow)
   } catch (err) {
     console.error('Failed to fetch tenant:', err)
     return null
@@ -109,30 +123,17 @@ export async function getTenantByDomain(domain: string): Promise<Tenant | null> 
   try {
     const supabase = getAnonClient()
     const { data, error } = await supabase
-      .from('tenants')
-      .select(
-        'tenant_id, business_name, slug, custom_domain, app_name, features_enabled, loyalty_config, currency, timezone'
-      )
+      .from('venues')
+      .select(VENUE_PUBLIC_COLUMNS)
       .eq('custom_domain', domain)
       .single()
 
-    if (error) {
-      console.error('Error fetching tenant by domain:', error)
+    if (error || !data) {
+      console.error('Error fetching tenant by domain:', error?.message)
       return null
     }
 
-    // Also get the manifest for design tokens
-    const { data: manifest } = await supabase
-      .from('tenant_manifests')
-      .select('design_tokens, logo_url')
-      .eq('tenant_id', data.tenant_id)
-      .single()
-
-    return {
-      ...data,
-      logo_url: manifest?.logo_url,
-      primary_color: manifest?.design_tokens?.colors?.primary || '#6b3410',
-    }
+    return toTenant(data as unknown as VenueRow)
   } catch (err) {
     console.error('Failed to fetch tenant by domain:', err)
     return null
@@ -147,30 +148,17 @@ export async function getTenantById(tenantId: string): Promise<Tenant | null> {
   try {
     const supabase = getAnonClient()
     const { data, error } = await supabase
-      .from('tenants')
-      .select(
-        'tenant_id, business_name, slug, custom_domain, app_name, features_enabled, loyalty_config, currency, timezone'
-      )
-      .eq('tenant_id', tenantId)
+      .from('venues')
+      .select(VENUE_PUBLIC_COLUMNS)
+      .eq('venue_id', tenantId)
       .single()
 
-    if (error) {
-      console.error('Error fetching tenant by ID:', error)
+    if (error || !data) {
+      console.error('Error fetching tenant by ID:', error?.message)
       return null
     }
 
-    // Also get the manifest for design tokens
-    const { data: manifest } = await supabase
-      .from('tenant_manifests')
-      .select('design_tokens, logo_url')
-      .eq('tenant_id', data.tenant_id)
-      .single()
-
-    return {
-      ...data,
-      logo_url: manifest?.logo_url,
-      primary_color: manifest?.design_tokens?.colors?.primary || '#6b3410',
-    }
+    return toTenant(data as unknown as VenueRow)
   } catch (err) {
     console.error('Failed to fetch tenant:', err)
     return null
@@ -185,8 +173,8 @@ export async function getAllTenants(): Promise<Tenant[]> {
   try {
     const supabase = getAnonClient()
     const { data, error } = await supabase
-      .from('tenants')
-      .select('tenant_id, business_name, slug')
+      .from('venues')
+      .select('venue_id, business_name, slug')
       .order('business_name')
 
     if (error) {
@@ -194,7 +182,11 @@ export async function getAllTenants(): Promise<Tenant[]> {
       return []
     }
 
-    return data || []
+    return (data ?? []).map(v => ({
+      tenant_id: v.venue_id,
+      business_name: v.business_name,
+      slug: v.slug,
+    }))
   } catch (err) {
     console.error('Failed to fetch tenants:', err)
     return []

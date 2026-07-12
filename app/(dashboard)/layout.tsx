@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { isAroAdminUser } from '@/lib/authz'
 import DashboardShell from './layout-client'
 
 // Server-side auth gate: no session cookie → /login. Rendering of the
@@ -15,22 +16,33 @@ import DashboardShell from './layout-client'
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  let authenticated = false
+  let userId: string | null = null
   try {
     const supabase = createClient()
     const {
       data: { session },
     } = await supabase.auth.getSession()
-    authenticated = Boolean(session?.user)
+    userId = session?.user?.id ?? null
   } catch (err) {
     // Missing env or unreachable Supabase — fail CLOSED, never open.
     console.error('[dashboard layout] auth check failed:', err)
-    authenticated = false
+    userId = null
   }
 
-  if (!authenticated) {
+  if (!userId) {
     redirect('/login')
   }
 
-  return <DashboardShell>{children}</DashboardShell>
+  // Nav-only role check (which sidebar items to render, not an authz
+  // decision — every page/route under here re-checks its own access).
+  // isAroAdminUser is React-cache()'d per request, so dashboard/page.tsx's
+  // own role dispatch reuses this result instead of querying again.
+  let isAroAdmin = false
+  try {
+    isAroAdmin = await isAroAdminUser(userId)
+  } catch (err) {
+    console.error('[dashboard layout] role check failed:', err)
+  }
+
+  return <DashboardShell isAroAdmin={isAroAdmin}>{children}</DashboardShell>
 }

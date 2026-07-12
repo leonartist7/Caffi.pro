@@ -1,11 +1,33 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { NextResponse } from 'next/server'
 import type { User } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export type Role = 'owner' | 'manager' | 'staff' | 'aro_admin'
+
+/**
+ * Per-request-memoized aro_admin check — the (dashboard) layout calls this
+ * to decide which nav items to render, and dashboard/page.tsx calls it
+ * again for its own role dispatch; React's cache() dedupes the two into
+ * one membership query per request instead of two, the same "don't pay
+ * twice for the same check" principle as the getSession() fix in the
+ * layout. Nav-only: never treat this as an authorization decision on its
+ * own — every route/page re-checks access independently.
+ */
+export const isAroAdminUser = cache(async (userId: string): Promise<boolean> => {
+  const admin = getSupabaseAdmin()
+  const { data } = await admin
+    .from('memberships')
+    .select('membership_id')
+    .eq('user_id', userId)
+    .eq('role', 'aro_admin')
+    .eq('is_active', true)
+    .limit(1)
+  return (data?.length ?? 0) > 0
+})
 
 export interface VenueAuthz {
   user: User

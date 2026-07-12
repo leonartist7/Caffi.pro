@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { Building2, Users, Activity, Inbox, Plus, ArrowRight } from 'lucide-react'
 import { createClient } from '@/utils/supabase/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { isAroAdminUser } from '@/lib/authz'
 import { mondayStartInTz } from '@/lib/owner-stats'
 import { eventLabel } from '@/lib/events'
 
@@ -36,15 +37,22 @@ export default async function DashboardHome() {
   if (!user) redirect('/login')
 
   const admin = getSupabaseAdmin()
-  const { data: memberships } = await admin
-    .from('memberships')
-    .select('role')
-    .eq('user_id', user.id)
-    .eq('is_active', true)
 
-  const roles = new Set((memberships ?? []).map(m => m.role))
-  if (roles.has('owner') || roles.has('manager')) redirect('/home')
-  if (!roles.has('aro_admin')) redirect('/counter')
+  // isAroAdminUser is React-cache()'d per request — the (dashboard) layout
+  // already called it to decide nav items, so this reuses that result
+  // instead of a second query. The owner/manager check below only runs
+  // for non-admins, since aro_admin never needs it.
+  const isAroAdmin = await isAroAdminUser(user.id)
+  if (!isAroAdmin) {
+    const { data: memberships } = await admin
+      .from('memberships')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+    const roles = new Set((memberships ?? []).map(m => m.role))
+    if (roles.has('owner') || roles.has('manager')) redirect('/home')
+    redirect('/counter')
+  }
 
   // ---- aro_admin: HQ overview ----------------------------------------
   const weekStart = mondayStartInTz(new Date(), HQ_REFERENCE_TZ)
