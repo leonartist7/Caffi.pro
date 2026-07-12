@@ -72,3 +72,12 @@ Tracks progress against `docs/plans/PLAN-hq-control-center.md` (see plan text in
 - The Staff screen opens a copyable invite-link modal immediately after an invite is created, and pending invite cards expose a copy-link action. The UI explicitly says links are shared manually until email delivery ships.
 - Self-review added a guard so a missing invite token never becomes a malformed `/join-team/null` URL.
 - Verified: `npx tsc --noEmit` clean and `npm run build` green.
+
+## Go-live polish — Phase C: Members CRM
+
+- Added Members as the first live client module, with an HQ list supporting debounced search and status filters plus warm empty/loading states.
+- Added role-gated member list/profile APIs that reuse `listRegulars` and `getMemberProfile`; browser code never queries member tables directly.
+- Added the HQ member profile with visit history, points ledger, derived status context, and validated manual point adjustments. Adjustments are append-only, cannot make a balance negative, emit `points.adjusted`, and never mutate stored balances.
+- Schema review confirmed `balance_after` is nullable and the fresh-install foundation does not constrain `reason`, so `adjustment` is accepted without a migration.
+- Self-review fixed an unavailable icon export, normalized empty notes to `Manual adjustment`, and contained network failures in the adjustment UI.
+- Verified: `npx tsc --noEmit` clean, `npm run build` green, and all four Members API/page entries appear in `.next/server/app-paths-manifest.json`.
