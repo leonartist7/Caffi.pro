@@ -22,9 +22,10 @@ interface MembershipRow {
   is_active: boolean
   invite_accepted_at: string | null
   pin_updated_at: string | null
+  invite_token: string | null
 }
 
-function toStaffShape(m: MembershipRow) {
+function toStaffShape(m: MembershipRow, siteUrl: string) {
   return {
     staff_id: m.membership_id,
     email: m.invite_email,
@@ -33,6 +34,7 @@ function toStaffShape(m: MembershipRow) {
     is_active: m.is_active,
     status: m.user_id ? 'active' : 'invited',
     has_pin: Boolean(m.pin_updated_at),
+    invite_url: m.user_id || !m.invite_token ? undefined : `${siteUrl}/join-team/${m.invite_token}`,
   }
 }
 
@@ -45,7 +47,7 @@ export async function GET(request: NextRequest) {
   const { data, error } = await admin
     .from('memberships')
     .select(
-      'membership_id, role, full_name, invite_email, user_id, is_active, invite_accepted_at, pin_updated_at'
+      'membership_id, role, full_name, invite_email, user_id, is_active, invite_accepted_at, pin_updated_at, invite_token'
     )
     .eq('venue_id', authz.ctx.venueId)
     .order('created_at', { ascending: false })
@@ -54,7 +56,8 @@ export async function GET(request: NextRequest) {
     console.error('[staff] list failed:', error)
     return NextResponse.json({ error: 'Failed to load staff' }, { status: 500 })
   }
-  return NextResponse.json({ staff: (data ?? []).map(toStaffShape) })
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin
+  return NextResponse.json({ staff: (data ?? []).map(member => toStaffShape(member, siteUrl)) })
 }
 
 export async function POST(request: NextRequest) {
@@ -95,6 +98,7 @@ export async function POST(request: NextRequest) {
         is_active: true,
         status: 'invited',
         has_pin: false,
+        invite_url: `${process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin}/join-team/${result.invite.invite_token}`,
       },
     },
     { status: 201 }

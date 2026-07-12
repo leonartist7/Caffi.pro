@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
-import { Plus, Shield, Coffee, KeyRound, UserX, UserCheck, Mail } from 'lucide-react'
+import { Plus, Shield, Coffee, KeyRound, UserX, UserCheck, Mail, Link2 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useConfirm } from '@/hooks/useConfirm'
 import { SkeletonList } from '@/components/SkeletonLoader'
@@ -18,6 +18,7 @@ interface StaffMember {
   is_active: boolean
   status: 'active' | 'invited'
   has_pin: boolean
+  invite_url?: string
 }
 
 export default function AdminStaffPage() {
@@ -28,6 +29,7 @@ export default function AdminStaffPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [pinTarget, setPinTarget] = useState<StaffMember | null>(null)
   const [pinValue, setPinValue] = useState('')
+  const [inviteLink, setInviteLink] = useState<string | null>(null)
   const [formData, setFormData] = useState<{ email: string; full_name: string; role: Role }>({
     email: '',
     full_name: '',
@@ -82,16 +84,24 @@ export default function AdminStaffPage() {
         throw new Error(body.error || `Request failed (${res.status})`)
       }
 
+      const { staff } = await res.json()
       await fetchStaffMembers()
       setModalOpen(false)
       resetForm()
-      toast.success('Invite sent — share the invite link with them to finish setup.')
+      setInviteLink(staff.invite_url)
+      toast.success('Invite created — copy the link below and send it to them.')
     } catch (error) {
       console.error('Error inviting staff:', error)
       toast.error(
         `Failed to invite staff member: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
     }
+  }
+
+  const copyInviteLink = async (url?: string) => {
+    if (!url) return
+    await navigator.clipboard.writeText(url)
+    toast.success('Link copied')
   }
 
   const toggleActiveStatus = async (staff: StaffMember) => {
@@ -252,13 +262,22 @@ export default function AdminStaffPage() {
                   </button>
                 )}
                 {staff.status === 'invited' ? (
-                  <button
-                    onClick={() => revokeInvite(staff)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                    title="Revoke invite"
-                  >
-                    <Mail className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button
+                      onClick={() => copyInviteLink(staff.invite_url)}
+                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                      title="Copy invite link"
+                    >
+                      <Link2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => revokeInvite(staff)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      title="Revoke invite"
+                    >
+                      <Mail className="w-4 h-4" />
+                    </button>
+                  </>
                 ) : (
                   <button
                     onClick={() => toggleActiveStatus(staff)}
@@ -387,6 +406,34 @@ export default function AdminStaffPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {inviteLink && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-lg w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Invite link</h2>
+            <p className="text-sm text-gray-600 mb-4">Copy and send this link to your teammate.</p>
+            <input
+              readOnly
+              value={inviteLink}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            />
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                onClick={() => setInviteLink(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => copyInviteLink(inviteLink)}
+                className="px-4 py-2 bg-coffee-700 text-white rounded-lg"
+              >
+                Copy
+              </button>
+            </div>
           </div>
         </div>
       )}
