@@ -46,3 +46,27 @@ verified against the production project.
 - Verified locally: every migration is mirrored in order, the latest migration
   matches the consolidated-schema tail exactly, `git diff --check` passes,
   `npm run type-check` passes, and `npm run build` passes.
+
+## Phase 2 — PaymentProvider abstraction + Stripe adapter
+
+- Added a server-only `PaymentProvider` boundary with a Stripe Checkout
+  adapter. `stripe` is pinned to `22.3.1`; no route or component imports the
+  SDK directly.
+- Added raw-body `/api/webhooks/stripe` verification. Checkout metadata carries
+  the internal order and venue identifiers; the webhook compares the provider
+  amount with the stored payment amount before calling the locked, service-only
+  `record_order_payment_success` database function.
+- Replay behavior is deliberate: an already-reconciled payment is a no-op,
+  while an amount mismatch is marked failed and acknowledged for operator
+  investigation rather than retried as a false success.
+- Added and applied `20260714080519_ordering_payment_event_atomicity.sql` so
+  payment success, order advancement, and the exactly-once `order.paid` event
+  commit in the same locked transaction. The rolled-back production test now
+  asserts one event after success and still one after webhook replay.
+- Exercised the real Next.js webhook route with locally generated Stripe
+  signatures: a valid signed unsupported event returns `200`/ignored, an
+  invalid signature returns `400`, and a missing signature returns `400`.
+- Confirmed the current Stripe Checkout documentation and current Supabase
+  changelog before implementation. The live database reconciliation path and
+  signed-webhook boundary are verified; only a Stripe-hosted Checkout payment
+  remains deferred until owner-provided test credentials exist.

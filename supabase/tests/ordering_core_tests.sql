@@ -66,11 +66,29 @@ BEGIN
         RAISE EXCEPTION 'Successful payment did not move order to paid';
     END IF;
 
+    IF (
+        SELECT COUNT(*)
+        FROM events
+        WHERE type = 'order.paid'
+          AND payload ->> 'order_id' = v_success_order::text
+    ) <> 1 THEN
+        RAISE EXCEPTION 'Successful payment did not emit exactly one order.paid event';
+    END IF;
+
     SELECT * INTO v_result
     FROM record_order_payment_success('stripe', v_success_ref, 1000, '{"replay":true}');
 
     IF v_result.applied OR v_result.amount_mismatch THEN
         RAISE EXCEPTION 'Webhook replay was not an idempotent no-op';
+    END IF;
+
+    IF (
+        SELECT COUNT(*)
+        FROM events
+        WHERE type = 'order.paid'
+          AND payload ->> 'order_id' = v_success_order::text
+    ) <> 1 THEN
+        RAISE EXCEPTION 'Webhook replay emitted a duplicate order.paid event';
     END IF;
 
     INSERT INTO orders (

@@ -30,6 +30,7 @@ export type AroEventType =
   | 'staff.updated'
   | 'staff.deactivated'
   | 'staff.pin_set'
+  | 'order.paid'
   | 'lead.received'
   | 'seed.applied'
   | 'sentry.test'
@@ -69,6 +70,7 @@ export const EVENT_LABELS: Record<string, string> = {
   'staff.updated': 'Staff member updated',
   'staff.deactivated': 'Staff member deactivated',
   'staff.pin_set': 'Counter PIN set',
+  'order.paid': 'Order paid',
   'lead.received': 'New lead received',
   'seed.applied': 'Seed data applied',
   'sentry.test': 'Sentry test event',
