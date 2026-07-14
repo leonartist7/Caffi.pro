@@ -102,6 +102,54 @@ await check('wrong counter PIN rejected', async () => {
   return 'no membership returned'
 })
 
+await check('anon ordering menu read', async () => {
+  const { error } = await anon
+    .from('menu_categories')
+    .select('category_id, venue_id, name, is_active')
+    .limit(1)
+  if (error) throw new Error(error.message)
+  return 'public menu columns readable'
+})
+
+await check('anon orders denied', async () => {
+  const { error } = await anon.from('orders').select('order_id').limit(1)
+  if (!error) throw new Error('orders query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon payments denied', async () => {
+  const { error } = await anon.from('payments').select('payment_id').limit(1)
+  if (!error) throw new Error('payments query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('service ordering tables', async () => {
+  const { error: ordersError } = await service
+    .from('orders')
+    .select('order_id', { count: 'exact', head: true })
+  if (ordersError) throw new Error(`orders: ${ordersError.message}`)
+
+  const { error: paymentsError } = await service
+    .from('payments')
+    .select('payment_id', { count: 'exact', head: true })
+  if (paymentsError) throw new Error(`payments: ${paymentsError.message}`)
+
+  return 'orders and payments accessible server-side'
+})
+
+await check('venue tax configuration', async () => {
+  const { data, error } = await service
+    .from('venues')
+    .select('tax_rate_bp')
+    .eq('venue_id', SEED_VENUE_ID)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data || !Number.isInteger(data.tax_rate_bp)) {
+    throw new Error('seed venue tax_rate_bp is missing or invalid')
+  }
+  return `${data.tax_rate_bp} basis points`
+})
+
 if (failures > 0) {
   console.error(`Live verification failed: ${failures} check(s) failed`)
   process.exit(1)

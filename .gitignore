@@ -35,3 +35,7 @@ tsconfig.tsbuildinfo
 
 # Sentry
 .sentryclirc
+
+# Local deployment-tool metadata
+.vercel/
+supabase/.temp/
