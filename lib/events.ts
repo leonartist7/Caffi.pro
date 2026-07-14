@@ -30,6 +30,12 @@ export type AroEventType =
   | 'staff.updated'
   | 'staff.deactivated'
   | 'staff.pin_set'
+  | 'menu.item_created'
+  | 'menu.item_updated'
+  | 'menu.item_deleted'
+  | 'menu.category_created'
+  | 'menu.category_updated'
+  | 'menu.category_deleted'
   | 'order.paid'
   | 'lead.received'
   | 'seed.applied'
@@ -70,6 +76,12 @@ export const EVENT_LABELS: Record<string, string> = {
   'staff.updated': 'Staff member updated',
   'staff.deactivated': 'Staff member deactivated',
   'staff.pin_set': 'Counter PIN set',
+  'menu.item_created': 'Menu item created',
+  'menu.item_updated': 'Menu item updated',
+  'menu.item_deleted': 'Menu item deleted',
+  'menu.category_created': 'Menu category created',
+  'menu.category_updated': 'Menu category updated',
+  'menu.category_deleted': 'Menu category deleted',
   'order.paid': 'Order paid',
   'lead.received': 'New lead received',
   'seed.applied': 'Seed data applied',

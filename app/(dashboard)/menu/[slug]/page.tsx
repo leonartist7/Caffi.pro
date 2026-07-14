@@ -1,10 +1,5 @@
-import { ComingSoon } from '@/components/ComingSoon'
+import { redirect } from 'next/navigation'
 
 export default function MenuDetailPage() {
-  return (
-    <ComingSoon
-      title="Menu"
-      description="Menu and category management is part of an upcoming commerce module — your data model is ready for it."
-    />
-  )
+  redirect('/menu')
 }

@@ -67,6 +67,28 @@ export async function requireRowVenueRole(
   allowedRoles: Role[] = ['owner', 'manager'],
   venueColumn: 'tenant_id' | 'venue_id' = 'tenant_id'
 ): Promise<AuthzResult> {
+  // Authenticate before touching the service-role client. Besides avoiding
+  // unnecessary privileged reads, this keeps anonymous responses at 401
+  // instead of revealing whether a guessed row exists.
+  try {
+    const supabase = createClient()
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser()
+    if (error || !user) {
+      return {
+        ok: false,
+        response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }),
+      }
+    }
+  } catch {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Not authenticated' }, { status: 401 }),
+    }
+  }
+
   try {
     const admin = getSupabaseAdmin()
     const { data: row, error } = await admin

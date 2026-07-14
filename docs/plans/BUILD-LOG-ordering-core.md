@@ -70,3 +70,27 @@ verified against the production project.
   changelog before implementation. The live database reconciliation path and
   signed-webhook boundary are verified; only a Stripe-hosted Checkout payment
   remains deferred until owner-provided test credentials exist.
+
+## Phase 3 — Menu management in HQ
+
+- Added owner/manager-gated category, item, modifier-group, and modifier APIs.
+  Row routes resolve their venue server-side, duplicate constraints return
+  `409`, inputs are validated before writes, and every category/item mutation
+  emits an activity event.
+- Replaced the parked Menu screen with an aro-native management workspace:
+  category filtering and CRUD, item search/grid and CRUD, active/hidden state,
+  image URLs, dietary tags, display order, and modifier groups with min/max
+  selection rules and priced options.
+- Added shared integer-cents helpers. Operators enter decimal CAD amounts while
+  the application stores cents; rendered prices use the monospace money style.
+- Flipped the Menu module to `live` and redirected the obsolete `/menu/[slug]`
+  placeholder to the canonical workspace.
+- Negative-route testing found that the shared row authorization gate resolved
+  rows with the service client before authenticating. The gate now returns
+  `401` before any privileged lookup, preventing row-existence disclosure for
+  all current and future ID-based APIs. The shared confirmation hook also now
+  resolves canceled actions correctly.
+- Verified locally: anonymous list/create/item/modifier requests are rejected;
+  `npm run type-check`, `npm run lint:strict`, `npm run build`, and
+  `git diff --check` pass. Re-ran the 11-check production Supabase verifier;
+  all checks pass and no credentials were written to disk.
