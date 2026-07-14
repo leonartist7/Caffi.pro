@@ -12,6 +12,7 @@
     "lint": "next lint",
     "lint:strict": "next lint --max-warnings 0",
     "verify:live": "node scripts/verify-live.mjs",
+    "verify:ordering-rpc": "node scripts/verify-ordering-rpc.mjs",
     "prepare": "husky"
   },
   "dependencies": {

@@ -36,6 +36,7 @@ export type AroEventType =
   | 'menu.category_created'
   | 'menu.category_updated'
   | 'menu.category_deleted'
+  | 'order.placed'
   | 'order.paid'
   | 'lead.received'
   | 'seed.applied'
@@ -82,6 +83,7 @@ export const EVENT_LABELS: Record<string, string> = {
   'menu.category_created': 'Menu category created',
   'menu.category_updated': 'Menu category updated',
   'menu.category_deleted': 'Menu category deleted',
+  'order.placed': 'Order placed',
   'order.paid': 'Order paid',
   'lead.received': 'New lead received',
   'seed.applied': 'Seed data applied',

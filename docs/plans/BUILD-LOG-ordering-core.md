@@ -94,3 +94,26 @@ verified against the production project.
   `npm run type-check`, `npm run lint:strict`, `npm run build`, and
   `git diff --check` pass. Re-ran the 11-check production Supabase verifier;
   all checks pass and no credentials were written to disk.
+
+## Phase 4 — Guest storefront, atomic checkout, and QR dine-in
+
+- Revived `/shop/[slug]` as a guest-first aro storefront with server-loaded
+  catalog data, per-venue local carts, integer-cent pricing, modifier selection
+  rules, pickup/table/delivery checkout, and device-local recent order links.
+- Replaced the legacy login-required/browser-write ordering stack and removed
+  its unused floating-point cart, dead table queries, and obsolete components.
+  Login, signup, profile, and rewards routes now return to the storefront.
+- Added and applied `20260714100000_storefront_order_creation.sql`. The locked,
+  service-role-only function reprices live items and modifiers, validates every
+  modifier group, table token, delivery zone, postal prefix, and minimum, then
+  writes the order, immutable line snapshots, and `order.placed` event in one
+  transaction. Client UUID replay returns the existing order.
+- Added the public checkout route behind the provider abstraction. It reuses a
+  pending Checkout URL on replay, records the pending payment server-side, and
+  exposes a clear `STUBBED` state when Stripe owner credentials are absent.
+- Added bearer-reference order status polling with only status, first name,
+  fulfilment type, total, and timestamp returned; no contact/address data is
+  exposed. `/t/[token]` resolves active table QR codes and pins dine-in checkout.
+- Verified live that anonymous callers cannot execute the order-creation RPC,
+  while service role can reach the function. The 11-check production verifier,
+  strict lint, type-check, production build, and final browser-query grep pass.
