@@ -61,7 +61,7 @@ export const MODULES: ModuleDef[] = [
   { key: 'activity', label: 'Activity', href: '/activity', icon: Activity, status: 'live' },
   { key: 'settings', label: 'Settings', href: '/settings', icon: Settings, status: 'live' },
   { key: 'menu', label: 'Menu', href: '/menu', icon: MenuIcon, status: 'live' },
-  { key: 'orders', label: 'Orders', href: '/orders', icon: ShoppingCart, status: 'coming_soon' },
+  { key: 'orders', label: 'Orders', href: '/orders', icon: ShoppingCart, status: 'live' },
   { key: 'coupons', label: 'Coupons', href: '/coupons', icon: Tag, status: 'coming_soon' },
   {
     key: 'notifications',

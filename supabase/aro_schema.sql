@@ -2000,3 +2000,102 @@ REVOKE ALL ON FUNCTION public.create_storefront_order(
 GRANT EXECUTE ON FUNCTION public.create_storefront_order(
     TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID
 ) TO service_role;
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_points_ledger_order_award
+    ON public.points_ledger(order_id) WHERE order_id IS NOT NULL AND reason = 'order';
+
+CREATE OR REPLACE FUNCTION public.transition_order_status(
+    p_order_id UUID, p_venue_id UUID, p_new_status TEXT, p_actor TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+    v_order public.orders%ROWTYPE;
+    v_points INTEGER := 0;
+    v_rate NUMERIC := 0;
+BEGIN
+    SELECT * INTO v_order FROM public.orders
+    WHERE order_id = p_order_id AND venue_id = p_venue_id FOR UPDATE;
+    IF NOT FOUND THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ORDER_NOT_FOUND'; END IF;
+    IF v_order.status = p_new_status THEN
+        RETURN jsonb_build_object('order_id', v_order.order_id, 'status', v_order.status, 'replayed', true);
+    END IF;
+    IF NOT (
+        (v_order.status = 'paid' AND p_new_status = 'accepted') OR
+        (v_order.status = 'accepted' AND p_new_status = 'preparing') OR
+        (v_order.status = 'preparing' AND p_new_status = 'ready') OR
+        (v_order.status = 'ready' AND p_new_status = 'completed' AND v_order.order_type <> 'delivery') OR
+        (v_order.status = 'ready' AND p_new_status = 'out_for_delivery' AND v_order.order_type = 'delivery') OR
+        (v_order.status = 'out_for_delivery' AND p_new_status = 'completed') OR
+        (p_new_status = 'canceled' AND v_order.status IN ('pending','paid','accepted','preparing','ready','out_for_delivery')) OR
+        (p_new_status = 'refunded' AND v_order.status IN ('paid','accepted','preparing','ready','out_for_delivery','canceled'))
+    ) THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ILLEGAL_ORDER_TRANSITION'; END IF;
+
+    UPDATE public.orders SET status = p_new_status, updated_at = NOW() WHERE order_id = p_order_id;
+    IF p_new_status = 'completed' AND v_order.member_id IS NOT NULL THEN
+        SELECT COALESCE((loyalty_config->>'points_per_euro')::NUMERIC, 0) INTO v_rate
+        FROM public.venues WHERE venue_id = p_venue_id;
+        v_points := FLOOR(v_order.total_cents * v_rate / 100.0);
+        IF v_points > 0 THEN
+            INSERT INTO public.points_ledger (
+                tenant_id, member_id, order_id, points_change, reason, description
+            ) VALUES (
+                p_venue_id, v_order.member_id, v_order.order_id, v_points, 'order',
+                'Order ' || LEFT(v_order.order_id::TEXT, 8)
+            ) ON CONFLICT (order_id) WHERE order_id IS NOT NULL AND reason = 'order' DO NOTHING;
+        END IF;
+    END IF;
+    INSERT INTO public.events(actor, venue_id, type, payload) VALUES (
+        COALESCE(p_actor, 'system'), p_venue_id, 'order.status_changed',
+        jsonb_build_object('order_id', p_order_id, 'from', v_order.status, 'to', p_new_status)
+    );
+    RETURN jsonb_build_object('order_id', p_order_id, 'status', p_new_status, 'points_awarded', v_points, 'replayed', false);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.transition_order_status(UUID, UUID, TEXT, TEXT)
+    FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.transition_order_status(UUID, UUID, TEXT, TEXT) TO service_role;
+
+-- Idempotent Ordering Core demo for the canonical Roastery venue.
+INSERT INTO public.menu_categories (category_id, venue_id, name, display_order, is_active)
+VALUES
+('c1000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Coffee',10,true),
+('c1000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Bakery',20,true)
+ON CONFLICT (category_id) DO UPDATE SET name=EXCLUDED.name, display_order=EXCLUDED.display_order, is_active=true;
+
+INSERT INTO public.menu_items (item_id, venue_id, category_id, name, description, price_cents, is_active, sort_order, dietary_tags)
+VALUES
+('c2000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Flat White','Velvety espresso and steamed milk.',475,true,10,ARRAY['vegetarian']),
+('c2000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Americano','Double espresso lengthened with hot water.',375,true,20,ARRAY['vegan']),
+('c2000000-0000-4000-8000-000000000003','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Cold Brew','Slow-steeped, chocolatey and bright.',500,true,30,ARRAY['vegan']),
+('c2000000-0000-4000-8000-000000000004','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Butter Croissant','Flaky, cultured-butter pastry.',425,true,10,ARRAY['vegetarian']),
+('c2000000-0000-4000-8000-000000000005','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Morning Bun','Cinnamon, orange and raw sugar.',450,true,20,ARRAY['vegetarian'])
+ON CONFLICT (item_id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, price_cents=EXCLUDED.price_cents, is_active=true;
+
+INSERT INTO public.modifier_groups (group_id, venue_id, item_id, name, min_select, max_select)
+VALUES
+('c3000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','c2000000-0000-4000-8000-000000000001','Size',1,1),
+('c3000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','c2000000-0000-4000-8000-000000000001','Milk',1,1)
+ON CONFLICT (group_id) DO UPDATE SET name=EXCLUDED.name, min_select=EXCLUDED.min_select, max_select=EXCLUDED.max_select;
+
+INSERT INTO public.modifiers (modifier_id, group_id, venue_id, name, price_delta_cents, is_active, sort_order)
+VALUES
+('c4000000-0000-4000-8000-000000000001','c3000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Regular',0,true,10),
+('c4000000-0000-4000-8000-000000000002','c3000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Large',75,true,20),
+('c4000000-0000-4000-8000-000000000003','c3000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Whole milk',0,true,10),
+('c4000000-0000-4000-8000-000000000004','c3000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Oat milk',75,true,20)
+ON CONFLICT (modifier_id) DO UPDATE SET name=EXCLUDED.name, price_delta_cents=EXCLUDED.price_delta_cents, is_active=true;
+
+INSERT INTO public.venue_tables (table_id, venue_id, label, qr_token, is_active)
+VALUES
+('c5000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Table 1','c5100000-0000-4000-8000-000000000001',true),
+('c5000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Table 2','c5100000-0000-4000-8000-000000000002',true)
+ON CONFLICT (table_id) DO UPDATE SET label=EXCLUDED.label, is_active=true;
+
+INSERT INTO public.delivery_zones (zone_id, venue_id, name, fee_cents, min_order_cents, postal_prefixes, is_active)
+VALUES ('c6000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Calgary core',500,2000,ARRAY['T2N','T2P','T2R'],true)
+ON CONFLICT (zone_id) DO UPDATE SET name=EXCLUDED.name, fee_cents=EXCLUDED.fee_cents, min_order_cents=EXCLUDED.min_order_cents, postal_prefixes=EXCLUDED.postal_prefixes, is_active=true;

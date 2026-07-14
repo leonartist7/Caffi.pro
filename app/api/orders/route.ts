@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { getProvider, PaymentProviderConfigurationError } from '@/lib/payments/provider'
+import { requireVenueRole } from '@/lib/authz'
 
 interface CreatedOrder {
   order_id: string
@@ -35,6 +36,27 @@ function orderError(message: string): string {
     return `Check your choices for ${message.split('MODIFIER_SELECTION_INVALID:')[1].split(/[\n"]/, 1)[0]}.`
   }
   return 'We could not validate this order. Refresh the menu and try again.'
+}
+
+export async function GET(request: NextRequest) {
+  const gate = await requireVenueRole(request.nextUrl.searchParams.get('venue_id'), [
+    'owner',
+    'manager',
+  ])
+  if (!gate.ok) return gate.response
+  const status = request.nextUrl.searchParams.get('status')
+  let query = getSupabaseAdmin()
+    .from('orders')
+    .select(
+      'order_id, order_type, status, guest_name, subtotal_cents, delivery_fee_cents, tax_cents, total_cents, placed_at'
+    )
+    .eq('venue_id', gate.ctx.venueId)
+    .order('placed_at', { ascending: false })
+    .limit(250)
+  if (status && status !== 'all') query = query.eq('status', status)
+  const { data, error } = await query
+  if (error) return NextResponse.json({ error: 'Failed to load orders' }, { status: 500 })
+  return NextResponse.json({ orders: data ?? [] })
 }
 
 export async function POST(request: NextRequest) {

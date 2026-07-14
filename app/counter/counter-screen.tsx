@@ -8,6 +8,7 @@ import {
   isStorageDegraded,
   type QueuedVisit,
 } from './offline-queue'
+import { OrdersQueue } from '@/components/counter/OrdersQueue'
 
 interface SearchResult {
   id: string
@@ -29,6 +30,7 @@ type Phase = 'search' | 'panel' | 'redeem-list' | 'success'
  * panel → +Visit or Redeem → success flash → back to empty search.
  */
 export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => void }) {
+  const [showOrders, setShowOrders] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [selected, setSelected] = useState<SearchResult | null>(null)
@@ -191,6 +193,10 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
     ? rewards.filter(r => r.points_required <= selected.points)
     : []
 
+  if (showOrders) {
+    return <OrdersQueue onBack={() => setShowOrders(false)} onSessionExpired={onSessionExpired} />
+  }
+
   return (
     <div className="min-h-screen bg-aro-cream flex flex-col p-4">
       {queueCount > 0 && (
@@ -218,6 +224,13 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
 
       {phase === 'search' && (
         <div className="flex-1 flex flex-col">
+          <button
+            type="button"
+            onClick={() => setShowOrders(true)}
+            className="mb-3 w-full rounded-2xl bg-aro-espresso py-4 font-display text-lg font-bold text-aro-cream"
+          >
+            Open order queue
+          </button>
           <input
             ref={searchInputRef}
             autoFocus

@@ -137,3 +137,12 @@ IS NULL`) — nobody can log in as them until a real Supabase Auth user
   env scopes, and Supabase Auth URL configuration. Caffi production smoke
   checks passed. AURA was merged and deployed, but its lead-forwarding smoke
   test remains blocked with `queued:false` pending an env-value match/redeploy.
+
+# Ordering payment setup
+
+Set `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, and
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in the Caffi.pro Production environment.
+In Stripe test mode, add webhook endpoint
+`https://caffipro.vercel.app/api/webhooks/stripe` for Checkout completion,
+asynchronous payment success/failure, and refund events. Use Stripe test card
+`4242 4242 4242 4242` for the release-one end-to-end payment check.

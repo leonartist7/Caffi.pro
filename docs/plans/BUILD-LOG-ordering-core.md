@@ -117,3 +117,30 @@ verified against the production project.
 - Verified live that anonymous callers cannot execute the order-creation RPC,
   while service role can reach the function. The 11-check production verifier,
   strict lint, type-check, production build, and final browser-query grep pass.
+
+## Phase 5 — Order operations and loyalty
+
+- Added a counter order queue that polls every 15 seconds and exposes only
+  legal one-tap progressions. Paid cancellations use the provider refund path,
+  append a negative refund payment, and emit `order.refunded`.
+- Added and applied `20260714110000_order_operations.sql`. Status changes are
+  row-locked, transition-validated, and evented. Completing a linked-member
+  order awards points through one unique order-ledger path; retries cannot
+  award twice. Order completion deliberately does not create a visit.
+- Launched the HQ Orders module with status filtering and complete order
+  history visibility for venue owners/managers.
+
+## Phase 6 — Fulfilment configuration, demo data, and final checks
+
+- Added owner/manager table and delivery-zone APIs plus an Orders settings
+  surface for table QR printing and Canadian FSA zone configuration (fee,
+  minimum, postal prefixes). Checkout enforces those rules in Postgres.
+- Added and applied `20260714120000_ordering_demo_seed.sql`, mirrored in the
+  development seed: two categories, five products, required size/milk choices,
+  two table QR tokens, and a Calgary-core delivery zone for The Roastery.
+- Production integration verification creates a temporary fully repriced order,
+  proves immutable line creation and every legal status transition, then removes
+  all test rows/events. Anonymous RPC denial, the 11 live security/data checks,
+  strict lint, type-check, production build, schema mirror, and secret scans pass.
+- Stripe-hosted payment and refund execution remain visibly `STUBBED` until
+  owner-provided Stripe test credentials are present; no fake success path exists.
