@@ -24,12 +24,20 @@ export async function POST(request: NextRequest) {
   if (kind === 'table') {
     if (typeof body.label !== 'string' || !body.label.trim())
       return NextResponse.json({ error: 'label is required' }, { status: 400 })
+    const capacityRaw = body.capacity
+    const capacity =
+      typeof capacityRaw === 'number' && Number.isFinite(capacityRaw) && capacityRaw > 0
+        ? Math.floor(capacityRaw)
+        : typeof capacityRaw === 'string' && Number(capacityRaw) > 0
+          ? Math.floor(Number(capacityRaw))
+          : 2
     const { data, error } = await getSupabaseAdmin()
       .from('venue_tables')
       .insert({
         venue_id: gate.ctx.venueId,
         label: body.label.trim(),
         is_active: body.is_active ?? true,
+        capacity,
       })
       .select('*')
       .single()

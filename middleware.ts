@@ -48,7 +48,9 @@ export async function middleware(request: NextRequest) {
     hostname.endsWith('.caffi.pro') ||
     hostname === 'app.aro.club'
 
-  // Custom domain → rewrite to slug-based shop routes
+  // Custom domain → rewrite to slug-based public routes (shop / reserve).
+  // Do not exclude /reserve here: bare /reserve must enter this block (startsWith
+  // '/reserve/' alone would miss it and fall through to /shop/<slug>/reserve → 404).
   if (
     !isMainDomain &&
     !pathname.startsWith('/shop/') &&
@@ -65,6 +67,11 @@ export async function middleware(request: NextRequest) {
 
       if (venue?.slug) {
         const url = request.nextUrl.clone()
+        // Spec: pathname === '/reserve' || startsWith('/reserve/') → /reserve/${slug}
+        if (pathname === '/reserve' || pathname.startsWith('/reserve/')) {
+          url.pathname = `/reserve/${venue.slug}`
+          return NextResponse.rewrite(url)
+        }
         url.pathname = `/shop/${venue.slug}${pathname}`
         return NextResponse.rewrite(url)
       }

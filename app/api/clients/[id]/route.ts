@@ -51,6 +51,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     logo_url?: string
     primary_color?: string
     contact_phone?: string
+    reservation_config?: Record<string, unknown>
   }
   try {
     body = await request.json()
@@ -61,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   const admin = getSupabaseAdmin()
   const { data: existing, error: fetchError } = await admin
     .from('venues')
-    .select('venue_id, brand_kit')
+    .select('venue_id, brand_kit, reservation_config')
     .eq('venue_id', params.id)
     .single()
   if (fetchError || !existing) {
@@ -82,6 +83,13 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       ...((existing.brand_kit as Record<string, unknown>) ?? {}),
       ...(body.primary_color !== undefined ? { primary: body.primary_color } : {}),
       ...(body.logo_url !== undefined ? { logo_url: body.logo_url || null } : {}),
+    }
+  }
+  if (body.reservation_config !== undefined && body.reservation_config !== null) {
+    // Merge into existing config so partial UI writes don't wipe defaults.
+    update.reservation_config = {
+      ...((existing.reservation_config as Record<string, unknown>) ?? {}),
+      ...body.reservation_config,
     }
   }
   if (Object.keys(update).length === 0) {
