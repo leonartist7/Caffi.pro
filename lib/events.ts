@@ -40,6 +40,10 @@ export type AroEventType =
   | 'order.status_changed'
   | 'order.refunded'
   | 'order.paid'
+  | 'reservation.created'
+  | 'reservation.status_changed'
+  | 'waitlist.joined'
+  | 'waitlist.status_changed'
   | 'lead.received'
   | 'seed.applied'
   | 'sentry.test'
@@ -89,6 +93,10 @@ export const EVENT_LABELS: Record<string, string> = {
   'order.status_changed': 'Order status changed',
   'order.refunded': 'Order refunded',
   'order.paid': 'Order paid',
+  'reservation.created': 'Reservation created',
+  'reservation.status_changed': 'Reservation status changed',
+  'waitlist.joined': 'Waitlist joined',
+  'waitlist.status_changed': 'Waitlist status changed',
   'lead.received': 'New lead received',
   'seed.applied': 'Seed data applied',
   'sentry.test': 'Sentry test event',

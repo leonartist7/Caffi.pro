@@ -13,6 +13,7 @@ import {
   ShoppingCart,
   Tag,
   Bell,
+  CalendarDays,
 } from 'lucide-react'
 
 /**
@@ -36,6 +37,7 @@ export type ModuleKey =
   | 'settings'
   | 'menu'
   | 'orders'
+  | 'reservations'
   | 'coupons'
   | 'notifications'
   | 'locations'
@@ -62,6 +64,13 @@ export const MODULES: ModuleDef[] = [
   { key: 'settings', label: 'Settings', href: '/settings', icon: Settings, status: 'live' },
   { key: 'menu', label: 'Menu', href: '/menu', icon: MenuIcon, status: 'live' },
   { key: 'orders', label: 'Orders', href: '/orders', icon: ShoppingCart, status: 'live' },
+  {
+    key: 'reservations',
+    label: 'Reservations',
+    href: '/reservations',
+    icon: CalendarDays,
+    status: 'live',
+  },
   { key: 'coupons', label: 'Coupons', href: '/coupons', icon: Tag, status: 'coming_soon' },
   {
     key: 'notifications',
