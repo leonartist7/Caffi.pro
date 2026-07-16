@@ -18,10 +18,11 @@ export interface ClientRow {
   created_at: string
   timezone: string
   brand_kit: Record<string, unknown> | null
+  reservation_config?: Record<string, unknown> | null
 }
 
 export const CLIENT_COLUMNS =
-  'venue_id, business_name, slug, owner_email, owner_phone, app_name, bundle_id, subscription_status, created_at, timezone, brand_kit'
+  'venue_id, business_name, slug, owner_email, owner_phone, app_name, bundle_id, subscription_status, created_at, timezone, brand_kit, reservation_config'
 
 export function toTenantShape(v: ClientRow) {
   const kit = v.brand_kit ?? {}
@@ -38,5 +39,6 @@ export function toTenantShape(v: ClientRow) {
     timezone: v.timezone,
     logo_url: (kit.logo_url as string | undefined) ?? null,
     primary_color: (kit.primary as string | undefined) ?? null,
+    reservation_config: v.reservation_config ?? null,
   }
 }

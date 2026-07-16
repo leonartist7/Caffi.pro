@@ -27,9 +27,16 @@ export async function PATCH(
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>
   const allowed =
     params.kind === 'tables'
-      ? ['label', 'is_active']
+      ? ['label', 'is_active', 'capacity']
       : ['name', 'fee_cents', 'min_order_cents', 'postal_prefixes', 'is_active']
   const update = Object.fromEntries(Object.entries(body).filter(([key]) => allowed.includes(key)))
+  if (params.kind === 'tables' && update.capacity !== undefined) {
+    const n = Number(update.capacity)
+    if (!Number.isFinite(n) || n < 1) {
+      return NextResponse.json({ error: 'capacity must be a positive integer' }, { status: 400 })
+    }
+    update.capacity = Math.floor(n)
+  }
   const { data, error } = await getSupabaseAdmin()
     .from(config.table)
     .update(update)

@@ -176,11 +176,69 @@ VALUES
 ('c4000000-0000-4000-8000-000000000004','c3000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Oat milk',75,true,20)
 ON CONFLICT (modifier_id) DO UPDATE SET name=EXCLUDED.name, price_delta_cents=EXCLUDED.price_delta_cents, is_active=true;
 
-INSERT INTO public.venue_tables (table_id, venue_id, label, qr_token, is_active)
+INSERT INTO public.venue_tables (table_id, venue_id, label, qr_token, is_active, capacity)
 VALUES
-('c5000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Table 1','c5100000-0000-4000-8000-000000000001',true),
-('c5000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Table 2','c5100000-0000-4000-8000-000000000002',true)
-ON CONFLICT (table_id) DO UPDATE SET label=EXCLUDED.label, is_active=true;
+('c5000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Table 1','c5100000-0000-4000-8000-000000000001',true,2),
+('c5000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Table 2','c5100000-0000-4000-8000-000000000002',true,4),
+('c5000000-0000-4000-8000-000000000003','a0000000-0000-4000-3000-000000000001','Table 3','c5100000-0000-4000-8000-000000000003',true,6)
+ON CONFLICT (table_id) DO UPDATE SET label=EXCLUDED.label, is_active=true, capacity=EXCLUDED.capacity;
+
+-- Roastery booking hours (demo) + sample reservation / waitlist rows
+UPDATE public.venues
+SET reservation_config = jsonb_build_object(
+  'slot_minutes', 30,
+  'min_party', 1,
+  'max_party', 8,
+  'max_advance_days', 30,
+  'buffer_minutes', 15,
+  'default_duration_minutes', 90,
+  'hours', jsonb_build_object(
+    'mon', jsonb_build_array('08:00','20:00'),
+    'tue', jsonb_build_array('08:00','20:00'),
+    'wed', jsonb_build_array('08:00','20:00'),
+    'thu', jsonb_build_array('08:00','20:00'),
+    'fri', jsonb_build_array('08:00','20:00'),
+    'sat', jsonb_build_array('08:00','20:00'),
+    'sun', null
+  )
+)
+WHERE venue_id = 'a0000000-0000-4000-3000-000000000001';
+
+INSERT INTO public.reservations (
+  reservation_id, venue_id, table_id, client_uuid, guest_name, guest_phone,
+  party_size, status, starts_at, duration_minutes, source
+) VALUES (
+  'c7000000-0000-4000-8000-000000000001',
+  'a0000000-0000-4000-3000-000000000001',
+  'c5000000-0000-4000-8000-000000000001',
+  'c7100000-0000-4000-8000-000000000001',
+  'Demo Guest',
+  '+14035550100',
+  2,
+  'confirmed',
+  (date_trunc('day', NOW() AT TIME ZONE 'America/Edmonton') + INTERVAL '1 day' + TIME '11:00')
+    AT TIME ZONE 'America/Edmonton',
+  90,
+  'staff'
+) ON CONFLICT (reservation_id) DO UPDATE SET
+  guest_name = EXCLUDED.guest_name,
+  party_size = EXCLUDED.party_size,
+  status = EXCLUDED.status;
+
+INSERT INTO public.waitlist_entries (
+  waitlist_id, venue_id, client_uuid, guest_name, guest_phone, party_size, status
+) VALUES (
+  'c8000000-0000-4000-8000-000000000001',
+  'a0000000-0000-4000-3000-000000000001',
+  'c8100000-0000-4000-8000-000000000001',
+  'Walk-in Guest',
+  '+14035550199',
+  3,
+  'waiting'
+) ON CONFLICT (waitlist_id) DO UPDATE SET
+  guest_name = EXCLUDED.guest_name,
+  party_size = EXCLUDED.party_size,
+  status = EXCLUDED.status;
 
 INSERT INTO public.delivery_zones (zone_id, venue_id, name, fee_cents, min_order_cents, postal_prefixes, is_active)
 VALUES ('c6000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Calgary core',500,2000,ARRAY['T2N','T2P','T2R'],true)
