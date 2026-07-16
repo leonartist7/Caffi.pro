@@ -48,12 +48,13 @@ export async function middleware(request: NextRequest) {
     hostname.endsWith('.caffi.pro') ||
     hostname === 'app.aro.club'
 
-  // Custom domain → rewrite to slug-based shop routes
+  // Custom domain → rewrite to slug-based public routes (shop / reserve)
   if (
     !isMainDomain &&
     !pathname.startsWith('/shop/') &&
     !pathname.startsWith('/join') &&
     !pathname.startsWith('/pass') &&
+    !pathname.startsWith('/reserve/') &&
     supabase
   ) {
     try {
@@ -65,6 +66,11 @@ export async function middleware(request: NextRequest) {
 
       if (venue?.slug) {
         const url = request.nextUrl.clone()
+        // /reserve or /reserve/* → guest booking widget for this venue
+        if (pathname === '/reserve' || pathname.startsWith('/reserve/')) {
+          url.pathname = `/reserve/${venue.slug}`
+          return NextResponse.rewrite(url)
+        }
         url.pathname = `/shop/${venue.slug}${pathname}`
         return NextResponse.rewrite(url)
       }

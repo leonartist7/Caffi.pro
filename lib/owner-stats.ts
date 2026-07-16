@@ -232,7 +232,7 @@ export async function getMemberProfile(
 // ----------------------------------------------------------------------------
 
 /** Venue-local wall-clock parts for a given instant + IANA timezone. */
-function localParts(
+export function localParts(
   date: Date,
   timeZone: string
 ): { y: number; m: number; d: number; weekday: number } {
