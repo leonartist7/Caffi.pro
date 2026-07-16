@@ -100,6 +100,31 @@ behavior has been verified. Prerequisites: PLAN-00 and PLAN-01 complete.
   / 2). Remaining app-level checks: `npm run verify:live` after PR #49 deploys
   app code; PR #49 was **not** merged by the apply session.
 
+## Supervisor fix round (PR #49 review, 2026-07-16)
+
+Required before merge (three items only — no other scope):
+
+1. **Rate-limit public POSTs** (master plan §7 / copy `app/api/join/route.ts`):
+   - `POST /api/reservations`: events-table window — count `reservation.created`
+     for the target `venue_id` in the last 10 minutes; `> 20` → 429
+     (`Too many attempts — try again soon`). **Choice:** per-venue count (not
+     IP-hash) because `create_reservation` inserts `reservation.created` inside
+     SQL without `ip_hash`; smaller than a `p_ip_hash` migration. Same threshold
+     and window as join.
+   - `POST /api/waitlist`: join pattern verbatim — SHA-256 IP hash (16 hex),
+     count `waitlist.joined` with `payload->>ip_hash` in the last 10 minutes;
+     `> 20` → 429. `ip_hash` added to the `waitlist.joined` emit payload.
+2. **Custom-domain bare `/reserve`**: removed the outer `!pathname.startsWith('/reserve/')`
+   exclusion so bare `/reserve` always enters the custom-domain block; rewrite
+   branch is `pathname === '/reserve' || pathname.startsWith('/reserve/')` →
+   `/reserve/${venue.slug}` before the shop rewrite (was falling through to
+   `/shop/<slug>/reserve` → 404 when only `/reserve/` was excluded inconsistently).
+3. **Waitlist `party_size` bounds**: before insert, require
+   `Number.isInteger(party_size) && party_size >= 1 && party_size <= max_party`
+   from `parseReservationConfig(venue.reservation_config)`; else 400.
+
+Self-review: only the three files above + this log; no migration; no PR merge.
+
 ## Verification checklist (spec §Verification)
 
 | #   | Check                                                              | Status                                             |

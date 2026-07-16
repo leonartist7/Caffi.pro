@@ -77,6 +77,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'This café is not accepting bookings.' }, { status: 404 })
   }
 
+  // Rate limit (join pattern: events-table 10‑min window, >20 → 429).
+  // create_reservation inserts reservation.created in SQL without ip_hash; smaller
+  // than a p_ip_hash migration is a per-venue window count on those events (see
+  // BUILD-LOG). Waitlist uses full IP-hash because emitEvent is route-owned.
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const { count } = await admin
+    .from('events')
+    .select('event_id', { count: 'exact', head: true })
+    .eq('type', 'reservation.created')
+    .eq('venue_id', venue.venue_id)
+    .gte('ts', tenMinAgo)
+  if ((count ?? 0) > 20) {
+    return NextResponse.json({ error: 'Too many attempts — try again soon' }, { status: 429 })
+  }
+
   let memberId: string | null = null
   if (body.member_pass_serial) {
     const { data: member } = await admin

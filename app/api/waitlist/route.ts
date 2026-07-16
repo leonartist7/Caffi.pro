@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHash } from 'crypto'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireVenueRole } from '@/lib/authz'
 import { emitEvent } from '@/lib/events'
 import { localParts } from '@/lib/owner-stats'
+import { parseReservationConfig } from '@/lib/reservations'
 
 /**
  * POST — public guest self-add (same-day waitlist).
  * GET  — staff list for today, gated.
  */
+
+/** Same shape as app/api/join/route.ts — serverless memory is useless for rate limits. */
+function ipHash(req: NextRequest): string {
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  return createHash('sha256').update(ip).digest('hex').slice(0, 16)
+}
+
 export async function POST(request: NextRequest) {
   let body: {
     venue_slug?: string
@@ -29,7 +41,8 @@ export async function POST(request: NextRequest) {
     !body.client_uuid ||
     !body.guest_name ||
     !body.guest_phone ||
-    !body.party_size
+    body.party_size === undefined ||
+    body.party_size === null
   ) {
     return NextResponse.json({ error: 'Missing required waitlist fields' }, { status: 400 })
   }
@@ -37,11 +50,33 @@ export async function POST(request: NextRequest) {
   const admin = getSupabaseAdmin()
   const { data: venue } = await admin
     .from('venues')
-    .select('venue_id')
+    .select('venue_id, reservation_config')
     .eq('slug', body.venue_slug)
     .maybeSingle()
   if (!venue) {
     return NextResponse.json({ error: 'Venue not found' }, { status: 404 })
+  }
+
+  const config = parseReservationConfig(venue.reservation_config)
+  const partySize = body.party_size
+  if (!Number.isInteger(partySize) || partySize < 1 || partySize > config.max_party) {
+    return NextResponse.json(
+      { error: 'Party size is outside this café’s limits.' },
+      { status: 400 }
+    )
+  }
+
+  // Rate limit (join pattern): >20 waitlist.joined from this IP hash in 10 min → 429
+  const hash = ipHash(request)
+  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString()
+  const { count } = await admin
+    .from('events')
+    .select('event_id', { count: 'exact', head: true })
+    .eq('type', 'waitlist.joined')
+    .gte('ts', tenMinAgo)
+    .eq('payload->>ip_hash', hash)
+  if ((count ?? 0) > 20) {
+    return NextResponse.json({ error: 'Too many attempts — try again soon' }, { status: 429 })
   }
 
   let memberId: string | null = null
@@ -62,7 +97,7 @@ export async function POST(request: NextRequest) {
       client_uuid: body.client_uuid,
       guest_name: body.guest_name.trim(),
       guest_phone: body.guest_phone.trim(),
-      party_size: body.party_size,
+      party_size: partySize,
       notes: body.notes?.trim() || null,
       member_id: memberId,
       status: 'waiting',
@@ -91,7 +126,7 @@ export async function POST(request: NextRequest) {
     type: 'waitlist.joined',
     actor: memberId ? `member:${memberId}` : 'guest',
     venueId: venue.venue_id,
-    payload: { waitlist_id: data.waitlist_id, party_size: data.party_size },
+    payload: { waitlist_id: data.waitlist_id, party_size: data.party_size, ip_hash: hash },
   })
 
   return NextResponse.json({ entry: data }, { status: 201 })
