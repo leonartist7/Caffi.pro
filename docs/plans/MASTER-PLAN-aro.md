@@ -31,7 +31,7 @@ The market's fault lines, and where aro stands on each:
 - **Growth** — + Ordering (QR dine-in, pickup, in-house delivery), reservations, campaigns/nudges.
 - **Pro** — + Client website & SEO, wallet passes, white-label app, delivery dispatch, priority support.
 
-Agency reality: until Phase 4 (billing) ships, tier assignment is manual (aro_admin toggles `features_enabled`). The owner may also sell Restaurant-Growth-style service retainers on top; the platform only needs to _gate modules_, not invoice, before Phase 4.
+Agency reality: until Phase 4 (billing) ships, tier assignment is manual (aro*admin toggles `features_enabled`). The owner may also sell Restaurant-Growth-style service retainers on top; the platform only needs to \_gate modules*, not invoice, before Phase 4.
 
 ## 3 · Design direction (locked): one brand — aro, everywhere
 
@@ -84,14 +84,14 @@ These are proven in the codebase and non-negotiable:
 
 ## 6 · Roadmap
 
-**Phase 0 — Go-live + polish** _(spec: `PLAN-00-go-live-polish.md` — ready now)_
-Production cutover (merge PR #47 + AURA #2), invite-link loop completion, Members CRM module in HQ, legacy surface retirement (`/staff/*` old portal, `/tenants/[id]`), `scripts/verify-live.mjs` RLS regression net. Decisions already locked: ship now; nudges deferred.
+**Phase 0 — Go-live + polish** ✅ COMPLETE _(spec: `PLAN-00-go-live-polish.md`)_
+Production cutover (merged PR #47 + AURA #2), invite-link loop, Members CRM module in HQ, legacy surface retirement (`/staff/*` old portal, `/tenants/[id]`), `scripts/verify-live.mjs` RLS regression net. Decisions locked: ship now; nudges deferred.
 
-**Phase 1 — Ordering core** _(spec: `PLAN-01-ordering-core.md` — ready now)_
-The revenue module. Menu system (categories/items/modifiers), PaymentProvider abstraction + Stripe adapter, revived `/shop` storefront restyled to aro, QR tableside ordering, order-ahead pickup, **in-house delivery zones (owner decision: included in release one)**, order management screen + KDS-lite for staff, loyalty integration (points per order through the existing ledger). Un-parks the Menu and Orders modules.
+**Phase 1 — Ordering core** ✅ COMPLETE _(spec: `PLAN-01-ordering-core.md`, evidence: `BUILD-LOG-ordering-core.md`)_
+Menu system (categories/items/modifiers), PaymentProvider abstraction + Stripe adapter, revived `/shop` storefront restyled to aro, QR tableside ordering, order-ahead pickup, in-house delivery zones, order management screen + KDS-lite for staff, loyalty integration (points per order through the existing ledger). Menu and Orders modules are `live`. Open item: owner has not yet supplied real Stripe credentials — checkout is functionally complete but shows the `STUBBED` badge until keys are added (env var task, not code).
 
-**Phase 2 — Reservations & waitlist** _(spec to be written at Phase 1 completion)_
-Resos-parity flat-rate module: bookings table with venue-local slotting (reuse `mondayStartInTz` timezone discipline), party size/duration, table capacity config, waitlist, no-show tracking, optional deposits through the PaymentProvider abstraction, guest-facing booking widget on the client site + `join.aro.club`-style public page, Reserve-with-Google readiness documented. Zero per-cover fees ever (positioning).
+**Phase 2 — Reservations & waitlist** _(spec: `PLAN-02-reservations-waitlist.md` — ready now, next up)_
+Resos-parity flat-rate module: bookings with venue-local slotting (reuse `mondayStartInTz` timezone discipline), party size/duration, table capacity config (extends `venue_tables`), same-day waitlist, no-show tracking, guest-facing booking widget, staff day view. Deposits and Reserve-with-Google are explicitly OUT of release one (see spec §Non-goals) — do not add them without a new spec. Zero per-cover fees ever (positioning).
 
 **Phase 3 — Marketing & nudges** _(deferred from earlier decision; spec to be written)_
 The loyalty loop completed: Resend (email) adapter first, Twilio (SMS) later; campaigns page becomes real; "Send a nudge" on member profiles; AI-draft approval actually sends; win-back automation with owner approval (autopilot flag exists on `campaigns`); CASL compliance — consent already captured at join, unsubscribe tokens already in schema; invite emails replace copy-link.

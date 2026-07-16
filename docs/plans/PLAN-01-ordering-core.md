@@ -1,5 +1,7 @@
 # PLAN-01 — Ordering Core: menus, payments abstraction, storefront, QR dine-in, pickup, in-house delivery
 
+> **STATUS: COMPLETE.** All 6 phases below are built, live-verified, and merged to `main` (see `docs/plans/BUILD-LOG-ordering-core.md` for evidence per phase). **Do not re-implement anything in this file.** The only open item is non-code: the owner has not yet supplied real Stripe test/live credentials, so checkout shows a visible `STUBBED` badge — that's a dashboard/env-var step, not an engineering task. If you were pointed at this file to build ordering, stop and re-read `MASTER-PLAN-aro.md` §6 for the next unbuilt phase instead.
+
 > Executor: read `docs/plans/MASTER-PLAN-aro.md` FIRST. Its architecture principles (§4) and execution protocol (§5) are binding here and are not repeated in full. Prerequisite: PLAN-00 is complete (production live, Members module shipped, legacy `/staff` + `/tenants` retired). Work on the designated `claude/…` branch, new draft PR titled `feat(ordering): menus, payments, storefront, QR dine-in, pickup, delivery`.
 
 ## Context & goal
