@@ -19,12 +19,17 @@ behavior has been verified. Prerequisites: PLAN-00 and PLAN-01 complete.
     `GRANT ALL ... TO service_role` only. No browser policies.
 - Mirrored the migration into `supabase/aro_schema.sql` after the ordering-core
   section (append).
-- **FLAG — live apply deferred:** no Supabase MCP server is connected in this
-  executor environment (available MCPs: GitHub, Sanity, tasks). Migration is
-  in-repo only until applied via Supabase CLI/dashboard or MCP by the owner.
-  Live `information_schema` / `get_advisors(security)` verification is blocked
-  until that apply. SQL tests are written for post-apply rolled-back execution
-  (`supabase/tests/reservations_core_tests.sql`).
+- **Live apply (2026-07-16):** Supabase MCP verified against project
+  `jjgccfrwjkwknyjtbtxa` (`https://jjgccfrwjkwknyjtbtxa.supabase.co`). Applied
+  `reservations_core` via MCP `apply_migration` (remote version
+  `20260716172405`). Verified live: columns on `venues`/`venue_tables`/
+  `reservations`/`waitlist_entries`; RLS on; indexes present; zero anon/
+  authenticated table grants on PII tables; `venue_tables` public SELECT still
+  only `(table_id, venue_id, label, qr_token, is_active)` (no `capacity`).
+  `get_advisors(security)`: `rls_enabled_no_policy` INFO on
+  `reservations`/`waitlist_entries` (intentional service-role-only, same class
+  as `orders`/`payments`); no new WARN from this migration (pre-existing Auth
+  leaked-password WARN only).
 
 ## Phase 2 — Atomic reservation functions
 
@@ -40,7 +45,8 @@ behavior has been verified. Prerequisites: PLAN-00 and PLAN-01 complete.
   execute granted to `service_role` only.
 - Tests: `supabase/tests/reservations_core_tests.sql` (BEGIN…ROLLBACK) covers
   grants, idempotent create, capacity exhaustion → `NO_AVAILABILITY`, legal and
-  illegal transitions. Not run live until migration is applied (see Phase 1 flag).
+  illegal transitions. **Run live 2026-07-16 via MCP `execute_sql` →**
+  `ALL RESERVATIONS CORE TESTS PASSED`; production rows left at 0 (rolled back).
 
 ## Phase 3 — Guest-facing booking API + widget
 
@@ -90,20 +96,20 @@ behavior has been verified. Prerequisites: PLAN-00 and PLAN-01 complete.
   RPC not anon-executable; double-submit idempotency probe (cleans up row).
 - **Grep gate (local):** no browser `.from('reservations'` / `.from('waitlist_entries'`
   outside `app/api`/server paths — only API routes and SQL. No new npm deps.
-- **FLAG remaining:** live migration apply, `get_advisors(security)`, and
-  `npm run verify:live` against production still require owner/CLI after merge
-  or via Supabase access this session lacks.
+- Live migration + advisors + SQL tests applied/verified 2026-07-16 (see Phase 1
+  / 2). Remaining app-level checks: `npm run verify:live` after PR #49 deploys
+  app code; PR #49 was **not** merged by the apply session.
 
 ## Verification checklist (spec §Verification)
 
-| #   | Check                                                              | Status                                            |
-| --- | ------------------------------------------------------------------ | ------------------------------------------------- |
-| 1   | Migration objects live + advisors clean                            | Deferred — no Supabase MCP / apply                |
-| 2   | Idempotent `create_reservation` (rolled-back test)                 | SQL written; run post-apply                       |
-| 3   | Capacity exhaustion → `NO_AVAILABILITY` / 409                      | SQL + API mapping written; run post-apply         |
-| 3b  | Hours null / closed day / outside hours                            | Implemented in SQL + availability API             |
-| 4   | Guest book → HQ day view → Seat → Complete; illegal transition 400 | Code paths implemented; needs live DB             |
-| 5   | Waitlist waiting → notified → seated                               | Implemented                                       |
-| 6   | Cross-venue 403 / anon no rows                                     | Authz gates + RLS grants as specified             |
-| 7   | Venue timezone rendering                                           | HQ uses `timeZone` option; guest shows slot times |
-| 8   | tsc + build green; module live; build log complete                 | tsc green; build verified in CI/local before push |
+| #   | Check                                                              | Status                                             |
+| --- | ------------------------------------------------------------------ | -------------------------------------------------- |
+| 1   | Migration objects live + advisors clean                            | **Done** live 2026-07-16 on `jjgccfrwjkwknyjtbtxa` |
+| 2   | Idempotent `create_reservation` (rolled-back test)                 | **Passed** live (BEGIN…ROLLBACK)                   |
+| 3   | Capacity exhaustion → `NO_AVAILABILITY` / 409                      | **SQL path passed** live; API 409 needs app deploy |
+| 3b  | Hours null / closed day / outside hours                            | Implemented in SQL + availability API              |
+| 4   | Guest book → HQ day view → Seat → Complete; illegal transition 400 | Code paths implemented; needs live DB              |
+| 5   | Waitlist waiting → notified → seated                               | Implemented                                        |
+| 6   | Cross-venue 403 / anon no rows                                     | Authz gates + RLS grants as specified              |
+| 7   | Venue timezone rendering                                           | HQ uses `timeZone` option; guest shows slot times  |
+| 8   | tsc + build green; module live; build log complete                 | tsc green; build verified in CI/local before push  |
