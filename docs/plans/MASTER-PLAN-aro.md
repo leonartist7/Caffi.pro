@@ -90,8 +90,16 @@ Production cutover (merged PR #47 + AURA #2), invite-link loop, Members CRM modu
 **Phase 1 — Ordering core** ✅ COMPLETE _(spec: `PLAN-01-ordering-core.md`, evidence: `BUILD-LOG-ordering-core.md`)_
 Menu system (categories/items/modifiers), PaymentProvider abstraction + Stripe adapter, revived `/shop` storefront restyled to aro, QR tableside ordering, order-ahead pickup, in-house delivery zones, order management screen + KDS-lite for staff, loyalty integration (points per order through the existing ledger). Menu and Orders modules are `live`. Open item: owner has not yet supplied real Stripe credentials — checkout is functionally complete but shows the `STUBBED` badge until keys are added (env var task, not code).
 
-**Phase 2 — Reservations & waitlist** _(spec: `PLAN-02-reservations-waitlist.md` — ready now, next up)_
-Resos-parity flat-rate module: bookings with venue-local slotting (reuse `mondayStartInTz` timezone discipline), party size/duration, table capacity config (extends `venue_tables`), same-day waitlist, no-show tracking, guest-facing booking widget, staff day view. Deposits and Reserve-with-Google are explicitly OUT of release one (see spec §Non-goals) — do not add them without a new spec. Zero per-cover fees ever (positioning).
+**Phase 2 — Reservations & waitlist** ✅ COMPLETE _(spec: `PLAN-02-reservations-waitlist.md`, evidence: `BUILD-LOG-reservations.md`, merged PR #49)_
+Bookings with venue-local slotting, table capacity, hours-gated availability, same-day waitlist, guest widget, staff day view. Live-verified: migration applied, RLS confirmed, rate limiting added in a required review round before merge.
+
+**Phase 3 — Marketing & nudges** ⏸ DEFERRED (owner decision, 2026-07-17)
+Needs a real email/SMS vendor account (Resend and/or Twilio) and consent/compliance calls before a spec can be written responsibly — an executor cannot make those decisions. Revisit once a provider is chosen; do not start this phase on assumptions.
+
+**Phase 4 — Billing & per-client module activation** — not started, not next (see below).
+
+**Phase 5 — Client websites & creative studio** _(spec: `PLAN-05-client-websites.md` — ready now, next up, pulled forward ahead of Phase 3/4 because it needs no new vendor account)_
+Per-venue public marketing site (Owner.com-parity: home/menu/hours/location, SEO metadata, structured data, sitemap), brand_kit-driven theming already using the aro design system since day one (unlike the HQ screens — see below). Split from the original Phase 5 scope: the **HQ coffee/cream → aro design-system refit is deliberately deferred to its own follow-up (PLAN-06, not yet written)** rather than bundled in — every HQ screen (`/dashboard`, `/clients`, `/staff`, `/settings`, etc.) still renders zero `aro-` classes as of 2026-07-17, confirmed by grep; that's a large, separate, mechanical migration and bundling it here would blow this phase's scope past what one executor pass should carry.
 
 **Phase 3 — Marketing & nudges** _(deferred from earlier decision; spec to be written)_
 The loyalty loop completed: Resend (email) adapter first, Twilio (SMS) later; campaigns page becomes real; "Send a nudge" on member profiles; AI-draft approval actually sends; win-back automation with owner approval (autopilot flag exists on `campaigns`); CASL compliance — consent already captured at join, unsubscribe tokens already in schema; invite emails replace copy-link.
