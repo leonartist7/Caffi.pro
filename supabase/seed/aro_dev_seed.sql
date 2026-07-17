@@ -30,7 +30,7 @@ VALUES ('a0000000-0000-4000-3000-000000000001', 'a0000000-0000-4000-2000-0000000
         'a0000000-0000-4000-1000-000000000001', 'The Roastery', 'the-roastery',
         'owner@roastery.dev', 'The Roastery', 'club.aro.roastery',
         'America/Edmonton', 'CAD', 'en',
-        '{"primary": "#D67A45", "background": "#F3EAD7", "voice": "warm, neighbourly, no corporate speak"}'::jsonb,
+        '{"primary": "#D67A45", "background": "#F3EAD7", "voice": "warm, neighbourly, no corporate speak", "logo_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=400&q=80"}'::jsonb,
         '{"points_per_euro": 10, "signup_bonus": 0}'::jsonb)
 ON CONFLICT (venue_id) DO NOTHING;
 
@@ -100,15 +100,18 @@ WHERE v.venue_id = 'a0000000-0000-4000-3000-000000000001'
 ON CONFLICT (transaction_id) DO NOTHING;
 
 -- Rewards ---------------------------------------------------------------------
-INSERT INTO rewards (reward_id, tenant_id, name, description, points_required, reward_type)
+INSERT INTO rewards (reward_id, tenant_id, name, description, points_required, reward_type, image_url)
 VALUES
     ('a0000000-0000-4000-5000-000000000001', 'a0000000-0000-4000-3000-000000000001',
-     'Free drip coffee', 'Any size, any roast', 100, 'free_item'),
+     'Free drip coffee', 'Any size, any roast', 100, 'free_item',
+     'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80'),
     ('a0000000-0000-4000-5000-000000000002', 'a0000000-0000-4000-3000-000000000001',
-     'Free pastry', 'From the morning case', 180, 'free_item'),
+     'Free pastry', 'From the morning case', 180, 'free_item',
+     'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80'),
     ('a0000000-0000-4000-5000-000000000003', 'a0000000-0000-4000-3000-000000000001',
-     'Bag of house beans', '340g, whole bean', 400, 'free_item')
-ON CONFLICT (reward_id) DO NOTHING;
+     'Bag of house beans', '340g, whole bean', 400, 'free_item',
+     'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80')
+ON CONFLICT (reward_id) DO UPDATE SET image_url = COALESCE(rewards.image_url, EXCLUDED.image_url);
 
 -- Campaign + pending AI draft ---------------------------------------------------
 INSERT INTO campaigns (campaign_id, venue_id, type, name, status, autopilot, template)
@@ -153,14 +156,14 @@ VALUES
 ('c1000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Bakery',20,true)
 ON CONFLICT (category_id) DO UPDATE SET name=EXCLUDED.name, display_order=EXCLUDED.display_order, is_active=true;
 
-INSERT INTO public.menu_items (item_id, venue_id, category_id, name, description, price_cents, is_active, sort_order, dietary_tags)
+INSERT INTO public.menu_items (item_id, venue_id, category_id, name, description, price_cents, image_url, is_active, sort_order, dietary_tags)
 VALUES
-('c2000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Flat White','Velvety espresso and steamed milk.',475,true,10,ARRAY['vegetarian']),
-('c2000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Americano','Double espresso lengthened with hot water.',375,true,20,ARRAY['vegan']),
-('c2000000-0000-4000-8000-000000000003','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Cold Brew','Slow-steeped, chocolatey and bright.',500,true,30,ARRAY['vegan']),
-('c2000000-0000-4000-8000-000000000004','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Butter Croissant','Flaky, cultured-butter pastry.',425,true,10,ARRAY['vegetarian']),
-('c2000000-0000-4000-8000-000000000005','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Morning Bun','Cinnamon, orange and raw sugar.',450,true,20,ARRAY['vegetarian'])
-ON CONFLICT (item_id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, price_cents=EXCLUDED.price_cents, is_active=true;
+('c2000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Flat White','Velvety espresso and steamed milk.',475,'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=800&q=80',true,10,ARRAY['vegetarian']),
+('c2000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Americano','Double espresso lengthened with hot water.',375,'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',true,20,ARRAY['vegan']),
+('c2000000-0000-4000-8000-000000000003','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Cold Brew','Slow-steeped, chocolatey and bright.',500,'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=800&q=80',true,30,ARRAY['vegan']),
+('c2000000-0000-4000-8000-000000000004','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Butter Croissant','Flaky, cultured-butter pastry.',425,'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80',true,10,ARRAY['vegetarian']),
+('c2000000-0000-4000-8000-000000000005','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Morning Bun','Cinnamon, orange and raw sugar.',450,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',true,20,ARRAY['vegetarian'])
+ON CONFLICT (item_id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, price_cents=EXCLUDED.price_cents, image_url=EXCLUDED.image_url, is_active=true;
 
 INSERT INTO public.modifier_groups (group_id, venue_id, item_id, name, min_select, max_select)
 VALUES
