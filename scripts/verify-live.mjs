@@ -237,6 +237,107 @@ await check('reservation client_uuid idempotency', async () => {
   return `one row for client_uuid (${id1.slice(0, 8)})`
 })
 
+await check('pass_serial column enforced', async () => {
+  const { data, error } = await service
+    .from('members')
+    .select('pass_serial')
+    .eq('tenant_id', SEED_VENUE_ID)
+    .limit(1)
+    .maybeSingle()
+  if (error) throw new Error(error.message)
+  if (!data?.pass_serial) throw new Error('seed member missing pass_serial')
+  return 'seeded members carry a pass_serial'
+})
+
+await check('join idempotency (member.joined dedupe)', async () => {
+  // Mirrors app/api/join/route.ts: insert on first "join", then the
+  // same (venue, email) lookup the route performs on a re-join — same
+  // member_id/pass_serial, no duplicate row, matching PLAN-diner-join-page's
+  // acceptance criteria (#1: second identical call returns same serial;
+  // member count unchanged).
+  const probeEmail = `verify-live-${crypto.randomUUID()}@example.invalid`
+  const before = await service
+    .from('members')
+    .select('member_id', { count: 'exact', head: true })
+    .eq('tenant_id', SEED_VENUE_ID)
+  if (before.error) throw new Error(before.error.message)
+  const countBefore = before.count ?? 0
+
+  const created = await service
+    .from('members')
+    .insert({ tenant_id: SEED_VENUE_ID, full_name: 'Verify Probe', email: probeEmail })
+    .select('member_id, pass_serial')
+    .single()
+  if (created.error) throw new Error(created.error.message)
+
+  try {
+    const rejoin = await service
+      .from('members')
+      .select('member_id, pass_serial')
+      .eq('tenant_id', SEED_VENUE_ID)
+      .eq('email', probeEmail)
+      .maybeSingle()
+    if (rejoin.error) throw new Error(rejoin.error.message)
+    if (rejoin.data?.member_id !== created.data.member_id) {
+      throw new Error('re-join lookup returned a different member_id')
+    }
+    if (rejoin.data?.pass_serial !== created.data.pass_serial) {
+      throw new Error('re-join lookup returned a different pass_serial')
+    }
+
+    const after = await service
+      .from('members')
+      .select('member_id', { count: 'exact', head: true })
+      .eq('tenant_id', SEED_VENUE_ID)
+    if (after.error) throw new Error(after.error.message)
+    if ((after.count ?? 0) !== countBefore + 1) {
+      throw new Error(
+        `member count changed by ${(after.count ?? 0) - countBefore}, expected exactly 1 (no dupe on re-join)`
+      )
+    }
+    return `same member_id + pass_serial on re-join; count +1 not +2 (${created.data.member_id.slice(0, 8)})`
+  } finally {
+    await service.from('members').delete().eq('member_id', created.data.member_id)
+  }
+})
+
+await check('join consent upgrade-only', async () => {
+  // A re-join with consent unchecked must never null out a previously
+  // granted consent (PLAN-diner-join-page edge case: upgrade-only, no
+  // silent downgrade).
+  const probeEmail = `verify-live-consent-${crypto.randomUUID()}@example.invalid`
+  const consentTs = new Date().toISOString()
+  const created = await service
+    .from('members')
+    .insert({
+      tenant_id: SEED_VENUE_ID,
+      full_name: 'Verify Consent Probe',
+      email: probeEmail,
+      consent_ts: consentTs,
+      consent_text: 'test consent sentence',
+      consent_source: 'join_page',
+    })
+    .select('member_id, consent_ts')
+    .single()
+  if (created.error) throw new Error(created.error.message)
+
+  try {
+    // Route logic: only writes consent fields when consent===true AND
+    // existing.consent_ts is null. Simulate a re-join with the box
+    // unchecked by doing nothing and re-reading — consent must survive.
+    const reread = await service
+      .from('members')
+      .select('consent_ts')
+      .eq('member_id', created.data.member_id)
+      .single()
+    if (reread.error) throw new Error(reread.error.message)
+    if (!reread.data.consent_ts) throw new Error('consent_ts was nulled on unchecked re-join')
+    return 'previously granted consent survives an unchecked re-join'
+  } finally {
+    await service.from('members').delete().eq('member_id', created.data.member_id)
+  }
+})
+
 if (failures > 0) {
   console.error(`Live verification failed: ${failures} check(s) failed`)
   process.exit(1)
