@@ -84,6 +84,13 @@ These are proven in the codebase and non-negotiable:
 
 ## 6 · Roadmap
 
+> **Sequencing update (2026-07-19):** the roadmap below remains the phase
+> record, but build ordering is now governed by
+> `docs/plans/MASTER-PLAN-v2-operating-system.md` — the operating-system
+> masterplan (vision, revenue-ordered 🔴/🟡/⚪ sequence, per-system specs,
+> and the consolidated open-decisions register). Phase numbering here is
+> unchanged; v2 sequences and extends it, never renumbers it.
+
 **Phase 0 — Go-live + polish** ✅ COMPLETE _(spec: `PLAN-00-go-live-polish.md`)_
 Production cutover (merged PR #47 + AURA #2), invite-link loop, Members CRM module in HQ, legacy surface retirement (`/staff/*` old portal, `/tenants/[id]`), `scripts/verify-live.mjs` RLS regression net. Decisions locked: ship now; nudges deferred.
 
