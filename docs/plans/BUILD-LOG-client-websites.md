@@ -26,3 +26,11 @@
 - Added gallery, contact, social, canonical navigation, and safely escaped LocalBusiness JSON-LD behavior.
 - Review: removed invented fallback marketing copy, corrected internal site links for custom-domain canonical navigation, and hoisted all public strings.
 - Verification: type-check passed after each TypeScript file; production build passed; aro-color, inline-JSX-string, and duplicate-query grep gates passed.
+
+## Phase 3 — SEO and discovery
+
+- Added native Next.js sitemap and robots metadata routes.
+- Sitemap output is generated dynamically from service-role venue data and includes only enabled, non-killed sites with canonical home/menu/hours/contact URLs.
+- Added distinct page metadata, canonical URLs, Open Graph fields, optional gallery imagery, and enabled-site-only JSON-LD.
+- Review: forced the database-backed sitemap dynamic so builds without runtime Supabase credentials do not attempt to query live data during prerendering.
+- Verification: type-check and production build passed; the generated robots body allows crawling and references `/sitemap.xml`. Live sitemap membership remains pending a keyed environment.
