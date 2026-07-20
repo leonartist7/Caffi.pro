@@ -224,6 +224,19 @@ same day — never skip the test-mode end-to-end because "the code was already
 verified"; webhook config is environment-specific and is exactly what a
 dry-run catches.
 
+**Account model resolved (D-17, 2026-07-20): single platform Stripe
+account, not Stripe Connect.** `lib/payments/adapters/stripe.ts` uses one
+global `STRIPE_SECRET_KEY` with no per-venue account routing — this spec
+below matches that exactly. This is a deliberate, revenue-first choice, not
+an oversight: Stripe Connect (each café gets its own connected account,
+funds land directly with them) would better match the "cafés keep their
+negotiated rates" positioning line in `MASTER-PLAN-aro.md` §1, but it's
+real new scope — Stripe platform approval, a client onboarding UI, and an
+adapter rewrite to pass `stripeAccount` per call — that no spec in this
+document currently covers. **Do not build Connect from this spec.** If the
+owner revisits D-17, that becomes its own Fable-authored addition to this
+masterplan before any executor touches it.
+
 ### Implementation spec
 
 1. 👤 Owner: Stripe dashboard → API keys. Set in Caffi Vercel **Production**:
@@ -363,12 +376,28 @@ deliberately left open, so the executor has zero judgment calls left:
    on first view (it is owner-facing content with no external send; forcing
    an approve click on a report is ceremony). The approve/skip button pair
    remains exclusively for kinds that can leave the building.
-3. **Model + env**: `AI_DRAFT_MODEL` env var, default to the current
-   fast/cheap Claude tier at execution time (the executor consults the
-   claude-api skill for the current model id — never hardcodes one from
-   memory), `ANTHROPIC_API_KEY` in `.env.example` under a corrected
-   "Phase 3" header (fixing the Phase-4 drift in the same commit, per that
-   doc's §1.2 instruction).
+3. **Model + env** — **owner decision made 2026-07-20: OpenAI (ChatGPT),
+   overriding the strategic doc's Anthropic recommendation.** `lib/ai/
+provider.ts`'s abstraction was built for exactly this kind of swap — no
+   architecture change follows from it, only the adapter target. Concrete
+   requirements for whichever model builds `lib/ai/provider.ts`:
+   - Env var `OPENAI_API_KEY` (not `ANTHROPIC_API_KEY`) in `.env.example`
+     under a corrected "Phase 3" header (fixing the Phase-4 drift in the
+     same commit, per the strategic doc's §1.2 instruction).
+   - `AI_DRAFT_MODEL` env var for the model id, default to OpenAI's current
+     fast/cheap tier at execution time — the executor must check OpenAI's
+     current model catalog rather than hardcode an id from memory (same
+     "never trust a remembered model name" rule the strategic doc applies
+     to Claude; it applies identically here).
+   - `lib/ai/provider.ts`'s `AiProvider` interface (per the strategic doc
+     §5.2) stays provider-agnostic; the OpenAI adapter lives in
+     `lib/ai/adapters/openai.ts` — no route or component imports the
+     OpenAI SDK directly, same discipline as every other provider boundary
+     in this codebase.
+   - Every other part of R4's design (voice doctrine, grounding-in-real-
+     data rule, rate limiting, `prompt_ctx` traceability) is provider-
+     independent and carries over unchanged — swapping the model does not
+     relax any of it.
 
 Voice bar restated in one line for the executor: every draft must read like
 it was written by someone who has stood behind that counter — grounded in
@@ -993,29 +1022,32 @@ from `MASTER-PLAN-marketing-creative-studio.md` §9 (statuses updated —
 three are now resolved) with the new ones this masterplan surfaces. "Owner
 action" = minutes of dashboard work; "owner decision" = a real choice._
 
-| ID   | Decision                                                  | Status                                | Recommendation                                 | Unblocks             |
-| ---- | --------------------------------------------------------- | ------------------------------------- | ---------------------------------------------- | -------------------- |
-| D-1  | Email vendor commitment (account + API key)               | **Open — owner decision**             | Resend, as long-stubbed                        | N1, N3, N6           |
-| D-1b | SMS vendor commitment                                     | Open — owner decision (can trail D-1) | Twilio                                         | N6                   |
-| D-2  | CASL/CAN-SPAM/TCPA compliance sign-off on the §5.3 design | Open — owner (+counsel if desired)    | Design to the stricter combined bar as staged  | First real send (N1) |
-| D-3  | Creative Studio route group                               | ✅ **Resolved** (R4)                  | `(owner)` group                                | —                    |
-| D-4  | LLM provider + model tier                                 | Recommended; needs key                | Anthropic API, fast tier, `AI_DRAFT_MODEL` env | R4 (CS-1/CS-2)       |
-| D-5  | Send-volume cost absorption vs pass-through               | Open — owner pricing call             | Absorb inside Growth tier at café volumes      | N7 pricing copy      |
-| D-6  | Digest approval UX                                        | ✅ **Resolved** (R4)                  | Seen-not-approved                              | —                    |
-| D-7  | Campaign origination                                      | ✅ **Resolved** (N1)                  | Draft-first; manual compose creates a draft    | —                    |
-| D-8  | Stripe production keys + webhook endpoint                 | **Open — owner action (~30 min)**     | Do it this week; R2 is zero-code revenue       | R2                   |
-| D-9  | AURA Production env parity confirmation                   | **Open — owner action (~10 min)**     | Do it first; R1 is a revenue leak              | R1                   |
-| D-10 | Sending domain + from-address identity                    | Open — owner decision                 | Platform domain, venue friendly-from           | N1                   |
-| D-11 | `CRON_SECRET` + Vercel cron enablement                    | Owner action at N3 time               | Standard                                       | N3                   |
-| D-12 | Tier prices (Starter/Growth/Pro numbers)                  | Open — owner decision                 | Structure is locked; numbers are the call      | N7                   |
-| D-13 | Voice vendor selection                                    | Open — deferred by design             | Evaluate Vapi/Retell/Bland at gate time        | L1                   |
-| D-14 | Apple/Google developer accounts                           | Open — deferred                       | Only when wallet demand is evidenced           | L3                   |
-| D-15 | Google Business Profile API relationship                  | Open — deferred                       | Manual guidance path meanwhile                 | L4                   |
-| D-16 | i18n go/no-go + first locale                              | Open — market question                | String discipline now; decide on market pull   | L6                   |
+| ID   | Decision                                                                              | Status                                         | Recommendation                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Unblocks                          |
+| ---- | ------------------------------------------------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| D-1  | Email vendor commitment (account + API key)                                           | **Open — owner decision**                      | Resend, as long-stubbed                                                                                                                                                                                                                                                                                                                                                                                                                                            | N1, N3, N6                        |
+| D-1b | SMS vendor commitment                                                                 | Open — owner decision (can trail D-1)          | Twilio                                                                                                                                                                                                                                                                                                                                                                                                                                                             | N6                                |
+| D-2  | CASL/CAN-SPAM/TCPA compliance sign-off on the §5.3 design                             | Open — owner (+counsel if desired)             | Design to the stricter combined bar as staged                                                                                                                                                                                                                                                                                                                                                                                                                      | First real send (N1)              |
+| D-3  | Creative Studio route group                                                           | ✅ **Resolved** (R4)                           | `(owner)` group                                                                                                                                                                                                                                                                                                                                                                                                                                                    | —                                 |
+| D-4  | LLM provider + model tier                                                             | ✅ **Resolved (owner, 2026-07-20)**            | **OpenAI (ChatGPT)** — overrides the strategic doc's Anthropic recommendation; needs `OPENAI_API_KEY`                                                                                                                                                                                                                                                                                                                                                              | R4 (CS-1/CS-2)                    |
+| D-5  | Send-volume cost absorption vs pass-through                                           | Open — owner pricing call                      | Absorb inside Growth tier at café volumes                                                                                                                                                                                                                                                                                                                                                                                                                          | N7 pricing copy                   |
+| D-6  | Digest approval UX                                                                    | ✅ **Resolved** (R4)                           | Seen-not-approved                                                                                                                                                                                                                                                                                                                                                                                                                                                  | —                                 |
+| D-7  | Campaign origination                                                                  | ✅ **Resolved** (N1)                           | Draft-first; manual compose creates a draft                                                                                                                                                                                                                                                                                                                                                                                                                        | —                                 |
+| D-8  | Stripe production keys + webhook endpoint                                             | **Open — owner action (~30 min)**              | Do it this week; R2 is zero-code revenue                                                                                                                                                                                                                                                                                                                                                                                                                           | R2                                |
+| D-9  | AURA Production env parity confirmation                                               | **Open — owner action (~10 min)**              | Do it first; R1 is a revenue leak                                                                                                                                                                                                                                                                                                                                                                                                                                  | R1                                |
+| D-10 | Sending domain + from-address identity                                                | Open — owner decision                          | Platform domain, venue friendly-from                                                                                                                                                                                                                                                                                                                                                                                                                               | N1                                |
+| D-11 | `CRON_SECRET` + Vercel cron enablement                                                | Owner action at N3 time                        | Standard                                                                                                                                                                                                                                                                                                                                                                                                                                                           | N3                                |
+| D-12 | Tier prices (Starter/Growth/Pro numbers)                                              | Open — owner decision                          | Structure is locked; numbers are the call                                                                                                                                                                                                                                                                                                                                                                                                                          | N7                                |
+| D-13 | Voice vendor selection                                                                | Open — deferred by design                      | Evaluate Vapi/Retell/Bland at gate time                                                                                                                                                                                                                                                                                                                                                                                                                            | L1                                |
+| D-14 | Apple/Google developer accounts                                                       | Open — deferred                                | Only when wallet demand is evidenced                                                                                                                                                                                                                                                                                                                                                                                                                               | L3                                |
+| D-15 | Google Business Profile API relationship                                              | Open — deferred                                | Manual guidance path meanwhile                                                                                                                                                                                                                                                                                                                                                                                                                                     | L4                                |
+| D-16 | i18n go/no-go + first locale                                                          | Open — market question                         | String discipline now; decide on market pull                                                                                                                                                                                                                                                                                                                                                                                                                       | L6                                |
+| D-17 | Stripe account model: single platform account vs. Stripe Connect (per-venue accounts) | **Open — owner decision, surfaced 2026-07-20** | Single account now (matches `lib/payments/adapters/stripe.ts` exactly as built — one global `STRIPE_SECRET_KEY`, zero extra dev work); defer Connect until ≥2 paying venues make "cafés keep their own rates" a live promise instead of a documentation line. Connect is additive later, not a rewrite — but it IS new scope (client onboarding flow, `stripeAccount` routing per call, Stripe platform approval) that R2 as currently specced does **not** cover. | R2 (which model to build against) |
 
 **The two to do this week are D-8 and D-9** — both are owner actions
 measured in minutes, and together they turn on the two revenue paths the
-code already supports.
+code already supports. D-4 and D-17 (LLM provider, Stripe account model)
+were resolved/surfaced 2026-07-20 — see R4 and R2 for the concrete
+implications on each.
 
 ---
 
