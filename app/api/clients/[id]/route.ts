@@ -112,6 +112,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     nextSiteProfile = parseSiteProfile({
       site_profile: { ...existingSiteProfile, ...body.site_profile },
     })
+    if (nextSiteProfile.site_enabled && !nextSiteProfile.tagline) {
+      return NextResponse.json(
+        { error: 'Add a tagline before publishing the site' },
+        { status: 400 }
+      )
+    }
     nextBrandKit = { ...nextBrandKit, site_profile: nextSiteProfile }
     brandKitChanged = true
     siteEventType =

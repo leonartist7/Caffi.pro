@@ -16,3 +16,13 @@
 - Added server-only accessors for derived weekly hours and published-site enumeration.
 - Review: consolidated all brand-kit writes before assignment so a request that edits general branding and website fields cannot overwrite either change.
 - Verification: type-check passed after each TypeScript file; phase production build passed.
+
+## Phase 2 — Public site pages
+
+- Added the public `/site/[slug]` layout and home, menu, hours, and contact pages in the aro design system.
+- Disabled profiles short-circuit to a warm setup state; publishing now requires a non-empty tagline so an empty template cannot silently go live.
+- Reused `getStorefront` and `formatCents` for the printed menu, with no duplicate Supabase menu query.
+- Read only parsed weekly hours through the server accessor and gated ordering/booking links against real availability.
+- Added gallery, contact, social, canonical navigation, and safely escaped LocalBusiness JSON-LD behavior.
+- Review: removed invented fallback marketing copy, corrected internal site links for custom-domain canonical navigation, and hoisted all public strings.
+- Verification: type-check passed after each TypeScript file; production build passed; aro-color, inline-JSX-string, and duplicate-query grep gates passed.
