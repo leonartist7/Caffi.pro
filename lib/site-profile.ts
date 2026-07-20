@@ -39,7 +39,10 @@ export function parseSiteProfile(brandKit: unknown): SiteProfile {
   const kit = asObject(brandKit)
   const profile = asObject(kit.site_profile)
   const gallery = Array.isArray(profile.gallery)
-    ? profile.gallery.filter((value): value is string => typeof value === 'string').slice(0, 6)
+    ? profile.gallery
+        .filter((value): value is string => typeof value === 'string' && !!value.trim())
+        .map(value => value.trim())
+        .slice(0, 6)
     : []
 
   return {

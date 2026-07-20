@@ -34,3 +34,11 @@
 - Added distinct page metadata, canonical URLs, Open Graph fields, optional gallery imagery, and enabled-site-only JSON-LD.
 - Review: forced the database-backed sitemap dynamic so builds without runtime Supabase credentials do not attempt to query live data during prerendering.
 - Verification: type-check and production build passed; the generated robots body allows crawling and references `/sitemap.xml`. Live sitemap membership remains pending a keyed environment.
+
+## Phase 4 — Website settings and custom domains
+
+- Added one real Website tab to Settings without changing the existing HQ visual system or module registry.
+- Added profile fields, six-item URL gallery editing, tagline-gated publishing, persisted-state preview behavior, and accurate public URL copy.
+- Switched custom-domain roots and clean content paths to the public site while preserving bare and slugged ordering/reservation routes.
+- Review: added server-side tagline enforcement in addition to the UI gate, trimmed empty gallery entries, and handled bare `/shop` explicitly to avoid `/shop/<slug>/shop` rewrites.
+- Verification: type-check passed after each TypeScript file and the production build passed with all new public and metadata routes present.

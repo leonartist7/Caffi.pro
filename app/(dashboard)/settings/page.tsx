@@ -12,15 +12,21 @@ import {
   Server,
   Save,
   Building2,
+  Globe2,
 } from 'lucide-react'
 import { ComingSoon } from '@/components/ComingSoon'
+import { WebsiteSettings } from '@/components/settings/WebsiteSettings'
+import type { SiteProfile } from '@/lib/site-profile'
 
 interface VenueDetail {
   tenant_id: string
   business_name: string
+  slug: string
+  custom_domain: string | null
   logo_url: string | null
   primary_color: string | null
   timezone: string
+  site_profile: SiteProfile
 }
 
 export default function SettingsPage() {
@@ -33,6 +39,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: 'general', name: 'General', icon: SettingsIcon },
+    { id: 'website', name: 'Website', icon: Globe2 },
     { id: 'notifications', name: 'Notifications', icon: Bell },
     { id: 'api', name: 'API Keys', icon: Key },
     { id: 'email', name: 'Email Templates', icon: Mail },
@@ -223,6 +230,37 @@ export default function SettingsPage() {
                 </button>
               </form>
             )}
+          </>
+        )}
+
+        {activeTab === 'website' && (
+          <>
+            {!selectedTenant ? (
+              <div className="py-12 text-center">
+                <Building2 className="mx-auto mb-4 h-16 w-16 text-coffee-300 dark:text-dark-600" />
+                <h3 className="mb-2 text-xl font-bold text-coffee-900 dark:text-cream-100">
+                  Select a client
+                </h3>
+                <p className="text-coffee-600 dark:text-cream-400">
+                  Choose a client from the dropdown above to manage their website.
+                </p>
+              </div>
+            ) : loading ? (
+              <div className="py-12 text-center">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-coffee-500 border-t-transparent" />
+              </div>
+            ) : venue ? (
+              <WebsiteSettings
+                venueId={venue.tenant_id}
+                businessName={venue.business_name}
+                slug={venue.slug}
+                customDomain={venue.custom_domain}
+                initialProfile={venue.site_profile}
+                onSaved={profile =>
+                  setVenue(current => (current ? { ...current, site_profile: profile } : current))
+                }
+              />
+            ) : null}
           </>
         )}
 
