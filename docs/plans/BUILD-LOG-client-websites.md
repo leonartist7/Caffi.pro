@@ -49,3 +49,13 @@
 - Added the owner-facing Google Business Profile onboarding guide covering claiming, verification, website/hours consistency, photos, and review upkeep.
 - Review: used a separate `UPDATE` after the conflict-safe venue insert so existing development databases receive the profile on repeat seed runs without replacing unrelated brand-kit fields.
 - Verification: SQL and documentation static review passed. Executing the seed twice against Supabase remains pending because this workspace has no local or live database credentials.
+
+## Final verification
+
+- `npm run type-check`: passed.
+- `npm run lint:strict`: passed with zero warnings or errors.
+- `npm run build`: passed; route output includes all four site pages, `/sitemap.xml`, and `/robots.txt`. The build retains only the pre-existing webpack cache and Supabase Edge Runtime warnings.
+- Pure profile tests passed for defensive defaults, trimming, six-image capping, publishing, main-domain canonicals, and custom-domain canonicals.
+- Static gates passed: no legacy/non-aro colour classes or inline user-visible JSX literals under `app/site/**`; no site-local menu query construction; no dependency or `lib/modules.ts` changes; middleware routing invariants present; diff whitespace clean.
+- Generated robots output allows all crawlers and points at the sitemap.
+- Not claimed without credentials: authenticated GET/PATCH role checks, activity-feed rows, live sitemap membership, seeded database idempotency, browser rendering against The Roastery data, and real custom-domain host rewrites.
