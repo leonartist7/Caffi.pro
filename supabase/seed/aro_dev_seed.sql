@@ -34,6 +34,27 @@ VALUES ('a0000000-0000-4000-3000-000000000001', 'a0000000-0000-4000-2000-0000000
         '{"points_per_euro": 10, "signup_bonus": 0}'::jsonb)
 ON CONFLICT (venue_id) DO NOTHING;
 
+-- Public website marketing profile. Merge the namespaced object so repeat runs
+-- are deterministic without replacing logo, colour, or voice fields.
+UPDATE public.venues
+SET brand_kit = COALESCE(brand_kit, '{}'::jsonb) || jsonb_build_object(
+  'site_profile', jsonb_build_object(
+    'tagline', 'Coffee with character, made for Kensington.',
+    'about', E'The Roastery is a neighbourhood café built around thoughtful coffee and easy conversation.\n\nWe roast with curiosity, bake in small batches, and keep a seat ready for your usual.',
+    'address', '1122 Kensington Road NW, Calgary, AB',
+    'phone_display', '(403) 555-0100',
+    'instagram_url', 'https://www.instagram.com/theroastery',
+    'facebook_url', 'https://www.facebook.com/theroastery',
+    'gallery', jsonb_build_array(
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1445116572660-236099ec97a0?auto=format&fit=crop&w=1400&q=85',
+      'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&w=1400&q=85'
+    ),
+    'site_enabled', true
+  )
+)
+WHERE venue_id = 'a0000000-0000-4000-3000-000000000001';
+
 -- Memberships ---------------------------------------------------------------
 INSERT INTO memberships (membership_id, org_id, venue_id, role, full_name, invite_email)
 VALUES

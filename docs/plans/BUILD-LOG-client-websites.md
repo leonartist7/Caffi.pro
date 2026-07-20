@@ -42,3 +42,10 @@
 - Switched custom-domain roots and clean content paths to the public site while preserving bare and slugged ordering/reservation routes.
 - Review: added server-side tagline enforcement in addition to the UI gate, trimmed empty gallery entries, and handled bare `/shop` explicitly to avoid `/shop/<slug>/shop` rewrites.
 - Verification: type-check passed after each TypeScript file and the production build passed with all new public and metadata routes present.
+
+## Phase 5 — Demo seed and owner guidance
+
+- Added an idempotent nested `site_profile` merge for The Roastery with complete copy, contact details, social links, three existing-pattern Unsplash images, and publishing enabled.
+- Added the owner-facing Google Business Profile onboarding guide covering claiming, verification, website/hours consistency, photos, and review upkeep.
+- Review: used a separate `UPDATE` after the conflict-safe venue insert so existing development databases receive the profile on repeat seed runs without replacing unrelated brand-kit fields.
+- Verification: SQL and documentation static review passed. Executing the seed twice against Supabase remains pending because this workspace has no local or live database credentials.
