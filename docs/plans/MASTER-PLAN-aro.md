@@ -84,6 +84,13 @@ These are proven in the codebase and non-negotiable:
 
 ## 6 · Roadmap
 
+> **Sequencing update (2026-07-19):** the roadmap below remains the phase
+> record, but build ordering is now governed by
+> `docs/plans/MASTER-PLAN-v2-operating-system.md` — the operating-system
+> masterplan (vision, revenue-ordered 🔴/🟡/⚪ sequence, per-system specs,
+> and the consolidated open-decisions register). Phase numbering here is
+> unchanged; v2 sequences and extends it, never renumbers it.
+
 **Phase 0 — Go-live + polish** ✅ COMPLETE _(spec: `PLAN-00-go-live-polish.md`)_
 Production cutover (merged PR #47 + AURA #2), invite-link loop, Members CRM module in HQ, legacy surface retirement (`/staff/*` old portal, `/tenants/[id]`), `scripts/verify-live.mjs` RLS regression net. Decisions locked: ship now; nudges deferred.
 
@@ -94,7 +101,7 @@ Menu system (categories/items/modifiers), PaymentProvider abstraction + Stripe a
 Bookings with venue-local slotting, table capacity, hours-gated availability, same-day waitlist, guest widget, staff day view. Live-verified: migration applied, RLS confirmed, rate limiting added in a required review round before merge.
 
 **Phase 3 — Marketing & nudges** ⏸ DEFERRED (owner decision, 2026-07-17)
-Needs a real email/SMS vendor account (Resend and/or Twilio) and consent/compliance calls before a spec can be written responsibly — an executor cannot make those decisions. Revisit once a provider is chosen; do not start this phase on assumptions.
+Needs a real email/SMS vendor account (Resend and/or Twilio) and consent/compliance calls before a spec can be written responsibly — an executor cannot make those decisions. Revisit once a provider is chosen; do not start this phase on assumptions. Deep diagnosis, creative vision, and pre-staged implementation plan for this phase — plus the "creative studio" AI-content-generation surface named in Phase 5's title but not scoped there — now exist in `docs/plans/MASTER-PLAN-marketing-creative-studio.md` (2026-07-18). That document's Creative Studio sub-phases (CS-1–CS-3: AI-generated social captions, owner digest, site-copy assist) are **not** blocked on the vendor decision above and are a candidate to pull forward, the same way Phase 5 itself was pulled forward on 2026-07-17 — see that document's §4.1 and §11 before deciding sequencing.
 
 **Phase 4 — Billing & per-client module activation** — not started, not next (see below).
 
