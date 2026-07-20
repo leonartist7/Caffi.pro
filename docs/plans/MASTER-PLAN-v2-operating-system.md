@@ -2,7 +2,9 @@
 
 **Status: complete draft, 2026-07-19.** Vision + Sequence approved by the
 owner; remaining sections written to completion on the owner's instruction in
-the same session. Ground truth: `MASTER-PLAN-aro.md` (binding §4/§5),
+the same session, including a Horizon 3 vision appendix, birthday capture
+(N9), and per-task executor model assignments (Section 7). Ground truth:
+`MASTER-PLAN-aro.md` (binding §4/§5),
 `MASTER-PLAN-marketing-creative-studio.md`, `PLAN-05-client-websites.md`,
 `PHASE-6-COMMERCE-CANDIDATES.md`, `HANDOFF-live-bringup.md`, and the live
 Supabase project `jjgccfrwjkwknyjtbtxa` — all re-verified 2026-07-18/19.
@@ -95,6 +97,7 @@ live; nothing below re-plans them.
 | N6  | **M-2 SMS** (Twilio, STOP webhook, stricter TCPA bar)                                                                                                                   | Platform: reactivation        | SMS out-converts email for cafés but costs real money per send — earn it after email proves the pipeline.                                                  | N1 + owner SMS vendor decision                     |
 | N7  | **Phase 4 billing** (Stripe Billing on flat tiers, module gating UI)                                                                                                    | Agency: monetization          | Manual tier toggling works at a handful of venues; billing becomes the bottleneck exactly when the agency funnel starts working.                           | Owner pricing decision (tier prices)               |
 | N8  | **PLAN-06 HQ aro refit** (the coffee/cream → aro migration, deliberately split out of PLAN-05)                                                                          | Platform: perceived quality   | Design debt, mechanical, large — schedule as filler work between revenue items, not ahead of them.                                                         | Nothing                                            |
+| N9  | **Birthday capture** (one-shot ask on the web pass; feeds the `campaigns.type='birthday'` slot the schema already allows)                                               | Platform: reactivation        | Hospitality's highest-converting message type, and the schema already anticipated it — nothing has ever captured the date.                                 | Capture needs nothing; sends need N1               |
 
 ### ⚪ LATER — scale infrastructure
 
@@ -123,6 +126,12 @@ already works instead of rewriting it._
 ---
 
 ## R1 · AURA lead-forwarding fix
+
+**Executor:** Sonnet 5 / GPT 5.6 — the runbook below is a literal, ordered
+diagnostic tree with explicit stop conditions at each step; no design
+judgment required to execute it. **Escalate to Fable 5** only if steps 1–3
+fail to isolate the fault (a genuinely novel failure mode, not covered
+here).
 
 **Objective** — every completed AURA diagnostic lands as a `leads` row in the
 platform within seconds, permanently, with proof.
@@ -196,6 +205,11 @@ data; R3's "demo asset" story has leads to demo _to_.
 
 ## R2 · Stripe production keys
 
+**Executor:** Sonnet 5 / GPT 5.6 for the verification steps (2–4 below);
+the env-var/dashboard steps (1, owner-only) are not model work at all.
+Zero design judgment in the verification protocol — it's a literal
+sequence with a hard test-mode-before-live-mode gate.
+
 **Objective** — a real card buys a real coffee: ordering revenue flows,
 loyalty points accrue, zero code changes.
 
@@ -255,6 +269,12 @@ webhook discipline.
 
 ## R3 · Client websites (PLAN-05)
 
+**Executor:** Sonnet 5 / GPT 5.6. `PLAN-05-client-websites.md` was already
+written for exactly this tier (verified ground truth, exact files to
+clone, non-goals with teeth) — this masterplan's three deltas (§below) are
+equally literal. No Fable-tier authoring needed; the spec chain is
+complete.
+
 **Objective** — every venue gets a real, SEO-correct public website generated
 from data it already has, becoming both the agency's demo asset and the
 platform's diner-intake surface.
@@ -264,10 +284,10 @@ platform's diner-intake surface.
 **The existing spec is strong — execute it as written.**
 `PLAN-05-client-websites.md` already carries executor-grade precision:
 verified ground truth with dates, exact file-to-clone references, non-goals
-with teeth, the brand_kit JSONB extension path that needs no migration, the
+with teeth, the brand*kit JSONB extension path that needs no migration, the
 custom-domain homepage switch, and a full verification list. It needs no
 churn. This masterplan adds only the v2-lens connective tissue below —
-three small enrichments an executor applies _while_ following PLAN-05, not
+three small enrichments an executor applies \_while* following PLAN-05, not
 a reinterpretation of it.
 
 ### Implementation spec (delta on top of PLAN-05, not a replacement)
@@ -310,6 +330,14 @@ a real website" pitch line, custom domains as true homepages.
 ---
 
 ## R4 · Creative Studio CS-1 + CS-2
+
+**Executor:** **Fable 5 writes `PLAN-07-creative-studio.md`** (converting
+`MASTER-PLAN-marketing-creative-studio.md` §7 into the lean executable
+spec, per that document's own §11 instruction) **and authors the voice-
+doctrine prompt preamble** (`lib/ai/prompts/shared.ts`) — prompt-writing
+that encodes taste is Fable-input, not executor-input, the same way this
+masterplan's own prose is. Sonnet 5 / GPT 5.6 builds everything else from
+PLAN-07 once it exists — routes, UI, the provider abstraction plumbing.
 
 **Objective** — the empty ApprovalsInbox fills with real, venue-grounded
 drafts: social captions on demand, a weekly owner digest — approval-gated,
@@ -388,6 +416,17 @@ what existing documents already carry._
 
 ## N1 · M-1 email nudges (the loop-closer)
 
+**Executor:** **Fable 5 writes `PLAN-08-marketing-nudges.md`** and designs
+the eligibility-query compliance test (§5.3's pre-M-1 test) personally —
+this is real money-adjacent, consent-bearing infrastructure and the one
+place in the 🟡 tier where the _design_ of the safety check matters as
+much as its implementation. Sonnet 5 builds from PLAN-08. **Never assign
+this task, or any part of it, to a light/mechanical tier** — the
+eligibility query is the compliance boundary (§below); a model without
+full context on the consent doctrine can silently weaken it. Fable
+reviews the eligibility query and unsubscribe route before merge,
+regardless of which model built them.
+
 **Objective** — the graph's insight finally reaches the member: approved
 win-back and slow-day messages go out by email, consent-gated at the SQL
 level, and returning visits land back in the graph.
@@ -456,6 +495,8 @@ story for the agency funnel.
 
 ## N2 · CS-3 site-copy assist
 
+**Executor:** Sonnet 5 / GPT 5.6. Small, fully specced, no open calls.
+
 **Objective** — the Website settings tab drafts taglines and about-text in
 the venue's voice, making onboarding faster and sites better.
 
@@ -471,6 +512,11 @@ activation (feeds N4's checklist completion rate).
 ---
 
 ## N3 · Digest delivery (the owner's inbox habit)
+
+**Executor:** Sonnet 5 / GPT 5.6. New table + the repo's first cron
+justify the mid tier over light, but the spec below is fully literal
+(exact migration, exact idempotency key, exact trigger condition) — no
+Fable authoring needed before building.
 
 **Objective** — every venue owner receives their weekly one-number digest by
 email without opening the app; the platform proves its value on a schedule.
@@ -550,6 +596,10 @@ safely" precedent; the agency funnel gets its standing heartbeat.
 
 ## N4 · 7-day onboarding checklist (activation engine)
 
+**Executor:** Sonnet 5 / GPT 5.6. Read-model over existing data, zero
+migration, low blast-radius — literal enough for the mid tier without
+needing a Fable-authored intermediate spec.
+
 **Objective** — a newly signed venue reaches its first regular-making
 habits in week one: QR printed, first member, first visit, first reward,
 staff PIN set, website on — with zero manual bookkeeping.
@@ -619,6 +669,12 @@ quality (activated owners refer).
 ---
 
 ## N5 · Referral engine
+
+**Executor:** Sonnet 5 / GPT 5.6, with a mandatory Fable 5 pre-merge review
+of the once-only-credit logic specifically (step 4 below) — a ledger
+double-credit bug here is a real money leak, even at café scale, and the
+fraud-resistance property (reward-on-visit-not-join) must survive whatever
+idempotency approach the builder chooses.
 
 **Objective** — the pass in every member's pocket and the results screen in
 every owner's hand become acquisition channels: member-refers-member with
@@ -697,6 +753,10 @@ both funnels at near-zero marginal cost.
 
 ## N6 · M-2 SMS
 
+**Executor:** Sonnet 5, with Fable 5 reviewing the STOP webhook and the
+TCPA-consent path before merge — same class of risk as N1, never a
+light-tier task, never merged without that review regardless of builder.
+
 Spec: `MASTER-PLAN-marketing-creative-studio.md` §6 M-2 scope as written —
 Twilio adapter behind the same `CommsProvider`, STOP-webhook
 (signature-verified) wired to the same revocation path as unsubscribe,
@@ -710,6 +770,12 @@ highest-converting reactivation channel, priced accordingly.
 ---
 
 ## N7 · Phase 4 billing & module activation
+
+**Executor:** **Fable 5 must write the full executable spec** once D-12
+(pricing) lands — what follows here is direction-level prose and is
+**not buildable by any executor tier as written**. Once Fable's spec
+exists: Sonnet 5 builds it, with Fable reviewing the webhook-driven
+status-transition logic before merge (billing is a money surface).
 
 **Objective** — tier assignment stops being a manual toggle: Stripe Billing
 subscriptions map to module sets, dunning states surface, upsells become a
@@ -735,6 +801,13 @@ pricing decision D-12.
 
 ## N8 · PLAN-06 HQ aro refit
 
+**Executor:** spec author — Fable 5 or Sonnet 5 (screen-inventory work,
+low judgment); builder — **Kimi K3-class / light tier**. This is the
+sweet spot for the smallest capable model: every commit is style-only,
+every pass/fail gate is a grep, and a mistake is visible immediately
+(a leftover `coffee-` class fails the gate). See §Executor Model
+Assignments for the literal per-screen instructions this tier requires.
+
 **Objective** — the HQ screens stop wearing the legacy coffee/cream skin;
 one brand everywhere becomes literally true.
 
@@ -750,6 +823,87 @@ an off-system hex). Schedule as filler between revenue items. **Acceptance
 sketch**: per-screen grep gates green; measured contrast table in the build
 log; zero behavioral diffs (`npm run build` + smoke unchanged).
 **Dependencies** — none; pure debt paydown.
+
+---
+
+## N9 · Birthday capture
+
+**Executor:** spec — done, this document (literal); builder — **Sonnet 5 /
+GPT 5.6**. Consent/abuse-adjacent (a member-editable date field needs the
+one-shot guard reviewed) — not a light-tier task despite its small size.
+
+**Objective** — every member's birthday is captured once, warmly, on the
+surface they already hold — filling the `campaigns.type='birthday'` slot
+the schema has allowed since Phase 2 with no capture path ever built.
+
+### Strategic & creative direction
+
+The birthday message is hospitality's highest-converting send, and this is
+the cheapest possible way to earn the data: ask once, on the pass, only
+when unset, framed as a reward ("there's a free drink in it") rather than
+a form. No second touchpoint is needed — the diner-facing join flow stays
+deliberately one-field per its own doctrine; this is the pass page's job,
+not the join page's.
+
+**Privacy-by-design, non-negotiable**: store month + day only, **never
+year**. No age-bearing data exists to leak, to subpoena, or to misuse —
+this is a design constraint, not an oversight, and any future rework of
+this feature must preserve it.
+
+### Implementation spec
+
+1. **Migration**: `members.birthday_month SMALLINT CHECK (birthday_month
+BETWEEN 1 AND 12)`, `members.birthday_day SMALLINT CHECK (birthday_day
+BETWEEN 1 AND 31)` — both nullable, no cross-field "valid for this
+   month" constraint (Feb 30 typed by a client bug should fail the day-31
+   check trivially; exact calendar validity is enforced in the API layer,
+   not the DB, per the existing validate-in-code convention). RLS/grants
+   unchanged — the columns ride the existing `members` policies; only
+   server code ever writes them. Mirror to `aro_schema.sql`, apply via
+   MCP, advisor-check.
+2. **Ask block on the pass** (`app/pass/[serial]/page.tsx`): renders only
+   when both fields are null. Two small selects (month, day — no free-text
+   date input, no year field anywhere in the UI). Submits to the new
+   route; on success the block replaces itself with a quiet "🎂 saved —
+   see you then" line, matching the pass page's existing warm-confirmation
+   tone (no confetti — confetti stays reserved per the aro motion doctrine
+   for order-placed/reward-redeemed only).
+3. **Write path**: `POST /api/pass/[serial]/birthday` body
+   `{month: number, day: number}`. Resolve the member by `pass_serial`
+   (same bearer-token lookup `getPass()` in the page already performs —
+   reuse it, don't refetch differently). **One-shot**: reject with 409 if
+   either field is already set (corrections happen through owner HQ later,
+   not through the public bearer link — prevents a lost/shared pass link
+   from being used to grief a member's data). Validate real calendar
+   dates (reject e.g. month=2/day=30) with a small pure function in
+   `lib/` (not inline in the route) so it's independently testable.
+   Rate-limit via the same events-table window-counting pattern already
+   used in `/api/join` (a public bearer-token endpoint needs the same
+   abuse guard). Emit `member.birthday_set`.
+4. **Sends**: nothing sends from this task. The `winback`/`birthday`
+   campaign type becomes usable only once N1 (M-1 email nudges) ships;
+   N9 only makes the data exist.
+5. New event type: `member.birthday_set` (+ label).
+
+### ✅ Acceptance checklist
+
+- [ ] Fields are one-shot: a second POST with either field already set
+      returns 409 and does not overwrite.
+- [ ] Invalid calendar dates (Feb 30, day 32, month 13) rejected with a
+      clear 400, never silently clamped.
+- [ ] `grep -rn "birthday_year\|birthdate\|date_of_birth" app lib supabase`
+      returns nothing — proves no year/full-date field was ever added
+      anywhere in the stack.
+- [ ] Ask block disappears once set; reappears never (not on next visit,
+      not on next pass load).
+- [ ] Rate limit triggers on rapid-repeat POSTs from the same IP hash.
+- [ ] `verify-live.mjs` extended: anon cannot read `birthday_month`/`_day`
+      outside the server path (confirms no accidental public grant).
+- [ ] Migration mirrored + advisor-checked; build green.
+
+**Dependencies** — needs: nothing to build (capture is fully
+self-contained). Unlocks: N1's birthday campaign type once email sends
+exist; feeds N3's digest ("3 birthdays this week" is free once both exist).
 
 ---
 
@@ -865,6 +1019,139 @@ code already supports.
 
 ---
 
+# SECTION 6 — HORIZON 3: vision candidates (not buildable)
+
+_These are recorded so the vision isn't lost — not because they're next.
+**Stricter than ⚪ LATER**: ⚪ items at least get a direction paragraph an
+executor can eventually build from once their gate opens. Horizon 3 items
+get no direction spec at all, on purpose — writing one now would be false
+precision about problems that don't exist yet at this scale. Same
+preservation doctrine as `PHASE-6-COMMERCE-CANDIDATES.md`: capture the
+idea, state its trigger, move on. **No executor tier, including Fable 5,
+builds anything from this section without first writing a full strategic
+diagnosis the way `MASTER-PLAN-marketing-creative-studio.md` did for
+Marketing & Creative Studio** — that document is the model for how a
+Horizon 3 item earns its way into a real sequence._
+
+**H1 · Cross-venue intelligence flywheel.** Anonymized benchmarking
+("cafés your size see 34% two-week return; you're at 21%") turns the
+aggregate of many venues' loyalty graphs into a second moat no POS-led or
+ordering-led competitor can copy — they don't have cadence-level loyalty
+data to aggregate. **Trigger**: ≥20 live venues with real trade history.
+**Doctrine any future spec must inherit**: aggregate-only outputs, a
+minimum-venue-count floor before any comparison is shown (never expose a
+single other venue's numbers), per-venue opt-out, and never member-level
+data crossing venue boundaries under any circumstance.
+
+**H2 · Multi-location groups.** `organizations` already sits above
+`venues` in the schema, but cross-location loyalty (do points earned at
+location A work at location B?) has no designed answer. **Trigger**: the
+first real client opens a second location and asks. **Doctrine**: this is
+a product decision the owner makes deliberately when it's real, not a
+default — a hasty "yes, of course" could break the per-venue tenant
+isolation principle (`MASTER-PLAN-aro.md` §4.1) in ways that are expensive
+to unwind.
+
+**H3 · Gift cards / stored value.** The classic café cash-flow instrument
+(revenue in December, redemption in February) and a natural fit for the
+append-only ledger discipline already in place. **Trigger**: repeated real
+demand from live venues AND a liability/compliance review (stored value is
+regulated money in most jurisdictions). **Doctrine**: never built
+casually, never built before D-2-class compliance sign-off exists for it
+specifically — it is a heavier compliance surface than email/SMS.
+
+**H4 · Data export.** A CSV export of a venue's own members/visits inside
+HQ — the smallest item on this list (roughly a day of work) and the first
+candidate worth promoting into 🟡 the moment a sales conversation needs it.
+It makes the locked "100% merchant data ownership" positioning
+(`MASTER-PLAN-aro.md` §1) literally demonstrable instead of only claimed.
+**Trigger**: none required beyond bandwidth — this is the one Horizon 3
+item that could be promoted on request rather than waiting for a market
+signal.
+
+**H5 · Events & community layer.** Cupping nights, live music, classes —
+cafés already run these; RSVP-as-visits feeds the graph, and it's the
+warmest possible campaign content once N1 exists. The feature that would
+make aro read as a community operating system rather than a transaction
+one. **Trigger**: post-N1, real owner demand (not speculative).
+
+---
+
+# SECTION 7 — EXECUTOR MODEL ASSIGNMENTS
+
+_The owner's requirement, applied across every phase above: no task is
+assigned to a tier that would have to imagine its way through a gap in
+the spec. Detailed enough for a lower-tier model to execute perfectly;
+not detailed to the point of overkill on tasks that don't need it._
+
+### Tiering doctrine (binding — read before assigning or reassigning any task)
+
+1. **Fable 5 — architect tier.** Strategy, lean-spec authoring (turning a
+   strategic document into an executable `PLAN-NN`), resolving open design
+   decisions, and any task touching **money, consent, or compliance
+   design** (not just implementation — the _design_ of the safety check).
+   Fable's output is what gives lower tiers zero imagination to fill in;
+   Fable never delegates the writing of a spec it hasn't fully thought
+   through, the same standard this masterplan itself was held to.
+2. **Sonnet 5 / GPT 5.6 — senior executor tier.** Full-feature builds from
+   an executor-grade spec. This is the tier the whole corpus targets by
+   default — `MASTER-PLAN-aro.md`'s opening line says specs are written
+   "so a mid-tier model (Sonnet 5, GPT 5.6) can implement... without
+   judgment calls." **Floor tier for anything touching migrations, authz,
+   money, or consent code** — even when Fable designed the safety check,
+   Sonnet/GPT build the surrounding feature.
+3. **Kimi K3 / light tier — mechanical executor.** Reserved for tasks that
+   are simultaneously: (a) purely mechanical — a known transform applied
+   repeatedly, (b) pass/fail verifiable by grep or a single query, and
+   (c) zero design freedom — there is exactly one correct output per
+   input. **Never** assign this tier anything touching auth, money,
+   consent, migrations, or a public API surface, regardless of how small
+   the diff looks. N8 (HQ refit) is the only 🔴/🟡/⚪ task in this
+   masterplan that qualifies.
+4. **Escalate, never improvise.** Every phase inherits `MASTER-PLAN-aro.md`
+   §5's STOP-and-flag protocol. A lower-tier executor that hits a genuine
+   judgment call (a schema surprise, a contradiction between this doc and
+   the repo, an ambiguous edge case the spec didn't cover) escalates to
+   Fable 5 rather than guessing — guessing on a money/consent surface is
+   exactly the failure mode the tiering exists to prevent.
+5. **Review gates.** Every execution self-reviews with
+   `/code-review --level medium` pre-commit (existing house rule,
+   unchanged). Beyond that: Fable 5 personally reviews the specific
+   named surfaces called out per-task below (N1's eligibility query, N5's
+   once-only credit, N6's STOP webhook, N7's billing transitions) before
+   merge — regardless of which model wrote the code, because the risk
+   lives in the logic, not the author.
+
+### Assignment table
+
+| Task                                                                      | Spec author                                                                                   | Builder                                                                      | Why this split                                                                                                          |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| R1 lead-leak fix                                                          | Fable 5 (done, this doc)                                                                      | Sonnet 5 / GPT 5.6                                                           | Literal runbook; escalate to Fable only if steps 1–3 don't isolate the fault                                            |
+| R2 Stripe keys                                                            | Fable 5 (done)                                                                                | Sonnet 5 / GPT 5.6 (verification only)                                       | Owner does the env work; model work is a literal test-then-live sequence                                                |
+| R3 client websites                                                        | Fable 5 (`PLAN-05`, pre-written for this tier)                                                | Sonnet 5 / GPT 5.6                                                           | Spec chain already complete — no further authoring needed                                                               |
+| R4 Creative Studio                                                        | **Fable 5 must write `PLAN-07`** + the voice-doctrine prompt preamble                         | Sonnet 5 / GPT 5.6 builds from `PLAN-07`                                     | Prompt-writing that encodes taste is Fable-input, not executor-input                                                    |
+| N1 email nudges                                                           | **Fable 5 must write `PLAN-08`** + the eligibility-query compliance test                      | Sonnet 5 (never light-tier)                                                  | Consent-bearing infrastructure; Fable reviews the eligibility query + unsubscribe route pre-merge regardless of builder |
+| N2 site-copy                                                              | Fable 5 (done, small)                                                                         | Sonnet 5 / GPT 5.6                                                           | Fully specced, no open calls                                                                                            |
+| N3 digest delivery                                                        | Fable 5 (done, this doc, literal)                                                             | Sonnet 5 / GPT 5.6                                                           | New table + first cron justify mid-tier; spec is literal enough to need no further authoring                            |
+| N4 onboarding checklist                                                   | Fable 5 (done, this doc, literal)                                                             | Sonnet 5 / GPT 5.6                                                           | Read-model only, zero migration, low blast radius                                                                       |
+| N5 referral engine                                                        | Fable 5 (done, this doc, literal)                                                             | Sonnet 5 / GPT 5.6, **Fable pre-merge review of the once-only-credit logic** | Ledger double-credit is a real money leak even at café scale                                                            |
+| N6 SMS                                                                    | Fable 5 (points to §6 M-2)                                                                    | Sonnet 5, **Fable reviews STOP webhook + TCPA path pre-merge**               | Same risk class as N1; never light-tier                                                                                 |
+| N7 billing                                                                | **Fable 5 must write the full spec** when D-12 lands — currently **not buildable as written** | Sonnet 5, **Fable reviews webhook-driven status transitions pre-merge**      | Money surface; direction-level prose is not an executable spec                                                          |
+| N8 HQ refit                                                               | Fable 5 or Sonnet 5 writes the screen inventory                                               | **Kimi K3-class / light tier**                                               | Style-only diffs, grep-gated, mistake-evident — the one genuine light-tier task in this document                        |
+| N9 birthday capture                                                       | Fable 5 (done, this doc, literal)                                                             | Sonnet 5 / GPT 5.6                                                           | Small but consent/abuse-adjacent (one-shot guard) — not light-tier                                                      |
+| ⚪ L1–L6 (all)                                                            | **Fable 5 only**, when each gate opens                                                        | Not yet assigned                                                             | Direction paragraphs are Fable-input; no lower tier builds from them as written                                         |
+| Horizon 3 (all)                                                           | **Fable 5 only**, and only after writing a full strategic diagnosis                           | Not applicable                                                               | Not buildable at all — see Section 6's own rule                                                                         |
+| Misc: seed data extensions, doc formatting sweeps, string-hoisting passes | —                                                                                             | **Kimi K3-class / light tier**                                               | Grep-verifiable, zero design freedom, matches N8's profile                                                              |
+
+**The detail-level rule, stated once for reuse:** a task may only be
+assigned to a given tier if the spec it runs on leaves that tier zero
+imagination to fill in. Where this table says "Fable must write PLAN-NN
+first," that authoring step is part of the task's dependency chain, not an
+optional nicety — assigning the direction-level prose directly to a
+lower tier is the protocol violation this section exists to prevent.
+
+---
+
 ## How an executor consumes this document
 
 1. Read `MASTER-PLAN-aro.md` (§4/§5 binding) — then this document's vision
@@ -873,12 +1160,15 @@ code already supports.
 2. Systems marked "spec exists — execute as written" (R3, R4, N1, N2, N6)
    mean exactly that: the pointed-at document is the contract; this one
    adds only the listed deltas and resolutions.
-3. New-system specs here (R1, R2, N3, N4, N5) are executable directly, but
-   each still gets a lean `PLAN-NN` file + `BUILD-LOG` per the house
+3. New-system specs here (R1, R2, N3, N4, N5, N9) are executable directly,
+   but each still gets a lean `PLAN-NN` file + `BUILD-LOG` per the house
    pattern when its build starts.
-4. ⚪ items are NOT buildable from this document — each explicitly requires
-   a future full spec once its gate opens. Building L-tier work from the
-   direction paragraphs above is a protocol violation.
+4. ⚪ items and Horizon 3 items are NOT buildable from this document — ⚪
+   explicitly requires a future full spec once its gate opens; Horizon 3
+   requires a full strategic diagnosis before even that. Building either
+   from the paragraphs above is a protocol violation. Check **Section 7**
+   before assigning any task to a model — the tier a task is written for
+   is not optional, and the review gates it names are not skippable.
 5. Every schema-touching system extends `scripts/verify-live.mjs`. Every
    system emits its named events. Every acceptance checklist is pass/fail —
    a partially-green checklist is a not-done system.
