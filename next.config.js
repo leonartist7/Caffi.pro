@@ -3,7 +3,16 @@ const { withSentryConfig } = require('@sentry/nextjs')
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost'],
+    // Demo menu/reward photos use Unsplash; Storage uploads can be added later.
+    remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      {
+        protocol: 'https',
+        hostname: 'jjgccfrwjkwknyjtbtxa.supabase.co',
+        pathname: '/storage/v1/object/public/**',
+      },
+    ],
+    domains: ['localhost', 'images.unsplash.com'],
   },
   eslint: {
     // Warning: This allows production builds to successfully complete even if

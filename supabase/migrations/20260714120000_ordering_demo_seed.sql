@@ -5,14 +5,14 @@ VALUES
 ('c1000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','Bakery',20,true)
 ON CONFLICT (category_id) DO UPDATE SET name=EXCLUDED.name, display_order=EXCLUDED.display_order, is_active=true;
 
-INSERT INTO public.menu_items (item_id, venue_id, category_id, name, description, price_cents, is_active, sort_order, dietary_tags)
+INSERT INTO public.menu_items (item_id, venue_id, category_id, name, description, price_cents, image_url, is_active, sort_order, dietary_tags)
 VALUES
-('c2000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Flat White','Velvety espresso and steamed milk.',475,true,10,ARRAY['vegetarian']),
-('c2000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Americano','Double espresso lengthened with hot water.',375,true,20,ARRAY['vegan']),
-('c2000000-0000-4000-8000-000000000003','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Cold Brew','Slow-steeped, chocolatey and bright.',500,true,30,ARRAY['vegan']),
-('c2000000-0000-4000-8000-000000000004','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Butter Croissant','Flaky, cultured-butter pastry.',425,true,10,ARRAY['vegetarian']),
-('c2000000-0000-4000-8000-000000000005','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Morning Bun','Cinnamon, orange and raw sugar.',450,true,20,ARRAY['vegetarian'])
-ON CONFLICT (item_id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, price_cents=EXCLUDED.price_cents, is_active=true;
+('c2000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Flat White','Velvety espresso and steamed milk.',475,'https://images.unsplash.com/photo-1572442388796-11668a67e53d?auto=format&fit=crop&w=800&q=80',true,10,ARRAY['vegetarian']),
+('c2000000-0000-4000-8000-000000000002','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Americano','Double espresso lengthened with hot water.',375,'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80',true,20,ARRAY['vegan']),
+('c2000000-0000-4000-8000-000000000003','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000001','Cold Brew','Slow-steeped, chocolatey and bright.',500,'https://images.unsplash.com/photo-1517701604599-bb29b565090c?auto=format&fit=crop&w=800&q=80',true,30,ARRAY['vegan']),
+('c2000000-0000-4000-8000-000000000004','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Butter Croissant','Flaky, cultured-butter pastry.',425,'https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80',true,10,ARRAY['vegetarian']),
+('c2000000-0000-4000-8000-000000000005','a0000000-0000-4000-3000-000000000001','c1000000-0000-4000-8000-000000000002','Morning Bun','Cinnamon, orange and raw sugar.',450,'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80',true,20,ARRAY['vegetarian'])
+ON CONFLICT (item_id) DO UPDATE SET name=EXCLUDED.name, description=EXCLUDED.description, price_cents=EXCLUDED.price_cents, image_url=EXCLUDED.image_url, is_active=true;
 
 INSERT INTO public.modifier_groups (group_id, venue_id, item_id, name, min_select, max_select)
 VALUES
