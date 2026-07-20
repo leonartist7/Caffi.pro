@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { DEFAULT_SITE_PROFILE, parseSiteProfile, type SiteProfile } from '@/lib/site-profile'
 
 /**
  * Anonymous, sessionless client for PUBLIC venue lookups only (safe in
@@ -28,6 +29,7 @@ export interface Tenant {
   custom_domain?: string
   logo_url?: string
   primary_color?: string
+  site_profile: SiteProfile
   app_name?: string
   features_enabled?: {
     ordering?: boolean
@@ -79,6 +81,7 @@ function toTenant(v: VenueRow): Tenant {
     timezone: v.timezone ?? undefined,
     logo_url: (kit.logo_url as string | undefined) ?? undefined,
     primary_color: (kit.primary as string | undefined) ?? '#6b3410',
+    site_profile: parseSiteProfile(kit),
   }
 }
 
@@ -186,6 +189,7 @@ export async function getAllTenants(): Promise<Tenant[]> {
       tenant_id: v.venue_id,
       business_name: v.business_name,
       slug: v.slug,
+      site_profile: DEFAULT_SITE_PROFILE,
     }))
   } catch (err) {
     console.error('Failed to fetch tenants:', err)
