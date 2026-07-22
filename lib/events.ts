@@ -27,6 +27,8 @@ export type AroEventType =
   | 'client.created'
   | 'client.updated'
   | 'client.deleted'
+  | 'site.published'
+  | 'site.updated'
   | 'staff.updated'
   | 'staff.deactivated'
   | 'staff.pin_set'
@@ -80,6 +82,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'client.created': 'Client created',
   'client.updated': 'Client updated',
   'client.deleted': 'Client deleted',
+  'site.published': 'Website published',
+  'site.updated': 'Website updated',
   'staff.updated': 'Staff member updated',
   'staff.deactivated': 'Staff member deactivated',
   'staff.pin_set': 'Counter PIN set',

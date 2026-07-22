@@ -1,0 +1,61 @@
+# BUILD LOG — R3 Client Websites
+
+## Baseline
+
+- Branched `codex/r3-client-websites` from local `main` at `e448984`.
+- `npm run type-check`: passed.
+- `npm run build`: passed with the pre-existing webpack cache and Supabase Edge Runtime warnings.
+- Local Supabase credentials are not configured; authenticated/live checks remain explicitly pending.
+
+## Phase 1 — Marketing profile and API
+
+- Added defensive parsing for namespaced `brand_kit.site_profile`, capped gallery entries at six, and defaulted publishing off.
+- Extended public tenant and HQ client response shapes, including custom-domain data for accurate website URLs.
+- Extended the existing authorized client PATCH route with a normalized nested merge that preserves unrelated brand-kit fields.
+- Added labeled `site.published` and `site.updated` events while preserving `client.updated`.
+- Added server-only accessors for derived weekly hours and published-site enumeration.
+- Review: consolidated all brand-kit writes before assignment so a request that edits general branding and website fields cannot overwrite either change.
+- Verification: type-check passed after each TypeScript file; phase production build passed.
+
+## Phase 2 — Public site pages
+
+- Added the public `/site/[slug]` layout and home, menu, hours, and contact pages in the aro design system.
+- Disabled profiles short-circuit to a warm setup state; publishing now requires a non-empty tagline so an empty template cannot silently go live.
+- Reused `getStorefront` and `formatCents` for the printed menu, with no duplicate Supabase menu query.
+- Read only parsed weekly hours through the server accessor and gated ordering/booking links against real availability.
+- Added gallery, contact, social, canonical navigation, and safely escaped LocalBusiness JSON-LD behavior.
+- Review: removed invented fallback marketing copy, corrected internal site links for custom-domain canonical navigation, and hoisted all public strings.
+- Verification: type-check passed after each TypeScript file; production build passed; aro-color, inline-JSX-string, and duplicate-query grep gates passed.
+
+## Phase 3 — SEO and discovery
+
+- Added native Next.js sitemap and robots metadata routes.
+- Sitemap output is generated dynamically from service-role venue data and includes only enabled, non-killed sites with canonical home/menu/hours/contact URLs.
+- Added distinct page metadata, canonical URLs, Open Graph fields, optional gallery imagery, and enabled-site-only JSON-LD.
+- Review: forced the database-backed sitemap dynamic so builds without runtime Supabase credentials do not attempt to query live data during prerendering.
+- Verification: type-check and production build passed; the generated robots body allows crawling and references `/sitemap.xml`. Live sitemap membership remains pending a keyed environment.
+
+## Phase 4 — Website settings and custom domains
+
+- Added one real Website tab to Settings without changing the existing HQ visual system or module registry.
+- Added profile fields, six-item URL gallery editing, tagline-gated publishing, persisted-state preview behavior, and accurate public URL copy.
+- Switched custom-domain roots and clean content paths to the public site while preserving bare and slugged ordering/reservation routes.
+- Review: added server-side tagline enforcement in addition to the UI gate, trimmed empty gallery entries, and handled bare `/shop` explicitly to avoid `/shop/<slug>/shop` rewrites.
+- Verification: type-check passed after each TypeScript file and the production build passed with all new public and metadata routes present.
+
+## Phase 5 — Demo seed and owner guidance
+
+- Added an idempotent nested `site_profile` merge for The Roastery with complete copy, contact details, social links, three existing-pattern Unsplash images, and publishing enabled.
+- Added the owner-facing Google Business Profile onboarding guide covering claiming, verification, website/hours consistency, photos, and review upkeep.
+- Review: used a separate `UPDATE` after the conflict-safe venue insert so existing development databases receive the profile on repeat seed runs without replacing unrelated brand-kit fields.
+- Verification: SQL and documentation static review passed. Executing the seed twice against Supabase remains pending because this workspace has no local or live database credentials.
+
+## Final verification
+
+- `npm run type-check`: passed.
+- `npm run lint:strict`: passed with zero warnings or errors.
+- `npm run build`: passed; route output includes all four site pages, `/sitemap.xml`, and `/robots.txt`. The build retains only the pre-existing webpack cache and Supabase Edge Runtime warnings.
+- Pure profile tests passed for defensive defaults, trimming, six-image capping, publishing, main-domain canonicals, and custom-domain canonicals.
+- Static gates passed: no legacy/non-aro colour classes or inline user-visible JSX literals under `app/site/**`; no site-local menu query construction; no dependency or `lib/modules.ts` changes; middleware routing invariants present; diff whitespace clean.
+- Generated robots output allows all crawlers and points at the sitemap.
+- Not claimed without credentials: authenticated GET/PATCH role checks, activity-feed rows, live sitemap membership, seeded database idempotency, browser rendering against The Roastery data, and real custom-domain host rewrites.

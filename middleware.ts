@@ -48,16 +48,17 @@ export async function middleware(request: NextRequest) {
     hostname.endsWith('.caffi.pro') ||
     hostname === 'app.aro.club'
 
-  // Custom domain → rewrite to slug-based public routes (shop / reserve).
-  // Do not exclude /reserve here: bare /reserve must enter this block (startsWith
-  // '/reserve/' alone would miss it and fall through to /shop/<slug>/reserve → 404).
-  if (
-    !isMainDomain &&
-    !pathname.startsWith('/shop/') &&
-    !pathname.startsWith('/join') &&
-    !pathname.startsWith('/pass') &&
-    supabase
-  ) {
+  // Custom domain → the venue website is the default public surface. Internal
+  // slugged routes remain valid; clean website paths are rewritten below.
+  if (!isMainDomain && !pathname.startsWith('/join') && !pathname.startsWith('/pass') && supabase) {
+    if (
+      pathname.startsWith('/shop/') ||
+      pathname.startsWith('/reserve/') ||
+      pathname.startsWith('/site/')
+    ) {
+      return response
+    }
+
     try {
       const { data: venue } = await supabase
         .from('venues')
@@ -67,12 +68,15 @@ export async function middleware(request: NextRequest) {
 
       if (venue?.slug) {
         const url = request.nextUrl.clone()
-        // Spec: pathname === '/reserve' || startsWith('/reserve/') → /reserve/${slug}
-        if (pathname === '/reserve' || pathname.startsWith('/reserve/')) {
+        if (pathname === '/shop') {
+          url.pathname = `/shop/${venue.slug}`
+          return NextResponse.rewrite(url)
+        }
+        if (pathname === '/reserve') {
           url.pathname = `/reserve/${venue.slug}`
           return NextResponse.rewrite(url)
         }
-        url.pathname = `/shop/${venue.slug}${pathname}`
+        url.pathname = `/site/${venue.slug}${pathname === '/' ? '' : pathname}`
         return NextResponse.rewrite(url)
       }
       return NextResponse.rewrite(new URL('/404', request.url))

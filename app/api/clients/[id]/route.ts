@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAroAdmin, requireRowVenueRole } from '@/lib/authz'
 import { emitEvent } from '@/lib/events'
 import { CLIENT_COLUMNS, toTenantShape } from '@/lib/clients'
+import { parseSiteProfile, type SiteProfile } from '@/lib/site-profile'
 
 /**
  * GET/PATCH for a single client (venue) — venue's own owner/manager or
@@ -52,6 +53,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     primary_color?: string
     contact_phone?: string
     reservation_config?: Record<string, unknown>
+    site_profile?: Partial<SiteProfile>
   }
   try {
     body = await request.json()
@@ -78,13 +80,52 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       .replace(/^-+|-+$/g, '')
   }
   if (body.contact_phone !== undefined) update.owner_phone = body.contact_phone || null
+  const existingBrandKit = (existing.brand_kit as Record<string, unknown>) ?? {}
+  let nextBrandKit = existingBrandKit
+  let brandKitChanged = false
+  let siteEventType: 'site.published' | 'site.updated' | null = null
+  let nextSiteProfile: SiteProfile | null = null
+
   if (body.primary_color !== undefined || body.logo_url !== undefined) {
-    update.brand_kit = {
-      ...((existing.brand_kit as Record<string, unknown>) ?? {}),
+    nextBrandKit = {
+      ...nextBrandKit,
       ...(body.primary_color !== undefined ? { primary: body.primary_color } : {}),
       ...(body.logo_url !== undefined ? { logo_url: body.logo_url || null } : {}),
     }
+    brandKitChanged = true
   }
+  if (body.site_profile !== undefined) {
+    if (
+      !body.site_profile ||
+      typeof body.site_profile !== 'object' ||
+      Array.isArray(body.site_profile)
+    ) {
+      return NextResponse.json({ error: 'site_profile must be an object' }, { status: 400 })
+    }
+    const previousSiteProfile = parseSiteProfile(existingBrandKit)
+    const existingSiteProfile =
+      existingBrandKit.site_profile &&
+      typeof existingBrandKit.site_profile === 'object' &&
+      !Array.isArray(existingBrandKit.site_profile)
+        ? (existingBrandKit.site_profile as Record<string, unknown>)
+        : {}
+    nextSiteProfile = parseSiteProfile({
+      site_profile: { ...existingSiteProfile, ...body.site_profile },
+    })
+    if (nextSiteProfile.site_enabled && !nextSiteProfile.tagline) {
+      return NextResponse.json(
+        { error: 'Add a tagline before publishing the site' },
+        { status: 400 }
+      )
+    }
+    nextBrandKit = { ...nextBrandKit, site_profile: nextSiteProfile }
+    brandKitChanged = true
+    siteEventType =
+      !previousSiteProfile.site_enabled && nextSiteProfile.site_enabled
+        ? 'site.published'
+        : 'site.updated'
+  }
+  if (brandKitChanged) update.brand_kit = nextBrandKit
   if (body.reservation_config !== undefined && body.reservation_config !== null) {
     // Merge into existing config so partial UI writes don't wipe defaults.
     update.reservation_config = {
@@ -111,6 +152,14 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     venueId: params.id,
     payload: { fields: Object.keys(update) },
   })
+  if (siteEventType && nextSiteProfile) {
+    void emitEvent({
+      type: siteEventType,
+      actor: `user:${gate.ctx.user.id}`,
+      venueId: params.id,
+      payload: { site_enabled: nextSiteProfile.site_enabled },
+    })
+  }
   return NextResponse.json({ ok: true })
 }
 
