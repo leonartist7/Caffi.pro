@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { Sparkles } from 'lucide-react'
 import { getTenantBySlug } from '@/lib/get-tenant'
 import { SiteShell } from '@/components/site/SiteShell'
+import { buildLocalBusinessJsonLd, getSiteBaseUrl } from '@/lib/site-structured-data'
 
 /**
  * Public, unauthenticated route group (like /shop and /reserve) — not under
@@ -36,5 +37,18 @@ export default async function SiteLayout({
     )
   }
 
-  return <SiteShell tenant={tenant}>{children}</SiteShell>
+  const jsonLd = buildLocalBusinessJsonLd(tenant, `${getSiteBaseUrl()}/site/${tenant.slug}`)
+
+  return (
+    <>
+      {/* Skipped entirely (no script tag) for a disabled site — handled by
+          the short-circuit above, this only ever renders once enabled. */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <SiteShell tenant={tenant}>{children}</SiteShell>
+    </>
+  )
 }
