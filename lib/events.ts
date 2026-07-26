@@ -21,6 +21,8 @@ export type AroEventType =
   | 'message.sent'
   | 'ai_draft.created'
   | 'ai_draft.approved'
+  | 'ai_draft.edited'
+  | 'ai_draft.skipped'
   | 'invite.created'
   | 'invite.accepted'
   | 'counter.login'
@@ -74,6 +76,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'message.sent': 'Message sent',
   'ai_draft.created': 'AI draft created',
   'ai_draft.approved': 'AI draft approved',
+  'ai_draft.edited': 'AI draft edited',
+  'ai_draft.skipped': 'AI draft skipped',
   'invite.created': 'Staff invited',
   'invite.accepted': 'Staff invite accepted',
   'counter.login': 'Counter login',
