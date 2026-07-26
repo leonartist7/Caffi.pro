@@ -72,6 +72,18 @@ export async function middleware(request: NextRequest) {
           url.pathname = `/reserve/${venue.slug}`
           return NextResponse.rewrite(url)
         }
+        // PLAN-05 Phase 4: the site becomes the default landing surface for a
+        // custom domain — bare '/' and anything that isn't an explicit /shop
+        // or /reserve link goes to /site/<slug> instead of straight into the
+        // ordering storefront. /shop and /reserve stay directly reachable
+        // (the site's own CTA buttons link there).
+        if (
+          pathname === '/' ||
+          (!pathname.startsWith('/shop') && !pathname.startsWith('/reserve'))
+        ) {
+          url.pathname = `/site/${venue.slug}${pathname === '/' ? '' : pathname}`
+          return NextResponse.rewrite(url)
+        }
         url.pathname = `/shop/${venue.slug}${pathname}`
         return NextResponse.rewrite(url)
       }
