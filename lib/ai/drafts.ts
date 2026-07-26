@@ -85,14 +85,22 @@ export async function findCurrentWeekDigest(
   return data ?? null
 }
 
-/** Pending drafts for the studio list. Digests are excluded — they render separately. */
-export async function listOpenDrafts(venueId: string, limit = 20): Promise<StoredDraft[]> {
+/**
+ * Drafts for the studio list. Digests are excluded — they render in their own
+ * panel — and skipped drafts stay gone.
+ *
+ * Approved and edited drafts are deliberately included rather than filtered
+ * out the way /home's inbox filters them: approving a caption means "this is
+ * good, copy it out" (§3.3), so a caption that disappeared the moment it was
+ * approved would take the copy button with it and lose the owner their text.
+ */
+export async function listStudioDrafts(venueId: string, limit = 20): Promise<StoredDraft[]> {
   const admin = getSupabaseAdmin()
   const { data } = await admin
     .from('ai_drafts')
     .select(DRAFT_COLUMNS)
     .eq('venue_id', venueId)
-    .eq('status', 'draft')
+    .in('status', ['draft', 'approved', 'edited'])
     .neq('kind', 'digest')
     .order('created_at', { ascending: false })
     .limit(limit)

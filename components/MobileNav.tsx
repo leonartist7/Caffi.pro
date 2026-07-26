@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from '@/contexts/ThemeContext'
 import { Menu as MenuIcon, X, Sun, Moon, Coffee } from 'lucide-react'
-import { MODULES, HQ_ITEMS } from '@/lib/modules'
+import { hqModules, HQ_ITEMS } from '@/lib/modules'
 
 interface NavItem {
   name: string
@@ -18,7 +18,7 @@ function buildNavItems(isAroAdmin: boolean): NavItem[] {
   const hq: NavItem[] = isAroAdmin
     ? HQ_ITEMS.map(i => ({ name: i.label, href: i.href, icon: i.icon }))
     : []
-  const modules: NavItem[] = MODULES.map(m => ({
+  const modules: NavItem[] = hqModules().map(m => ({
     name: m.label,
     href: m.href,
     icon: m.icon,

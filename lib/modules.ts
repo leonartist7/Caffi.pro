@@ -14,6 +14,7 @@ import {
   Tag,
   Bell,
   CalendarDays,
+  Sparkles,
 } from 'lucide-react'
 
 /**
@@ -38,6 +39,7 @@ export type ModuleKey =
   | 'menu'
   | 'orders'
   | 'reservations'
+  | 'creative'
   | 'coupons'
   | 'notifications'
   | 'locations'
@@ -48,6 +50,16 @@ export interface ModuleDef {
   href: string
   icon: ElementType
   status: 'live' | 'coming_soon'
+  /**
+   * Which shell renders this module's nav entry. Everything predating
+   * Creative Studio lives in the HQ (dashboard) group; `creative` is the
+   * first module that belongs to the venue owner's own (owner) shell. The
+   * distinction matters because the two route groups have different layout
+   * gates — an aro_admin following an (owner) link gets bounced to /counter,
+   * so HQ nav must not render owner-surface modules. Registration here is
+   * still what lets features_enabled gate the module for tiering.
+   */
+  surface?: 'hq' | 'owner'
 }
 
 /**
@@ -70,6 +82,14 @@ export const MODULES: ModuleDef[] = [
     href: '/reservations',
     icon: CalendarDays,
     status: 'live',
+  },
+  {
+    key: 'creative',
+    label: 'Creative',
+    href: '/creative',
+    icon: Sparkles,
+    status: 'live',
+    surface: 'owner',
   },
   { key: 'coupons', label: 'Coupons', href: '/coupons', icon: Tag, status: 'coming_soon' },
   {
@@ -105,4 +125,9 @@ export function enabledModules(venue?: {
     if (m.status === 'coming_soon') return true
     return venue?.features_enabled?.[m.key] !== false
   })
+}
+
+/** Modules whose nav entry belongs to the HQ (dashboard) shell. */
+export function hqModules(): ModuleDef[] {
+  return MODULES.filter(m => (m.surface ?? 'hq') === 'hq')
 }

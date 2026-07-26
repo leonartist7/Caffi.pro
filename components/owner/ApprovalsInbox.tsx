@@ -10,12 +10,23 @@ export interface AiDraft {
 
 /**
  * Approvals inbox: reads ai_drafts where status='draft' (passed in from the
- * server component). Empty until a later AI-drafting phase writes rows —
- * the empty state is deliberately warm, not a blank box.
+ * server component). Creative Studio (PLAN-07) is what finally writes rows
+ * into this table — the empty state is deliberately warm, not a blank box.
+ *
+ * `kinds` narrows the list to specific draft kinds. Creative Studio has its
+ * own richer card surface, so this stayed one component with a filter rather
+ * than being forked into two that would drift apart.
  */
-export function ApprovalsInbox({ initialDrafts }: { initialDrafts: AiDraft[] }) {
-  const [drafts, setDrafts] = useState(initialDrafts)
+export function ApprovalsInbox({
+  initialDrafts,
+  kinds,
+}: {
+  initialDrafts: AiDraft[]
+  kinds?: string[]
+}) {
+  const [allDrafts, setDrafts] = useState(initialDrafts)
   const [busy, setBusy] = useState<string | null>(null)
+  const drafts = kinds ? allDrafts.filter(d => kinds.includes(d.kind)) : allDrafts
 
   async function act(id: string, status: 'approved' | 'skipped') {
     setBusy(id)
