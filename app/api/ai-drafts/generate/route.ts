@@ -20,7 +20,7 @@ import {
 
 /**
  * POST /api/ai-drafts/generate — the Creative Studio generation trigger
- * (PLAN-07 Phase 3). Body: { venueId, kind: 'social_caption'|'digest', brief? }
+ * (PLAN-07 Phase 3). Body: { venue_id, kind: 'social_caption'|'digest', brief? }
  *
  * Step order is load-bearing: authorize before reading the body, validate
  * before spending a generation call, and check the digest-already-exists case
@@ -30,7 +30,7 @@ import {
 const GENERATABLE_KINDS: GeneratableDraftKind[] = ['social_caption', 'digest']
 
 export async function POST(request: NextRequest) {
-  let body: { venueId?: string; kind?: string; brief?: string }
+  let body: { venue_id?: string; kind?: string; brief?: string }
   try {
     body = await request.json()
   } catch {
@@ -38,8 +38,9 @@ export async function POST(request: NextRequest) {
   }
 
   // Authorize before touching context, the provider, or the database. The
-  // client-supplied venueId is authz input, never trusted (master plan §4.1).
-  const gate = await requireVenueRole(body.venueId, ['owner', 'manager'])
+  // client-supplied venue_id is authz input, never trusted (master plan §4.1);
+  // everything downstream uses gate.ctx.venueId, not the body value.
+  const gate = await requireVenueRole(body.venue_id, ['owner', 'manager'])
   if (!gate.ok) return gate.response
   const venueId = gate.ctx.venueId
 

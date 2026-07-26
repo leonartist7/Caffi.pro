@@ -89,7 +89,7 @@ export function CreativeStudio({
         const res = await fetch('/api/ai-drafts/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ venueId, kind, brief: text }),
+          body: JSON.stringify({ venue_id: venueId, kind, brief: text }),
         })
         return (await res.json()) as GenerateResponse
       } catch {
