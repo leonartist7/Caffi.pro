@@ -7,7 +7,7 @@ import { createInvite } from '@/lib/invites'
  * - owners can invite owner/manager/staff (multiple owners per venue is
  *   explicitly supported)
  * - managers can invite staff only
- * Email delivery arrives with Resend in Phase 4 — until then the invite
+ * Email delivery arrives with Resend in Phase 3 (M-1) — until then the invite
  * link is returned to the caller to share manually (visible stub, not a
  * fake send).
  */
@@ -35,9 +35,9 @@ export async function POST(request: NextRequest) {
           membership_id: result.invite.membership_id,
           email: result.invite.email,
           role: result.invite.role,
-          // Phase 4 sends this by email (Resend). Until then: share manually.
+          // Phase 3 M-1 sends this by email (Resend). Until then: share manually.
           invite_url: `${siteUrl}/join-team/${result.invite.invite_token}`,
-          email_delivery: 'STUBBED — needs RESEND_API_KEY (Phase 4)',
+          email_delivery: 'STUBBED — needs RESEND_API_KEY (Phase 3)',
         },
       },
       { status: 201 }

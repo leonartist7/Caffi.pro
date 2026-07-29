@@ -11,6 +11,16 @@ import { emitEvent } from '@/lib/events'
  */
 const VALID = ['approved', 'edited', 'skipped'] as const
 
+/**
+ * Every status used to emit `ai_draft.approved`, so the activity feed
+ * reported skips and edits as approvals. One event type per outcome.
+ */
+const EVENT_BY_STATUS = {
+  approved: 'ai_draft.approved',
+  edited: 'ai_draft.edited',
+  skipped: 'ai_draft.skipped',
+} as const
+
 export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   const gate = await requireRowVenueRole(
     'ai_drafts',
@@ -52,7 +62,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
   }
 
   void emitEvent({
-    type: 'ai_draft.approved',
+    type: EVENT_BY_STATUS[body.status as (typeof VALID)[number]],
     actor: `user:${gate.ctx.user.id}`,
     venueId: gate.ctx.venueId,
     payload: { draft_id: params.id, status: body.status },
