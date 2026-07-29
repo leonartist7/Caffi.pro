@@ -15,6 +15,22 @@ won**: every claim below was verified by reading the repository on
 `PLAN-NN`. Nothing here overrides `MASTER-PLAN-aro.md` §4/§5; conflicts
 stop the work.
 
+> **Owner note, 2026-07-29 (post-draft): executor substitution — Fable 5 → Opus 5.**
+> Everywhere this document or `MASTER-PLAN-v2-operating-system.md` §7 says
+> **"Fable 5"** as the required architect-tier author/reviewer (PLAN-10's
+> migration + RLS design, PLAN-12's redemption idempotency, PLAN-15's
+> pre-merge once-only-credit review, PLAN-18's consent/revocation design,
+> PLAN-24's depletion idempotency, PLAN-36's tip-allocation math, and any
+> other "Fable 5 authors/reviews" line in §7 of either document), read
+> **"Opus 5"** instead. The owner has chosen to run architect-tier work on
+> Opus 5 for this batch. Nothing else about the tiering doctrine changes —
+> the *reason* a task is architect-tier (money, consent, or cross-cutting
+> design) is unchanged, only which model fills that seat. A lane that hits
+> a "Fable 5" line should treat it as "Opus 5" and either escalate to an
+> Opus 5 session/agent for that specific design step, or stop and flag if
+> none is available — never build the architecture itself on Sonnet-tier
+> judgment.
+
 ---
 
 ## §0 — Two facts about this document's own inputs
