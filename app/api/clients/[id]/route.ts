@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { requireAroAdmin, requireRowVenueRole } from '@/lib/authz'
 import { emitEvent } from '@/lib/events'
 import { CLIENT_COLUMNS, toTenantShape } from '@/lib/clients'
+import { SITE_GALLERY_MAX, type SiteProfile } from '@/lib/site-profile'
 
 /**
  * GET/PATCH for a single client (venue) — venue's own owner/manager or
@@ -12,6 +13,17 @@ import { CLIENT_COLUMNS, toTenantShape } from '@/lib/clients'
  * venue is a platform-operator action, not something an owner triggers
  * via a single API call.
  */
+
+/**
+ * Caps gallery length server-side even though the UI already caps it —
+ * the client isn't trusted for anything past this route's own gate.
+ * Everything else in the patch passes through verbatim; parseSiteProfile
+ * on read is what actually normalizes types, this just bounds the array.
+ */
+function sanitizeSiteProfilePatch(patch: Partial<SiteProfile>): Partial<SiteProfile> {
+  if (!Array.isArray(patch.gallery)) return patch
+  return { ...patch, gallery: patch.gallery.slice(0, SITE_GALLERY_MAX) }
+}
 
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
   const gate = await requireRowVenueRole(
@@ -52,6 +64,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     primary_color?: string
     contact_phone?: string
     reservation_config?: Record<string, unknown>
+    site_profile?: Partial<SiteProfile>
   }
   try {
     body = await request.json()
@@ -78,11 +91,26 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       .replace(/^-+|-+$/g, '')
   }
   if (body.contact_phone !== undefined) update.owner_phone = body.contact_phone || null
-  if (body.primary_color !== undefined || body.logo_url !== undefined) {
+  if (
+    body.primary_color !== undefined ||
+    body.logo_url !== undefined ||
+    body.site_profile !== undefined
+  ) {
+    const existingBrandKit = (existing.brand_kit as Record<string, unknown>) ?? {}
     update.brand_kit = {
-      ...((existing.brand_kit as Record<string, unknown>) ?? {}),
+      ...existingBrandKit,
       ...(body.primary_color !== undefined ? { primary: body.primary_color } : {}),
       ...(body.logo_url !== undefined ? { logo_url: body.logo_url || null } : {}),
+      // Namespaced under site_profile, never flattened onto brand_kit, so it
+      // can never collide with `logo_url`/`primary` (lib/site-profile.ts).
+      ...(body.site_profile !== undefined
+        ? {
+            site_profile: {
+              ...((existingBrandKit.site_profile as Record<string, unknown>) ?? {}),
+              ...sanitizeSiteProfilePatch(body.site_profile),
+            },
+          }
+        : {}),
     }
   }
   if (body.reservation_config !== undefined && body.reservation_config !== null) {

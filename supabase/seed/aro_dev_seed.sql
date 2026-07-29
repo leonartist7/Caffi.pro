@@ -246,3 +246,26 @@ INSERT INTO public.waitlist_entries (
 INSERT INTO public.delivery_zones (zone_id, venue_id, name, fee_cents, min_order_cents, postal_prefixes, is_active)
 VALUES ('c6000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Calgary core',500,2000,ARRAY['T2N','T2P','T2R'],true)
 ON CONFLICT (zone_id) DO UPDATE SET name=EXCLUDED.name, fee_cents=EXCLUDED.fee_cents, min_order_cents=EXCLUDED.min_order_cents, postal_prefixes=EXCLUDED.postal_prefixes, is_active=true;
+
+-- PLAN-05 Phase 5: site_profile, namespaced inside brand_kit (lib/site-profile.ts).
+-- `||` merges into the existing brand_kit rather than the `ON CONFLICT DO NOTHING`
+-- venue insert above, which only ever fires once — this UPDATE is what stays
+-- idempotent across reseeds and never clobbers primary/background/voice/logo_url.
+UPDATE venues
+SET brand_kit = brand_kit || jsonb_build_object(
+  'site_profile', jsonb_build_object(
+    'tagline', 'Third-wave coffee, no pretense.',
+    'about', 'The Roastery started as a single Kensington storefront in 2019 — one espresso machine, a hand grinder, and a promise to never rush a pour.' || chr(10) || chr(10) || 'Today we still roast in small batches, source direct from three farms we visit every year, and know most of our regulars by their order before they reach the counter.',
+    'address', '123 10 St NW, Calgary, AB T2N 1V8',
+    'phone_display', '(403) 555-0142',
+    'instagram_url', 'https://instagram.com/theroasteryyyc',
+    'facebook_url', null,
+    'gallery', jsonb_build_array(
+      'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1442512595331-e89e73853f31?auto=format&fit=crop&w=800&q=80'
+    ),
+    'site_enabled', true
+  )
+)
+WHERE venue_id = 'a0000000-0000-4000-3000-000000000001';

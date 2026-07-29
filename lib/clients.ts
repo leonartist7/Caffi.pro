@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { parseSiteProfile } from '@/lib/site-profile'
+
 /**
  * Shared by /api/clients and /api/clients/[id] — Next.js route files can
  * only export HTTP method handlers (GET/POST/...), so this couldn't live
@@ -40,5 +42,6 @@ export function toTenantShape(v: ClientRow) {
     logo_url: (kit.logo_url as string | undefined) ?? null,
     primary_color: (kit.primary as string | undefined) ?? null,
     reservation_config: v.reservation_config ?? null,
+    site_profile: parseSiteProfile(v.brand_kit),
   }
 }
