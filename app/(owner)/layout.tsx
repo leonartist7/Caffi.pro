@@ -1,12 +1,15 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { resolveOwnerVenueId } from '@/lib/owner-stats'
+import { getImpersonatedVenueId } from '@/lib/impersonation'
 import { OwnerShell } from './owner-shell'
 
 /**
  * (owner) route group — server-gated like (dashboard), plus a role check:
- * owner/manager only. Staff who wander here (e.g. bookmark) get sent to
- * /counter, not a 403 wall — the wrong door, not a locked one.
+ * owner/manager only, OR an aro_admin actively impersonating a venue
+ * (PLAN-09). Staff who wander here (e.g. bookmark) get sent to /counter,
+ * not a 403 wall — the wrong door, not a locked one.
  *
  * Uses getSession() (cookie-local, no network) rather than getUser() —
  * middleware.ts already did the authoritative getUser() check + cookie
@@ -29,11 +32,37 @@ export default async function OwnerLayout({ children }: { children: React.ReactN
   }
   if (!userId) redirect('/login')
 
-  // resolveOwnerVenueId only matches owner/manager memberships — staff-only
-  // (or aro_admin, who belongs in the HQ (dashboard) group) resolves to
-  // null here, same as no membership at all.
-  const venueId = await resolveOwnerVenueId(userId)
+  // Impersonation checked first: it only ever resolves for a request that
+  // carries a cookie set by the requireAroAdmin()-gated route, and every
+  // read re-verifies the caller is still aro_admin — a stale/forged/expired
+  // cookie returns null and falls straight through to the unchanged
+  // owner/manager check below.
+  const impersonatedVenueId = await getImpersonatedVenueId(userId)
+
+  let venueId: string | null
+  let impersonating: { venueName: string } | null = null
+
+  if (impersonatedVenueId) {
+    venueId = impersonatedVenueId
+    const admin = getSupabaseAdmin()
+    const { data: venue } = await admin
+      .from('venues')
+      .select('business_name')
+      .eq('venue_id', impersonatedVenueId)
+      .maybeSingle()
+    impersonating = { venueName: venue?.business_name ?? 'this venue' }
+  } else {
+    // resolveOwnerVenueId only matches owner/manager memberships — staff-only
+    // (or aro_admin with no active impersonation) resolves to null here,
+    // same as no membership at all.
+    venueId = await resolveOwnerVenueId(userId)
+  }
+
   if (!venueId) redirect('/counter')
 
-  return <OwnerShell venueId={venueId}>{children}</OwnerShell>
+  return (
+    <OwnerShell venueId={venueId} impersonating={impersonating}>
+      {children}
+    </OwnerShell>
+  )
 }
