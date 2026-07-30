@@ -40,6 +40,7 @@ export default function MembersPage() {
   const [sort, setSort] = useState<SortKey>('recency_desc')
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
+  const [matchedCount, setMatchedCount] = useState(0)
   const [statusCounts, setStatusCounts] = useState<Record<Status, number>>({
     new: 0,
     regular: 0,
@@ -76,6 +77,7 @@ export default function MembersPage() {
         if (!response.ok) throw new Error(body.error || 'Failed to load members')
         setMembers(body.members ?? [])
         setTotal(body.total ?? 0)
+        setMatchedCount(body.matchedCount ?? 0)
         setStatusCounts(body.statusCounts ?? { new: 0, regular: 0, fading: 0, lost: 0 })
         setHasMore(Boolean(body.hasMore))
       } catch (error) {
@@ -102,7 +104,7 @@ export default function MembersPage() {
 
   const filterCount = (f: (typeof FILTERS)[number]) =>
     f === 'all' ? total : statusCounts[f as Status]
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(matchedCount / PAGE_SIZE))
 
   return (
     <div className="space-y-6">
@@ -201,7 +203,8 @@ export default function MembersPage() {
           </div>
           <div className="flex flex-col items-center justify-between gap-3 border-t border-aro-hairline pt-4 sm:flex-row">
             <p className="text-sm text-aro-muted">
-              Page {page} of {pageCount} · {total} total
+              Page {page} of {pageCount} · {matchedCount} match
+              {matchedCount === 1 ? '' : 'es'}
             </p>
             <div className="flex gap-2">
               <button

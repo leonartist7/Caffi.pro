@@ -2,8 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireVenueRole } from '@/lib/authz'
 import { listMembersPage, type MemberSort } from '@/lib/owner-stats'
 
-const STATUSES = new Set(['new', 'regular', 'fading', 'lost'])
+type MemberStatus = 'new' | 'regular' | 'fading' | 'lost'
+const STATUSES = new Set<MemberStatus>(['new', 'regular', 'fading', 'lost'])
 const SORTS = new Set<MemberSort>(['recency_desc', 'recency_asc', 'name_asc'])
+
+function parseStatus(value: string | undefined): MemberStatus | undefined {
+  return value && (STATUSES as Set<string>).has(value) ? (value as MemberStatus) : undefined
+}
 
 export async function GET(request: NextRequest) {
   const venueId = request.nextUrl.searchParams.get('venue_id')
@@ -18,7 +23,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const result = await listMembersPage(gate.ctx.venueId, {
-      status: status && STATUSES.has(status) ? (status as never) : undefined,
+      status: parseStatus(status),
       search,
       sort: sortParam && SORTS.has(sortParam as MemberSort) ? (sortParam as MemberSort) : undefined,
       page: Number.isFinite(pageParam) ? pageParam : 1,
@@ -27,6 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       members: result.rows,
       total: result.total,
+      matchedCount: result.matchedCount,
       statusCounts: result.statusCounts,
       page: result.page,
       pageSize: result.pageSize,

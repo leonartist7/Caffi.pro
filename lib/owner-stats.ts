@@ -109,7 +109,10 @@ export interface ListMembersOptions {
 
 export interface ListMembersResult {
   rows: RegularRow[]
+  /** Grand venue total (sum of statusCounts) — unaffected by search/status filter. For the header count and the "all" chip. */
   total: number
+  /** Rows matching the current search + status filter — the basis for pagination (page count, hasMore). Equals `total` when no filter is active. */
+  matchedCount: number
   statusCounts: Record<'new' | 'regular' | 'fading' | 'lost', number>
   page: number
   pageSize: number
@@ -126,8 +129,9 @@ function escapeOrValue(value: string): string {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 }
 
+/** Escapes ILIKE wildcards AND the escape character itself, then wraps as a %contains% pattern. */
 function toIlikePattern(term: string): string {
-  return `%${term.replace(/[%_]/g, c => `\\${c}`)}%`
+  return `%${term.replace(/[\\%_]/g, c => `\\${c}`)}%`
 }
 
 /**
@@ -190,7 +194,7 @@ export async function listMembersPage(
     if (searchError) throw new Error(`listMembersPage search failed: ${searchError.message}`)
     searchMemberIds = (matches ?? []).map(m => m.member_id)
     if (searchMemberIds.length === 0) {
-      return { rows: [], total, statusCounts, page, pageSize, hasMore: false }
+      return { rows: [], total, matchedCount: 0, statusCounts, page, pageSize, hasMore: false }
     }
   }
 
@@ -206,7 +210,11 @@ export async function listMembersPage(
   if (searchMemberIds) query = query.in('member_id', searchMemberIds)
 
   if (sort === 'name_asc') {
-    query = query.order('full_name', { referencedTable: 'members', ascending: true })
+    // NOT `{ referencedTable: 'members' }` — per postgrest-js's own docs,
+    // that option only reorders the nested array *within* each parent row.
+    // Sorting the parent (member_status) rows by an embedded column needs
+    // the dotted `table(column)` form as the order target itself.
+    query = query.order('members(full_name)', { ascending: true })
   } else {
     query = query.order('days_since_last', {
       ascending: sort === 'recency_asc',
@@ -242,14 +250,20 @@ export async function listMembersPage(
     }
   })
 
-  const matchedTotal = count ?? rows.length
+  // `count` from THIS query is the authoritative matched total for whatever
+  // filters are active — `matchedCount` and `hasMore` both derive from it,
+  // so pagination math can never disagree with the "Next" button's enabled
+  // state. `total` (the grand venue count, from statusCounts above) is a
+  // separate, deliberately unfiltered number for the header display.
+  const matchedCount = count ?? rows.length
   return {
     rows,
-    total: searchMemberIds || opts.status ? matchedTotal : total,
+    total,
+    matchedCount,
     statusCounts,
     page,
     pageSize,
-    hasMore: from + rows.length < matchedTotal,
+    hasMore: from + rows.length < matchedCount,
   }
 }
 

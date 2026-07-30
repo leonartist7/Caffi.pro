@@ -16,8 +16,10 @@ export function RegularsList({ venueId }: { venueId: string }) {
   const [page, setPage] = useState(1)
   const [rows, setRows] = useState<RegularRow[]>([])
   const [total, setTotal] = useState(0)
+  const [matchedCount, setMatchedCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -41,10 +43,18 @@ export function RegularsList({ venueId }: { venueId: string }) {
         if (!response.ok) throw new Error(body.error || 'Failed to load regulars')
         setRows(body.members ?? [])
         setTotal(body.total ?? 0)
+        setMatchedCount(body.matchedCount ?? 0)
         setHasMore(Boolean(body.hasMore))
-      } catch {
-        // Owner-facing surface: fail quiet, keep last-known list rather than
-        // a jarring error toast on a page checked constantly during service.
+        setLoadFailed(false)
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          // Owner-facing surface: no toast (checked constantly during
+          // service, a jarring popup mid-shift is worse than a quiet
+          // banner) — but a real failure must still be visible somewhere,
+          // logged, and distinguishable from "this venue has no members".
+          console.error('[regulars] load failed:', error)
+          setLoadFailed(true)
+        }
       } finally {
         if (!controller.signal.aborted) setLoading(false)
       }
@@ -55,7 +65,7 @@ export function RegularsList({ venueId }: { venueId: string }) {
     }
   }, [venueId, search, statusFilter, page])
 
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE))
+  const pageCount = Math.max(1, Math.ceil(matchedCount / PAGE_SIZE))
 
   return (
     <div className="p-6 md:p-8 max-w-4xl">
@@ -88,6 +98,10 @@ export function RegularsList({ venueId }: { venueId: string }) {
 
       {loading ? (
         <p className="text-sm text-aro-muted py-8 text-center">Loading…</p>
+      ) : loadFailed ? (
+        <p className="text-sm text-aro-rose py-8 text-center">
+          Couldn't load your regulars — check your connection and try again.
+        </p>
       ) : rows.length === 0 ? (
         <p className="text-sm text-aro-muted py-8 text-center">
           {search.trim() || statusFilter !== 'all'
