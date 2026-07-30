@@ -49,6 +49,8 @@ export type AroEventType =
   | 'lead.received'
   | 'seed.applied'
   | 'sentry.test'
+  | 'admin.impersonation_started'
+  | 'admin.impersonation_ended'
 
 export interface AroEvent {
   type: AroEventType
@@ -104,6 +106,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'lead.received': 'New lead received',
   'seed.applied': 'Seed data applied',
   'sentry.test': 'Sentry test event',
+  'admin.impersonation_started': 'Admin operating as venue',
+  'admin.impersonation_ended': 'Admin exited venue',
 }
 
 export function eventLabel(type: string): string {

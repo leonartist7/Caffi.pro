@@ -17,6 +17,7 @@ import {
   ShoppingBag,
   X,
   Eye,
+  LogIn,
 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -182,6 +183,28 @@ export default function ClientsPage() {
   function handleSelectTenant(tenant: Tenant) {
     setSelectedTenant(tenant)
     // Optionally redirect to dashboard or show success message
+  }
+
+  const [operatingId, setOperatingId] = useState<string | null>(null)
+
+  async function handleOperateAsVenue(tenant: Tenant) {
+    setOperatingId(tenant.tenant_id)
+    try {
+      const res = await fetch('/api/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: tenant.tenant_id }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error || `Request failed (${res.status})`)
+      }
+      window.location.href = '/home'
+    } catch (error) {
+      console.error('Error starting impersonation:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to operate as this venue')
+      setOperatingId(null)
+    }
   }
 
   const filteredTenants = tenants.filter(
@@ -394,6 +417,17 @@ export default function ClientsPage() {
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* PLAN-09: enter the venue's real owner console (/home, /creative, ...)
+                  rather than the legacy tenant-context subpages Manage opens. */}
+              <button
+                onClick={() => handleOperateAsVenue(tenant)}
+                disabled={operatingId === tenant.tenant_id}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-coffee-200 dark:border-dark-600 px-4 py-2 text-sm font-medium text-coffee-700 dark:text-cream-300 hover:bg-coffee-50 dark:hover:bg-dark-700 transition-all disabled:opacity-60"
+              >
+                <LogIn className="w-4 h-4" />
+                {operatingId === tenant.tenant_id ? 'Entering…' : 'Operate as this venue'}
+              </button>
             </div>
           ))
         )}
