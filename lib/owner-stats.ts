@@ -97,25 +97,130 @@ export interface RegularRow {
   balance: number
 }
 
-/** First page (50) of a venue's members joined to derived status + balance. */
-export async function listRegulars(
+export type MemberSort = 'recency_desc' | 'recency_asc' | 'name_asc'
+
+export interface ListMembersOptions {
+  search?: string
+  status?: 'new' | 'regular' | 'fading' | 'lost'
+  sort?: MemberSort
+  page?: number
+  pageSize?: number
+}
+
+export interface ListMembersResult {
+  rows: RegularRow[]
+  total: number
+  statusCounts: Record<'new' | 'regular' | 'fading' | 'lost', number>
+  page: number
+  pageSize: number
+  hasMore: boolean
+}
+
+const DEFAULT_PAGE_SIZE = 24
+const MAX_PAGE_SIZE = 100
+/** Defensive cap on search-id resolution — not a real limit at café scale. */
+const MAX_SEARCH_MATCHES = 2000
+
+/** Escapes a value for safe use inside a PostgREST `.or()` filter string. */
+function escapeOrValue(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
+function toIlikePattern(term: string): string {
+  return `%${term.replace(/[%_]/g, c => `\\${c}`)}%`
+}
+
+/**
+ * Paginated, searchable, sortable member directory for one venue. Replaces
+ * the old `listRegulars` hard cap (see PLAN-11): search resolves matching
+ * `member_id`s from `members` FIRST (so a match past any page boundary is
+ * still found), pagination is a real offset + total count (no silent
+ * truncation), and status-bucket counts are computed venue-wide in one
+ * bounded round trip. Total round trips per call: 3, or 4 when searching —
+ * constant regardless of page size or venue size, never N+1.
+ */
+export async function listMembersPage(
   venueId: string,
-  opts: { search?: string; status?: string; limit?: number } = {}
-): Promise<RegularRow[]> {
+  opts: ListMembersOptions = {}
+): Promise<ListMembersResult> {
   const admin = getSupabaseAdmin()
+  const page = Math.max(1, Math.floor(opts.page ?? 1))
+  const pageSize = Math.min(
+    MAX_PAGE_SIZE,
+    Math.max(1, Math.floor(opts.pageSize ?? DEFAULT_PAGE_SIZE))
+  )
+  const sort = opts.sort ?? 'recency_desc'
+
+  // Status counts: venue-wide, independent of the current search term —
+  // chips answer "how many total", not "how many match". One query.
+  const { data: statusRows, error: statusError } = await admin
+    .from('member_status')
+    .select('status')
+    .eq('venue_id', venueId)
+  if (statusError) throw new Error(`listMembersPage status counts failed: ${statusError.message}`)
+  const statusCounts: ListMembersResult['statusCounts'] = {
+    new: 0,
+    regular: 0,
+    fading: 0,
+    lost: 0,
+  }
+  for (const row of statusRows ?? []) {
+    const key = row.status as keyof typeof statusCounts
+    if (key in statusCounts) statusCounts[key] += 1
+  }
+  const total = statusRows?.length ?? 0
+
+  // Search resolves member_ids from the base table first — member_status
+  // is a view with no FK PostgREST can embed for a cross-column or().
+  let searchMemberIds: string[] | null = null
+  const term = opts.search?.trim()
+  if (term) {
+    const pattern = toIlikePattern(term)
+    const orFilter = [
+      `full_name.ilike.${escapeOrValue(pattern)}`,
+      `phone.ilike.${escapeOrValue(pattern)}`,
+      `email.ilike.${escapeOrValue(pattern)}`,
+    ].join(',')
+    const { data: matches, error: searchError } = await admin
+      .from('members')
+      .select('member_id')
+      .eq('tenant_id', venueId)
+      .or(orFilter)
+      .limit(MAX_SEARCH_MATCHES)
+    if (searchError) throw new Error(`listMembersPage search failed: ${searchError.message}`)
+    searchMemberIds = (matches ?? []).map(m => m.member_id)
+    if (searchMemberIds.length === 0) {
+      return { rows: [], total, statusCounts, page, pageSize, hasMore: false }
+    }
+  }
+
   let query = admin
     .from('member_status')
     .select(
-      'member_id, status, visit_count, last_visit_at, cadence_days, days_since_last, members!inner(full_name)'
+      'member_id, status, visit_count, last_visit_at, cadence_days, days_since_last, members!inner(full_name)',
+      { count: 'exact' }
     )
     .eq('venue_id', venueId)
-    .order('days_since_last', { ascending: true, nullsFirst: false })
-    .limit(opts.limit ?? 50)
 
   if (opts.status) query = query.eq('status', opts.status)
+  if (searchMemberIds) query = query.in('member_id', searchMemberIds)
 
-  const { data, error } = await query
-  if (error) throw new Error(`listRegulars failed: ${error.message}`)
+  if (sort === 'name_asc') {
+    query = query.order('full_name', { referencedTable: 'members', ascending: true })
+  } else {
+    query = query.order('days_since_last', {
+      ascending: sort === 'recency_asc',
+      nullsFirst: false,
+    })
+  }
+  query = query.order('member_id', { ascending: true })
+
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+  query = query.range(from, to)
+
+  const { data, error, count } = await query
+  if (error) throw new Error(`listMembersPage failed: ${error.message}`)
 
   const memberIds = (data ?? []).map(r => r.member_id)
   const { data: balances } = memberIds.length
@@ -123,7 +228,7 @@ export async function listRegulars(
     : { data: [] }
   const balanceByMember = new Map((balances ?? []).map(b => [b.member_id, b.balance]))
 
-  let rows = (data ?? []).map(r => {
+  const rows: RegularRow[] = (data ?? []).map(r => {
     const membersRel = r.members as unknown as { full_name: string | null } | null
     return {
       memberId: r.member_id,
@@ -137,12 +242,15 @@ export async function listRegulars(
     }
   })
 
-  if (opts.search) {
-    const needle = opts.search.trim().toLowerCase()
-    rows = rows.filter(r => r.fullName?.toLowerCase().includes(needle))
+  const matchedTotal = count ?? rows.length
+  return {
+    rows,
+    total: searchMemberIds || opts.status ? matchedTotal : total,
+    statusCounts,
+    page,
+    pageSize,
+    hasMore: from + rows.length < matchedTotal,
   }
-
-  return rows
 }
 
 export interface MemberProfile extends RegularRow {
