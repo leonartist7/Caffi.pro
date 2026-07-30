@@ -39,3 +39,6 @@ tsconfig.tsbuildinfo
 # Local deployment-tool metadata
 .vercel/
 supabase/.temp/
+
+# Claude Code agent-isolation worktrees (local scratch, never project content)
+.claude/worktrees/

@@ -1,5 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
-import { listRegulars, resolveOwnerVenueId } from '@/lib/owner-stats'
+import { resolveOwnerVenueId } from '@/lib/owner-stats'
 import { RegularsList } from './regulars-list'
 
 export const dynamic = 'force-dynamic'
@@ -14,6 +14,5 @@ export default async function RegularsPage() {
   const venueId = await resolveOwnerVenueId(user.id)
   if (!venueId) return null
 
-  const regulars = await listRegulars(venueId)
-  return <RegularsList initialRegulars={regulars} />
+  return <RegularsList venueId={venueId} />
 }
