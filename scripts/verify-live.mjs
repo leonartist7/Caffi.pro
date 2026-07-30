@@ -338,6 +338,114 @@ await check('join consent upgrade-only', async () => {
   }
 })
 
+await check('anon loyalty_programs denied', async () => {
+  const { error } = await anon.from('loyalty_programs').select('program_id').limit(1)
+  if (!error) throw new Error('loyalty_programs query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon member_offers denied', async () => {
+  const { error } = await anon.from('member_offers').select('offer_id').limit(1)
+  if (!error) throw new Error('member_offers query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon survey_responses denied', async () => {
+  const { error } = await anon.from('survey_responses').select('response_id').limit(1)
+  if (!error) throw new Error('survey_responses query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon push_subscriptions denied', async () => {
+  const { error } = await anon.from('push_subscriptions').select('subscription_id').limit(1)
+  if (!error) throw new Error('push_subscriptions query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon inventory_items denied', async () => {
+  const { error } = await anon.from('inventory_items').select('item_id').limit(1)
+  if (!error) throw new Error('inventory_items query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon inventory_movements denied', async () => {
+  const { error } = await anon.from('inventory_movements').select('movement_id').limit(1)
+  if (!error) throw new Error('inventory_movements query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon menu_item_ingredients denied', async () => {
+  const { error } = await anon.from('menu_item_ingredients').select('id').limit(1)
+  if (!error) throw new Error('menu_item_ingredients query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon staff_shifts denied', async () => {
+  const { error } = await anon.from('staff_shifts').select('shift_id').limit(1)
+  if (!error) throw new Error('staff_shifts query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+await check('anon tip_allocations denied', async () => {
+  const { error } = await anon.from('tip_allocations').select('allocation_id').limit(1)
+  if (!error) throw new Error('tip_allocations query unexpectedly succeeded')
+  return 'permission denied as required'
+})
+
+// push_subscriptions (Web Push endpoints = bearer credentials) and
+// tip_allocations (payroll) have ZERO client grants and ZERO policies, so
+// "anon is denied" is not a strong enough claim — an authenticated session
+// with no membership at all must be denied too. Sign in a throwaway auth user
+// with no memberships, probe, then delete it.
+async function withEphemeralAuthedClient(run) {
+  const email = `verify-live-authed-${crypto.randomUUID()}@example.invalid`
+  const password = `Vl-${crypto.randomUUID()}`
+  const created = await service.auth.admin.createUser({ email, password, email_confirm: true })
+  if (created.error) throw new Error(`could not create probe auth user: ${created.error.message}`)
+  const userId = created.data?.user?.id
+  if (!userId) throw new Error('probe auth user created without an id')
+  try {
+    const authed = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      options
+    )
+    const signedIn = await authed.auth.signInWithPassword({ email, password })
+    if (signedIn.error)
+      throw new Error(`could not sign in probe auth user: ${signedIn.error.message}`)
+    return await run(authed)
+  } finally {
+    await service.auth.admin.deleteUser(userId)
+  }
+}
+
+await check('authenticated non-owner push_subscriptions denied', async () =>
+  withEphemeralAuthedClient(async authed => {
+    const { data, error } = await authed
+      .from('push_subscriptions')
+      .select('subscription_id')
+      .limit(1)
+    if (!error) {
+      throw new Error(
+        `push_subscriptions readable by an authenticated non-owner (${data?.length ?? 0} row(s))`
+      )
+    }
+    return 'permission denied for anon and for an authenticated non-owner'
+  })
+)
+
+await check('authenticated non-owner tip_allocations denied', async () =>
+  withEphemeralAuthedClient(async authed => {
+    const { data, error } = await authed.from('tip_allocations').select('allocation_id').limit(1)
+    if (!error) {
+      throw new Error(
+        `tip_allocations readable by an authenticated non-owner (${data?.length ?? 0} row(s))`
+      )
+    }
+    return 'permission denied for anon and for an authenticated non-owner'
+  })
+)
+
 if (failures > 0) {
   console.error(`Live verification failed: ${failures} check(s) failed`)
   process.exit(1)
