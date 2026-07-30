@@ -6,7 +6,9 @@
       "Bash(git push)",
       "Bash(git add:*)",
       "Bash(npm run type-check:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(cp \"/root/.claude/uploads/737e1f7d-ec7b-5073-902f-c4a835034593/556cbf6c-laneawork.bundle\" ./lane-a-work.bundle)",
+      "Bash(git bundle *)"
     ],
     "deny": [],
     "ask": []
