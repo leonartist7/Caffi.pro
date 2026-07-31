@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useTenant } from '@/contexts/TenantContext'
 import { formatCents } from '@/lib/money'
 import { FulfilmentSettings } from '@/components/orders/FulfilmentSettings'
+import { KitchenSettings } from '@/components/orders/KitchenSettings'
 
 interface OrderRow {
   order_id: string
@@ -113,7 +114,12 @@ export default function OrdersPage() {
             <p className="mt-3 text-aro-muted">No orders in this view.</p>
           </div>
         )}
-        {selectedTenant ? <FulfilmentSettings venueId={selectedTenant.tenant_id} /> : null}
+        {selectedTenant ? (
+          <>
+            <KitchenSettings venueId={selectedTenant.tenant_id} />
+            <FulfilmentSettings venueId={selectedTenant.tenant_id} />
+          </>
+        ) : null}
       </div>
     </main>
   )

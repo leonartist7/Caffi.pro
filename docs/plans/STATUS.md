@@ -39,6 +39,47 @@ Unchanged — nothing started, all correctly deferred.
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
 
+## Lane B — Commerce & kitchen ops
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane B (`PLAN-20`–`PLAN-29`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`) before starting; PLAN-10's schema batch (already
+merged by Lane A) confirmed live via `list_tables` — `inventory_items`,
+`inventory_movements`, `menu_item_ingredients`, `tip_allocations`,
+`orders.tip_cents`/`accepted_at`/`ready_at` all present before any Lane B
+work began.
+
+- **PLAN-20 (Tips on QR orders)**: ✅ built, migration applied live, **PR
+  #61 open** (not yet merged as of this entry). `orders.tip_cents` flows
+  end-to-end checkout → RPC → Stripe → confirmation/counter/HQ. Also fixed
+  a real bug found in the same PR: `transition_order_status` was awarding
+  loyalty points on `total_cents` instead of `subtotal_cents`, silently
+  inflating points on every tipped order once PLAN-10 added `tip_cents`
+  into `total_cents`. See `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, PR open. Dedicated `/kitchen`
+  route (same counter PIN session as `/counter`), ticket-age colour
+  escalation, chime (muted by default, `AudioContext` primed inside the
+  unmute click for autoplay-policy correctness), wake-lock always-on
+  display mode. **Real architectural finding, escalated rather than
+  improvised**: true Supabase Realtime on `orders` is not safely wireable
+  today — `orders` RLS has zero policies (service-role only, verified
+  live) and the counter/kitchen session is a custom HMAC cookie, never a
+  Supabase Auth session, so a browser client has no legitimate way to
+  subscribe to `postgres_changes` without either loosening `orders` RLS
+  (tenant-isolation change) or minting a scoped custom JWT via a new
+  `SUPABASE_JWT_SECRET` for Realtime Authorization (not configured
+  anywhere in this env). Shipped a 3-second poll instead, honestly
+  labelled as polling, never claiming to be realtime. **This needs a
+  Fable-tier architecture decision before real Realtime is attempted** —
+  see `BUILD-LOG-PLAN-22.md` for the full finding and a concrete
+  recommendation for whoever picks it up.
+- Built out of dependency order deliberately: PLAN-21 (review prompt)
+  depends on PLAN-20 merging first (both touch `OrderStatus.tsx`); PLAN-22
+  needed only PR-0, so it was picked up while PLAN-20 was in review rather
+  than idling, per the lane's own dependency graph (§10).
+- **Next**: PLAN-21 once PLAN-20 merges → PLAN-23/24/25/26 (inventory →
+  depletion → costing/86-ing).
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
