@@ -10,6 +10,7 @@ interface CreatedOrder {
   subtotal_cents: number
   delivery_fee_cents: number
   tax_cents: number
+  tip_cents: number
   total_cents: number
   currency: string
   replayed: boolean
@@ -27,6 +28,7 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   DELIVERY_ADDRESS_REQUIRED: 'Enter a delivery address.',
   OUTSIDE_DELIVERY_ZONE: 'That postal code is outside this delivery area.',
   DELIVERY_MINIMUM_NOT_MET: 'Your cart does not meet this delivery zone minimum.',
+  INVALID_TIP: 'That tip amount is not valid.',
 }
 
 function orderError(message: string): string {
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
   let query = getSupabaseAdmin()
     .from('orders')
     .select(
-      'order_id, order_type, status, guest_name, subtotal_cents, delivery_fee_cents, tax_cents, total_cents, placed_at'
+      'order_id, order_type, status, guest_name, subtotal_cents, delivery_fee_cents, tax_cents, tip_cents, total_cents, placed_at'
     )
     .eq('venue_id', gate.ctx.venueId)
     .order('placed_at', { ascending: false })
@@ -72,6 +74,7 @@ export async function POST(request: NextRequest) {
     items?: Array<{ item_id?: string; quantity?: number; modifier_ids?: string[]; notes?: string }>
     notes?: string
     member_pass_serial?: string | null
+    tip_cents?: number
   }
   try {
     body = await request.json()
@@ -95,6 +98,8 @@ export async function POST(request: NextRequest) {
     p_delivery_postal_code: body.delivery_postal_code || null,
     p_notes: body.notes || null,
     p_member_pass_serial: body.member_pass_serial || null,
+    p_tip_cents:
+      Number.isInteger(body.tip_cents) && (body.tip_cents as number) >= 0 ? body.tip_cents : 0,
   })
   if (error || !data) {
     console.error('[orders] atomic order creation failed:', error)
