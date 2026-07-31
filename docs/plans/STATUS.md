@@ -39,6 +39,44 @@ Unchanged — nothing started, all correctly deferred.
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
 
+## Lane B — Commerce & kitchen ops
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane B (`PLAN-20`–`PLAN-29`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`) before starting; PLAN-10's schema batch (already
+merged by Lane A) confirmed live via `list_tables` before any Lane B work
+began.
+
+- **PLAN-20 (Tips on QR orders)**: ✅ built, migration applied live, **PR
+  #61 open**. Also fixed a real bug in the same PR: `transition_order_status`
+  was awarding loyalty points on `total_cents` instead of `subtotal_cents`,
+  silently inflating points on every tipped order. See `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, **PR #62 open**. Dedicated
+  `/kitchen` route. **Real architectural finding, escalated rather than
+  improvised**: true Supabase Realtime on `orders` isn't safely wireable
+  today (`orders` RLS has zero policies, counter/kitchen auth is a custom
+  cookie, not a Supabase session) — shipped a 3s poll instead, honestly
+  labelled, and flagged the JWT/RLS architecture decision needed before
+  real Realtime is attempted. See `BUILD-LOG-PLAN-22.md`.
+- **PLAN-23 (Inventory foundation)**: ✅ built, PR pending. Items CRUD,
+  receive/waste/count/adjust movements with server-side sign conventions,
+  derived on-hand (never stored), below-par flagging. Verified live: the
+  reconciling-delta math for physical counts, the append-only trigger
+  (attempted a real `UPDATE`/`DELETE`, both correctly rejected), and the
+  `ON DELETE RESTRICT` FK that blocks deleting an item with movement
+  history (correctly caught and turned into a friendly message). New page
+  at `/menu/inventory`; nav entry appended to `lib/modules.ts`. See
+  `BUILD-LOG-PLAN-23.md`.
+- Built out of dependency order deliberately: PLAN-21 (review prompt)
+  depends on PLAN-20 merging first (both touch `OrderStatus.tsx`); PLAN-22
+  and PLAN-23 needed only PR-0/PLAN-10 (both merged), so they were picked
+  up while PLAN-20 was in review rather than idling, per the lane's own
+  dependency graph (§10).
+- **Next**: PLAN-21 once PLAN-20 merges; PLAN-24 (perpetual depletion —
+  needs Fable-authored idempotency design per the master plan, since a
+  double-fired Stripe webhook decrementing stock twice is silent and
+  unrecoverable) → PLAN-25 (food costing) → PLAN-26 (86-ing).
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the

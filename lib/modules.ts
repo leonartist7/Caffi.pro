@@ -15,6 +15,7 @@ import {
   Bell,
   CalendarDays,
   Sparkles,
+  Boxes,
 } from 'lucide-react'
 
 /**
@@ -43,6 +44,8 @@ export type ModuleKey =
   | 'coupons'
   | 'notifications'
   | 'locations'
+  // --- Lane B ---
+  | 'inventory'
 
 export interface ModuleDef {
   key: ModuleKey
@@ -100,6 +103,14 @@ export const MODULES: ModuleDef[] = [
     status: 'coming_soon',
   },
   { key: 'locations', label: 'Locations', href: '/cafes', icon: MapPin, status: 'coming_soon' },
+  // --- Lane B ---
+  {
+    key: 'inventory',
+    label: 'Inventory',
+    href: '/menu/inventory',
+    icon: Boxes,
+    status: 'live',
+  },
 ]
 
 /** HQ-level nav — visible only to aro_admin, never client-scoped. */
