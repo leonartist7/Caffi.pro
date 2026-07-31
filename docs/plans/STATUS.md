@@ -28,16 +28,77 @@ Unchanged — nothing started, all correctly deferred.
 
 ## PLAN-09 — Admin venue impersonation (new, not in MASTER-PLAN-v2)
 
-- **Why it exists**: found today while trying to actually test R4 live —
-  an `aro_admin` account has no path into a venue's real owner console
+- **Why it exists**: found while trying to actually test R4 live — an
+  `aro_admin` account has no path into a venue's real owner console
   (`/home`, `/creative`) without a separate owner-role login per venue.
   Full rationale and spec: `PLAN-09-admin-venue-impersonation.md`.
-- **Status**: built this session (`lib/impersonation.ts`, the
-  `/api/admin/impersonate` route, the `(owner)` layout wiring, the owner
-  shell banner, the HQ "Operate as this venue" entry point). `tsc`/`build`
-  green. **Not yet verified live** — needs `IMPERSONATION_SECRET` set in
+- **Status**: ✅ **Merged to main** (PR #56, 2026-07-29). `lib/impersonation.ts`,
+  the `/api/admin/impersonate` route, the `(owner)` layout wiring, the owner
+  shell banner, the HQ "Operate as this venue" entry point. `tsc`/`build`
+  green. **Still not verified live** — needs `IMPERSONATION_SECRET` set in
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
+
+## MASTER-PLAN-v2R — three parallel lanes (new, 2026-07-29)
+
+`docs/plans/MASTER-PLAN-v2R-remastered.md` extends `MASTER-PLAN-v2` with a
+larger backlog (loyalty strategy library, commerce/kitchen ops, team
+management, delivery integrations, etc.), partitioned into three lanes
+executed by separate autonomous sessions. Real state as verified directly
+against `main`, the live `aro-platform` Supabase project, and remote
+branches — not self-reported:
+
+### Lane A — Loyalty & member growth: **active, 2 items in**
+
+- **PLAN-10** (shared schema migration — loyalty/inventory/shifts tables
+  for all three lanes): ✅ **applied live** to `aro-platform`
+  (`batch_schema_lanes_abc`, confirmed via `list_migrations`). All 9 new
+  tables (`loyalty_programs`, `member_offers`, `survey_responses`,
+  `push_subscriptions`, `inventory_items`, `inventory_movements`,
+  `menu_item_ingredients`, `staff_shifts`, `tip_allocations`) exist with
+  RLS enabled. `get_advisors` (security): no ERROR/CRITICAL findings — 2
+  tables show an informational "RLS enabled, no policy" note (safe
+  default: zero anon/authenticated access, service-role code unaffected),
+  the other 7 have real policies. The build log itself claimed this was
+  "not live-applied" — that was true when written; someone applied it
+  afterward. This entry reflects the live database, not the stale log.
+- **PLAN-11** (Members directory rebuild): ✅ code-complete on `main`.
+  Real pagination/search replacing a hard-capped client-filtered list;
+  self-review caught and fixed 3 genuine bugs (a `postgrest-js` embedded-
+  relation sort bug, a two-round-trip count race between the header total
+  and pagination math, silent error-swallowing on `/regulars`). `aro`
+  token refit, zero legacy classes (grep-verified). **Not verified live**
+  — no Supabase MCP access in that execution session; verified by
+  code-reading and local `tsc`/`build` only. See `BUILD-LOG-PLAN-11.md`'s
+  own "Verification gap" section for the exact list of unexercised
+  scenarios (pagination walk past 200+ members, live count cross-checks,
+  actual browser responsive check).
+- **Process deviation, both items**: pushed as direct commits to `main`
+  (via a `claude/import-lane-a-work-branches-*` session), not through a
+  draft PR — no CI check actually ran on either. Original branches
+  (`sonnet/lane-a-plan10-schema-batch`, `sonnet/lane-a-plan11-members-directory`)
+  still exist remotely if that history is needed.
+- **Next**: PLAN-12 through PLAN-18 (Lane A's remaining v2R items) are
+  unblocked now that PLAN-10 is confirmed live.
+
+### Lane B — Commerce & kitchen ops: **no trace found**
+
+No branch, no commit, no PR anywhere in the remote repo as of this check.
+Either never fired, still queued, or errored before writing anything that
+got pushed — indistinguishable from here. Check the Routine's run history
+directly.
+
+### Lane C — Team & platform polish: **no trace found**
+
+Same as Lane B — nothing in the remote repo. Check the Routine directly.
+
+### A likely root cause for both Lane A's verification gaps and B/C's silence
+
+Lane A's own build logs state the Supabase MCP connector was not available
+to that execution session (`enabledInChat: false` at the org level). If
+Lanes B and C hit the same gap immediately on a schema-dependent first
+item, that would explain silence rather than partial output — but this is
+inference, not confirmed; only the Routine's own run log can say for sure.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
@@ -89,6 +150,14 @@ Decision, recorded here so it isn't re-litigated:
    project's key, not the legacy `Caffi.pro` project's — this was mid-fix
    when this document was last updated.
 3. **Set `OPENAI_API_KEY`** to unstub Creative Studio generation.
-4. **Set `IMPERSONATION_SECRET`** (PLAN-09) to enable the new "Operate as
-   this venue" flow.
+4. **Set `IMPERSONATION_SECRET`** (PLAN-09, now merged) to enable the
+   "Operate as this venue" flow.
 5. Decide the fate of the legacy `Caffi.pro` Supabase project (see above).
+6. **Check the Lane B and Lane C Routines directly** — neither has produced
+   any commit, branch, or PR. Confirm whether they fired and errored, are
+   still queued, or were never actually created, then re-fire or fix as
+   needed.
+7. **Grant the Supabase MCP connector to any future lane Routines** —
+   Lane A's own build logs record it was missing, which is why PLAN-10/11
+   are code-complete but not live-verified, and is the leading suspect for
+   B/C's silence.
