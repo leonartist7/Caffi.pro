@@ -1773,6 +1773,32 @@ BEGIN
         )
     );
 
+    -- PLAN-24: depletion is best-effort by design. This inner
+    -- BEGIN...EXCEPTION is a sub-transaction (implicit savepoint): a
+    -- failure rolls back the stock movements ONLY. The payment, the order
+    -- status, and the order.paid event above are already durable and
+    -- still commit. An order must never be lost to a stock bug.
+    BEGIN
+        PERFORM public.deplete_order_stock(v_payment.order_id);
+    EXCEPTION WHEN OTHERS THEN
+        BEGIN
+            INSERT INTO events (actor, venue_id, type, payload)
+            VALUES (
+                'system',
+                v_payment.venue_id,
+                'inventory.depletion_failed',
+                jsonb_build_object(
+                    'order_id', v_payment.order_id,
+                    'phase', 'depletion',
+                    'sqlstate', SQLSTATE,
+                    'message', SQLERRM
+                )
+            );
+        EXCEPTION WHEN OTHERS THEN
+            RAISE WARNING 'depletion failure event unwritable for order %', v_payment.order_id;
+        END;
+    END;
+
     RETURN QUERY SELECT v_payment.order_id, v_payment.venue_id, true, false;
 END;
 $$;
@@ -2034,11 +2060,18 @@ BEGIN
         (p_new_status = 'refunded' AND v_order.status IN ('paid','accepted','preparing','ready','out_for_delivery','canceled'))
     ) THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ILLEGAL_ORDER_TRANSITION'; END IF;
 
-    UPDATE public.orders SET status = p_new_status, updated_at = NOW() WHERE order_id = p_order_id;
+    -- Kitchen ticket-age timestamps (PLAN-22 reads these).
+    UPDATE public.orders SET
+        status = p_new_status,
+        updated_at = NOW(),
+        accepted_at = CASE WHEN p_new_status = 'accepted' THEN NOW() ELSE accepted_at END,
+        ready_at = CASE WHEN p_new_status = 'ready' THEN NOW() ELSE ready_at END
+    WHERE order_id = p_order_id;
     IF p_new_status = 'completed' AND v_order.member_id IS NOT NULL THEN
         SELECT COALESCE((loyalty_config->>'points_per_euro')::NUMERIC, 0) INTO v_rate
         FROM public.venues WHERE venue_id = p_venue_id;
-        v_points := FLOOR(v_order.total_cents * v_rate / 100.0);
+        -- subtotal_cents only: tips and delivery/tax never earn points (PLAN-20).
+        v_points := FLOOR(v_order.subtotal_cents * v_rate / 100.0);
         IF v_points > 0 THEN
             INSERT INTO public.points_ledger (
                 tenant_id, member_id, order_id, points_change, reason, description
@@ -2048,6 +2081,30 @@ BEGIN
             ) ON CONFLICT (order_id) WHERE order_id IS NOT NULL AND reason = 'order' DO NOTHING;
         END IF;
     END IF;
+
+    -- PLAN-24: a refund writes compensating stock movements in the same
+    -- transaction as the status change, inside its own savepoint so a
+    -- stock failure can never block or reverse the refund.
+    IF p_new_status = 'refunded' THEN
+        BEGIN
+            PERFORM public.reverse_order_stock_depletion(p_order_id);
+        EXCEPTION WHEN OTHERS THEN
+            BEGIN
+                INSERT INTO public.events(actor, venue_id, type, payload) VALUES (
+                    'system', p_venue_id, 'inventory.depletion_failed',
+                    jsonb_build_object(
+                        'order_id', p_order_id,
+                        'phase', 'reversal',
+                        'sqlstate', SQLSTATE,
+                        'message', SQLERRM
+                    )
+                );
+            EXCEPTION WHEN OTHERS THEN
+                RAISE WARNING 'reversal failure event unwritable for order %', p_order_id;
+            END;
+        END;
+    END IF;
+
     INSERT INTO public.events(actor, venue_id, type, payload) VALUES (
         COALESCE(p_actor, 'system'), p_venue_id, 'order.status_changed',
         jsonb_build_object('order_id', p_order_id, 'from', v_order.status, 'to', p_new_status)
@@ -2917,7 +2974,7 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     venue_id UUID NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
     item_id UUID NOT NULL,
     qty NUMERIC NOT NULL,                      -- signed: receive/count +, waste/sale -
-    reason TEXT NOT NULL CHECK (reason IN ('receive', 'count', 'waste', 'sale', 'adjust')),
+    reason TEXT NOT NULL CHECK (reason IN ('receive', 'count', 'waste', 'sale', 'adjust', 'sale_reversal')),
     order_id UUID,
     note TEXT,
     membership_id UUID REFERENCES memberships(membership_id) ON DELETE SET NULL,
@@ -2939,6 +2996,94 @@ CREATE INDEX IF NOT EXISTS idx_inventory_movements_item_created
     ON inventory_movements(item_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inventory_movements_order
     ON inventory_movements(order_id) WHERE order_id IS NOT NULL;
+
+-- PLAN-24: one movement row per (order, inventory item) per kind. Partial,
+-- so manual movements (order_id IS NULL) are unconstrained. Paired with the
+-- GROUP BY in deplete_order_stock(): an order that uses the same ingredient
+-- across two lines writes ONE summed row, never two.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_movements_order_sale
+    ON inventory_movements(order_id, item_id)
+    WHERE order_id IS NOT NULL AND reason = 'sale';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_movements_order_sale_reversal
+    ON inventory_movements(order_id, item_id)
+    WHERE order_id IS NOT NULL AND reason = 'sale_reversal';
+
+-- PLAN-24: depletion. Safe to call any number of times for any order — the
+-- index above makes every call after the first a no-op (returns rows
+-- inserted, 0 on replay). An order with no recipe links produces zero rows
+-- and no error.
+CREATE OR REPLACE FUNCTION public.deplete_order_stock(p_order_id UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    v_rows INTEGER := 0;
+BEGIN
+    INSERT INTO public.inventory_movements (
+        venue_id, item_id, qty, reason, order_id, note
+    )
+    SELECT
+        o.venue_id,
+        mii.inventory_item_id,
+        -SUM(mii.qty_per_unit * oi.quantity),
+        'sale',
+        o.order_id,
+        'Auto-depleted on payment'
+    FROM public.orders o
+    JOIN public.order_items oi
+      ON oi.order_id = o.order_id
+    JOIN public.menu_item_ingredients mii
+      ON mii.item_id = oi.item_id
+     AND mii.venue_id = o.venue_id
+    WHERE o.order_id = p_order_id
+      AND o.status NOT IN ('pending', 'canceled', 'refunded')
+    GROUP BY o.venue_id, o.order_id, mii.inventory_item_id
+    HAVING SUM(mii.qty_per_unit * oi.quantity) > 0
+    ON CONFLICT (order_id, item_id)
+        WHERE order_id IS NOT NULL AND reason = 'sale'
+        DO NOTHING;
+
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    RETURN v_rows;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.deplete_order_stock(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.deplete_order_stock(UUID) TO service_role;
+
+-- PLAN-24: reversal. Negates the STORED sale rows — never re-derived from
+-- the recipe, which may have changed since the sale. Append-only: the
+-- original 'sale' rows are left exactly as they are.
+CREATE OR REPLACE FUNCTION public.reverse_order_stock_depletion(p_order_id UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    v_rows INTEGER := 0;
+BEGIN
+    INSERT INTO public.inventory_movements (
+        venue_id, item_id, qty, reason, order_id, note
+    )
+    SELECT
+        m.venue_id,
+        m.item_id,
+        -m.qty,
+        'sale_reversal',
+        m.order_id,
+        'Reversed on refund of order ' || LEFT(m.order_id::TEXT, 8)
+    FROM public.inventory_movements m
+    WHERE m.order_id = p_order_id
+      AND m.reason = 'sale'
+    ON CONFLICT (order_id, item_id)
+        WHERE order_id IS NOT NULL AND reason = 'sale_reversal'
+        DO NOTHING;
+
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    RETURN v_rows;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.reverse_order_stock_depletion(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.reverse_order_stock_depletion(UUID) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.forbid_inventory_movement_mutation()
 RETURNS trigger

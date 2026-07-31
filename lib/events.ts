@@ -51,6 +51,8 @@ export type AroEventType =
   | 'sentry.test'
   | 'admin.impersonation_started'
   | 'admin.impersonation_ended'
+  // --- Lane B ---
+  | 'inventory.depletion_failed'
 
 export interface AroEvent {
   type: AroEventType
@@ -108,6 +110,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'sentry.test': 'Sentry test event',
   'admin.impersonation_started': 'Admin operating as venue',
   'admin.impersonation_ended': 'Admin exited venue',
+  // --- Lane B ---
+  'inventory.depletion_failed': 'Stock depletion failed',
 }
 
 export function eventLabel(type: string): string {

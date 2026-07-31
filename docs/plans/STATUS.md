@@ -39,6 +39,57 @@ Unchanged — nothing started, all correctly deferred.
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
 
+## Lane B — Commerce & kitchen ops
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane B (`PLAN-20`–`PLAN-29`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch confirmed live before any
+Lane B work began.
+
+- **PLAN-20 (Tips)**: ✅ built, migration applied live, **PR #61 open**.
+  Also fixed a real bug: `transition_order_status` awarded points on
+  `total_cents` instead of `subtotal_cents`. `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, **PR #62 open**. Dedicated
+  `/kitchen` route; true Supabase Realtime flagged as an open architecture
+  decision (custom-cookie auth + zero RLS policies on `orders`), shipped a
+  3s poll instead, honestly labelled. `BUILD-LOG-PLAN-22.md`.
+- **PLAN-23 (Inventory foundation)**: ✅ built, **PR #63 open**. Items
+  CRUD, receive/waste/count/adjust movements, derived on-hand, below-par
+  flag. Append-only trigger and `ON DELETE RESTRICT` both proven from real
+  attempts, not cited. `BUILD-LOG-PLAN-23.md`.
+- **PLAN-24 (Perpetual depletion)**: ✅ built, PR pending. **Idempotency
+  design authored by a dedicated Opus-5 architect pass** before any code
+  was written (per the master plan's own doctrine — this was the one Lane
+  B item explicitly not pre-designed in the master plan document). Key
+  decisions: depletion runs inside `record_order_payment_success`'s own
+  transaction but inside a PL/pgSQL `BEGIN...EXCEPTION` sub-transaction
+  (implicit savepoint) so a stock bug can never reverse a sale; the
+  uniqueness guarantee is `(order_id, item_id)` paired with a `GROUP BY`
+  aggregation (not a naive single-row-per-order index, which breaks when
+  one order uses the same ingredient across two menu items); refund
+  reversal negates the stored sale rows rather than re-deriving from a
+  recipe that may have changed. **The central test — forcing a real
+  depletion failure via a temporary constraint and proving the payment
+  still commits with zero sale rows and a recorded `inventory.depletion_failed`
+  event — passed live**, both manually and via a new automated,
+  transactional `supabase/tests/depletion_tests.sql` (`ALL DEPLETION TESTS
+PASSED`, zero residue). One acceptance item (an "Oversold" pill on the
+  inventory list page) is deferred to a small follow-up PR once PLAN-23
+  merges, since that page is itself a PLAN-23 file not present on this
+  branch — the underlying data already supports it with zero further
+  backend work. `BUILD-LOG-PLAN-24.md`.
+- Built out of dependency order deliberately, twice: PLAN-21 (review
+  prompt) is waiting on PLAN-20 to merge (both touch `OrderStatus.tsx`);
+  PLAN-22/23 needed only PR-0/PLAN-10 and were picked up while PLAN-20 was
+  in review. PLAN-24 depends on PLAN-23 for its application-layer files
+  (not its DB schema, which was already live) — two small files
+  (`lib/inventory/types.ts`, one `lib/events.ts` entry) were necessarily
+  recreated on PLAN-24's branch and will need a straightforward
+  union-merge conflict resolution when both PRs land; flagged in
+  `BUILD-LOG-PLAN-24.md`.
+- **Next**: PLAN-21 once PLAN-20 merges; PLAN-25 (food costing — read-model,
+  no new tables) → PLAN-26 (86-ing).
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
