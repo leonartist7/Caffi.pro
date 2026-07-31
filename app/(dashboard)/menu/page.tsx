@@ -3,6 +3,7 @@
 import Image from 'next/image'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
+  Ban,
   Coffee,
   Edit3,
   EyeOff,
@@ -225,6 +226,20 @@ export default function MenuPage() {
     }
   }
 
+  async function toggle86(item: MenuItem) {
+    const next = !item.is_86ed
+    try {
+      await api(`/api/menu/items/${item.item_id}/toggle-86`, {
+        method: 'POST',
+        body: JSON.stringify({ is_86ed: next }),
+      })
+      toast.success(next ? `${item.name} 86'd` : `${item.name} restored`)
+      await loadMenu()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to update item availability')
+    }
+  }
+
   async function deleteItem(item: MenuItem) {
     const accepted = await confirm({
       title: `Delete ${item.name}?`,
@@ -418,6 +433,11 @@ export default function MenuPage() {
                           Hidden
                         </span>
                       ) : null}
+                      {item.is_86ed ? (
+                        <span className="absolute right-3 top-3 rounded-full bg-aro-rose px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+                          86&apos;d{item.auto_86ed ? ' · auto' : ''}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-3">
@@ -452,6 +472,19 @@ export default function MenuPage() {
                           ))}
                         </div>
                         <div className="flex shrink-0 gap-1">
+                          <button
+                            type="button"
+                            onClick={() => void toggle86(item)}
+                            aria-label={item.is_86ed ? `Restore ${item.name}` : `86 ${item.name}`}
+                            title={item.is_86ed ? 'Restore item' : '86 this item'}
+                            className={`rounded-full p-2 ${
+                              item.is_86ed
+                                ? 'bg-aro-rose/15 text-aro-rose'
+                                : 'text-aro-muted hover:bg-aro-sand hover:text-aro-espresso'
+                            }`}
+                          >
+                            <Ban className="h-4 w-4" />
+                          </button>
                           <button
                             type="button"
                             onClick={() => {

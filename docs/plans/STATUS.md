@@ -39,6 +39,71 @@ Unchanged — nothing started, all correctly deferred.
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
 
+## Lane B — Commerce & kitchen ops
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane B (`PLAN-20`–`PLAN-29`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch confirmed live before any
+Lane B work began.
+
+- **PLAN-20 (Tips)**: ✅ built, migration applied live, **PR #61 open**.
+  `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, **PR #62 open**. True Supabase
+  Realtime flagged as an open architecture decision. `BUILD-LOG-PLAN-22.md`.
+- **PLAN-23 (Inventory foundation)**: ✅ built, **PR #63 open**.
+  `BUILD-LOG-PLAN-23.md`.
+- **PLAN-24 (Perpetual depletion)**: ✅ built, **PR #64 open**.
+  Idempotency design authored by a dedicated Opus-5 architect pass; the
+  savepoint-isolation guarantee proven live by forcing a real failure.
+  `BUILD-LOG-PLAN-24.md`.
+- **PLAN-25 (Food costing & margin report)**: ✅ built, **PR #65 open**.
+  Read-model only, no new tables — a `LANGUAGE sql STABLE` function doing
+  all cost/margin arithmetic in Postgres NUMERIC (exact decimal), never
+  JavaScript. Three-state recipe completeness (`none`/`partial`/`complete`)
+  so a partial recipe never produces a number that looks like a real cost.
+  **Verified live, fully transactional (zero residue)**: hand-computed
+  per-item cost matched exactly; the central ranking proof (a 99%-margin,
+  zero-sales item correctly ranked below a 16.7%-margin, 100-units-sold
+  item) confirmed the report ranks by earned margin, not percentage alone;
+  zero-price item showed `NULL` margin_pct, never `Infinity`/`NaN`.
+  `BUILD-LOG-PLAN-25.md`.
+- **PLAN-26 (86-ing / stock-out)**: ✅ built, PR pending. Two flags on
+  `menu_items` (`is_86ed`, `auto_86ed`) with a `CHECK` enforcing
+  auto-implies-86'd; a single recompute function driven by two triggers
+  (`inventory_movements` insert — covers manual movements and PLAN-24's
+  automatic sale depletion alike — and `menu_item_ingredients` insert/
+  update/delete, for immediate effect on recipe changes). Manual-outranks-
+  automatic is structural: the recompute function only ever touches a row
+  it itself set `auto_86ed = true` on; the manual toggle endpoint always
+  clears that flag. Checkout rejection reuses the existing
+  `ITEM_UNAVAILABLE` catalog-lookup mechanism from `create_storefront_order`
+  rather than a parallel path. **Verified live, fully transactional (zero
+  residue)**: immediate auto-86 on a fresh ingredient link (no movement
+  needed), a 2-ingredient item staying 86'd until _both_ ingredients are
+  restocked, and the central proof — a manually-86'd item staying 86'd
+  through a restock that, in the same transaction, auto-restored a
+  different item depending on the identical ingredient. Two trigger
+  functions were caught by `get_advisors` defaulting to `PUBLIC` EXECUTE
+  grants and hardened to `service_role`-only before commit. **Deferred**:
+  a kitchen-side 86'd indicator — `app/kitchen/**` (PLAN-22) doesn't exist
+  on this branch yet and has no menu-browsing surface today regardless;
+  the counter-side banner (which does have a real, existing surface) is
+  built. `BUILD-LOG-PLAN-26.md`.
+- Built out of dependency order deliberately, more than once: PLAN-21
+  (review prompt) is waiting on PLAN-20 to merge (both touch
+  `OrderStatus.tsx`); PLAN-22/23 needed only PR-0/PLAN-10; PLAN-24 needed
+  PLAN-23's _schema_ (already live) but had to recreate two small
+  application files from PLAN-23's unmerged PR (flagged in
+  `BUILD-LOG-PLAN-24.md`, a straightforward union-merge conflict when both
+  land). PLAN-25 needed no such recreation — it's a pure read-model with
+  no overlapping files. PLAN-26 mirrored `create_storefront_order` against
+  whatever's actually on `main` today (still the pre-tip 11-arg version) —
+  expect a normal 3-way reconciliation of that function's `aro_schema.sql`
+  entry once PLAN-20/22/23/24/25/26 land in sequence.
+- **Next**: PLAN-21 once PLAN-20 merges. All items v2R assigns to Lane B
+  (PLAN-20, 22–26) have now been built; remaining work is driving each PR
+  to green and through review.
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the

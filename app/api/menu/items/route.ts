@@ -4,7 +4,7 @@ import { emitEvent } from '@/lib/events'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 const ITEM_COLUMNS =
-  'item_id, venue_id, category_id, name, description, price_cents, image_url, is_active, sort_order, dietary_tags, created_at, updated_at'
+  'item_id, venue_id, category_id, name, description, price_cents, image_url, is_active, sort_order, dietary_tags, created_at, updated_at, is_86ed, auto_86ed'
 const GROUP_COLUMNS = 'group_id, venue_id, item_id, name, min_select, max_select, created_at'
 const MODIFIER_COLUMNS =
   'modifier_id, group_id, venue_id, name, price_delta_cents, is_active, sort_order'

@@ -21,6 +21,12 @@ export async function GET(request: NextRequest) {
   const { data: modifiers } = itemIds.length
     ? await admin.from('order_item_modifiers').select('*').in('order_item_id', itemIds)
     : { data: [] }
+  const { data: eightySixed } = await admin
+    .from('menu_items')
+    .select('item_id, name, auto_86ed')
+    .eq('venue_id', session.venueId)
+    .eq('is_86ed', true)
+    .order('name')
   return NextResponse.json({
     orders: (orders ?? []).map(order => ({
       ...order,
@@ -33,5 +39,6 @@ export async function GET(request: NextRequest) {
           ),
         })),
     })),
+    eighty_sixed: eightySixed ?? [],
   })
 }

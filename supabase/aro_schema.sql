@@ -1337,7 +1337,13 @@ CREATE TABLE IF NOT EXISTS menu_items (
     sort_order INTEGER NOT NULL DEFAULT 0,
     dietary_tags TEXT[] NOT NULL DEFAULT '{}',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- PLAN-26: 86-ing / stock-out. is_86ed hides the item right now;
+    -- auto_86ed tracks whether the *current* state was set by stock
+    -- recompute, not a person — a manual toggle always clears it.
+    is_86ed BOOLEAN NOT NULL DEFAULT false,
+    auto_86ed BOOLEAN NOT NULL DEFAULT false,
+    CONSTRAINT menu_items_auto_86_implies_86 CHECK (NOT auto_86ed OR is_86ed)
 );
 
 CREATE TABLE IF NOT EXISTS modifier_groups (
@@ -1875,11 +1881,14 @@ BEGIN
             RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INVALID_QUANTITY';
         END IF;
 
-        SELECT item_id, name, price_cents INTO v_catalog FROM public.menu_items
+        SELECT item_id, name, price_cents, is_86ed INTO v_catalog FROM public.menu_items
         WHERE item_id = (v_item->>'item_id')::UUID
           AND venue_id = v_venue.venue_id AND is_active = true;
         IF NOT FOUND THEN
             RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ITEM_UNAVAILABLE';
+        END IF;
+        IF v_catalog.is_86ed THEN
+            RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ITEM_86ED:' || v_catalog.name;
         END IF;
 
         SELECT COALESCE(array_agg(DISTINCT value::UUID), ARRAY[]::UUID[])
@@ -2980,6 +2989,119 @@ CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_venue
     ON menu_item_ingredients(venue_id);
 CREATE INDEX IF NOT EXISTS idx_menu_item_ingredients_inventory_item
     ON menu_item_ingredients(inventory_item_id);
+
+-- PLAN-26: 86-ing / stock-out. Recompute stock-derived availability for a
+-- set of menu items. Auto-86 a short item (any linked ingredient at/below
+-- zero on-hand) that isn't already 86'd; auto-restore only a row the
+-- system itself 86'd, once every linked ingredient is back above zero.
+-- Never touches a row that's 86'd but not auto_86ed (a manual decision
+-- outranks an automatic one). Idempotent — only emits an event when a
+-- row actually transitions.
+CREATE OR REPLACE FUNCTION public.recompute_menu_item_stock_status(p_menu_item_ids UUID[])
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_item RECORD;
+    v_short BOOLEAN;
+BEGIN
+    FOR v_item IN
+        SELECT item_id, venue_id, name, is_86ed, auto_86ed
+        FROM menu_items
+        WHERE item_id = ANY(p_menu_item_ids)
+    LOOP
+        SELECT EXISTS (
+            SELECT 1
+            FROM menu_item_ingredients mii
+            LEFT JOIN (
+                SELECT item_id, SUM(qty) AS on_hand
+                FROM inventory_movements
+                GROUP BY item_id
+            ) stock ON stock.item_id = mii.inventory_item_id
+            WHERE mii.item_id = v_item.item_id
+              AND COALESCE(stock.on_hand, 0) <= 0
+        ) INTO v_short;
+
+        IF v_short AND NOT v_item.is_86ed THEN
+            UPDATE menu_items SET is_86ed = true, auto_86ed = true
+            WHERE menu_items.item_id = v_item.item_id;
+            INSERT INTO events (actor, venue_id, type, payload)
+            VALUES ('system', v_item.venue_id, 'menu.item_86ed',
+                jsonb_build_object('item_id', v_item.item_id, 'name', v_item.name, 'auto', true));
+        ELSIF NOT v_short AND v_item.auto_86ed THEN
+            UPDATE menu_items SET is_86ed = false, auto_86ed = false
+            WHERE menu_items.item_id = v_item.item_id;
+            INSERT INTO events (actor, venue_id, type, payload)
+            VALUES ('system', v_item.venue_id, 'menu.item_restored',
+                jsonb_build_object('item_id', v_item.item_id, 'name', v_item.name, 'auto', true));
+        END IF;
+    END LOOP;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.recompute_menu_item_stock_status(UUID[]) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.recompute_menu_item_stock_status(UUID[]) TO service_role;
+
+-- Every inventory_movements insert (manual waste/adjust/receive/count, or
+-- the automatic 'sale'/'sale_reversal' rows PLAN-24 writes) can flip a
+-- dependent menu item's availability within the same transaction.
+CREATE OR REPLACE FUNCTION public.trg_menu_availability_after_movement()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_ids UUID[];
+BEGIN
+    SELECT COALESCE(array_agg(DISTINCT item_id), ARRAY[]::UUID[])
+    INTO v_ids
+    FROM menu_item_ingredients
+    WHERE inventory_item_id = NEW.item_id;
+
+    IF array_length(v_ids, 1) > 0 THEN
+        PERFORM public.recompute_menu_item_stock_status(v_ids);
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_menu_availability_after_movement ON inventory_movements;
+CREATE TRIGGER trg_menu_availability_after_movement
+AFTER INSERT ON inventory_movements
+FOR EACH ROW EXECUTE FUNCTION public.trg_menu_availability_after_movement();
+
+REVOKE ALL ON FUNCTION public.trg_menu_availability_after_movement() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.trg_menu_availability_after_movement() TO service_role;
+
+-- Linking/unlinking a recipe ingredient can also flip availability
+-- immediately, without waiting for the next unrelated movement.
+CREATE OR REPLACE FUNCTION public.trg_menu_availability_after_ingredient_change()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        PERFORM public.recompute_menu_item_stock_status(ARRAY[OLD.item_id]);
+        RETURN OLD;
+    ELSE
+        PERFORM public.recompute_menu_item_stock_status(ARRAY[NEW.item_id]);
+        RETURN NEW;
+    END IF;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_menu_availability_after_ingredient_change ON menu_item_ingredients;
+CREATE TRIGGER trg_menu_availability_after_ingredient_change
+AFTER INSERT OR UPDATE OR DELETE ON menu_item_ingredients
+FOR EACH ROW EXECUTE FUNCTION public.trg_menu_availability_after_ingredient_change();
+
+REVOKE ALL ON FUNCTION public.trg_menu_availability_after_ingredient_change() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.trg_menu_availability_after_ingredient_change() TO service_role;
 
 -- ==========================================================================
 -- LANE C · TEAM & PLATFORM
