@@ -608,6 +608,11 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_venue_ts ON events(venue_id, ts DESC);
 CREATE INDEX IF NOT EXISTS idx_events_type_ts ON events(type, ts DESC);
+-- PLAN-21 follow-up: bounds anonymous review-event replay to one row per
+-- (order, event type) — see 20260801083000_lane_b_review_event_dedup.sql.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_review_once
+    ON events (type, (payload ->> 'order_id'))
+    WHERE type IN ('review.prompted', 'review.clicked');
 
 -- ----------------------------------------------------------------------------
 -- 12 · DERIVED MEMBER STATUS — the heart of the product; never stored.

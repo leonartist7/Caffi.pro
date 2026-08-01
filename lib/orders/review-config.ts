@@ -52,3 +52,19 @@ export function looksLikeReviewHost(value: string): boolean {
     return false
   }
 }
+
+/** Shared between the confirmation page's client component and the
+ * review-event route so "has this order been paid for" can't drift
+ * between the two call sites. */
+export const SETTLED_ORDER_STATUSES = [
+  'paid',
+  'accepted',
+  'preparing',
+  'ready',
+  'out_for_delivery',
+  'completed',
+] as const
+
+export function isSettledOrderStatus(status: string): boolean {
+  return (SETTLED_ORDER_STATUSES as readonly string[]).includes(status)
+}

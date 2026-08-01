@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertTriangle, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { isHttpsUrl, looksLikeReviewHost } from '@/lib/orders/review-config'
@@ -23,23 +23,34 @@ export function ReviewSettings({ venueId }: { venueId: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/orders/review-settings?venue_id=${venueId}`)
-      if (res.ok) {
-        const body = await res.json()
-        setUrl(body.review_config?.url ?? '')
+  useEffect(() => {
+    // A tenant switch while a request is in flight must not let the
+    // previous tenant's slower response land after the new one's, and
+    // must not leave Save enabled against a value that isn't this
+    // venue's yet — both `cancelled` and re-arming `loading` guard that.
+    let cancelled = false
+    setLoading(true)
+    async function load() {
+      try {
+        const res = await fetch(`/api/orders/review-settings?venue_id=${venueId}`)
+        if (cancelled) return
+        if (res.ok) {
+          const body = await res.json()
+          setUrl(body.review_config?.url ?? '')
+        } else {
+          toast.error('Could not load review settings')
+        }
+      } catch {
+        if (!cancelled) toast.error('Could not load review settings')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-    } catch {
-      toast.error('Could not load review settings')
-    } finally {
-      setLoading(false)
+    }
+    void load()
+    return () => {
+      cancelled = true
     }
   }, [venueId])
-
-  useEffect(() => {
-    void load()
-  }, [load])
 
   const trimmed = url.trim()
   const httpsInvalid = trimmed.length > 0 && !isHttpsUrl(trimmed)

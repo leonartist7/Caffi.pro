@@ -72,12 +72,23 @@ union the prose.)
   zero-migration namespacing as `tip_config`), saved atomically via
   `set_venue_review_url` — same single-statement JSONB-merge pattern
   PLAN-20 had to retrofit after a real race-condition finding, built in
-  from the start here. Prompt shows once per order (`localStorage` flag
-  checked before first render, no migration needed), anti-gating enforced
-  structurally (no rating input exists in the component at all). Verified
-  live, fully transactional, including the atomicity proof (an unrelated
-  `brand_kit` key and `tip_config` both survive a review-URL save
-  untouched). `BUILD-LOG-PLAN-21.md`.
+  from the start here. Prompt shows once per order per browser profile
+  (`localStorage` flag checked before first render, no migration needed;
+  a `storage` listener re-syncs it across tabs on the same order),
+  anti-gating enforced structurally (no rating input exists in the
+  component at all). Verified live, fully transactional, including the
+  atomicity proof (an unrelated `brand_kit` key and `tip_config` both
+  survive a review-URL save untouched). Post-review hardening before
+  merge fixed a real 🟠 cross-venue data leak (the confirmation page
+  now verifies the order's own `venue_id` matches `params.slug`, 404ing
+  on mismatch) and a real 🔴 unbounded-replay gap on the review-event
+  endpoint (now gated on order-settled status + a DB-level unique index
+  deduplicating per order/event-type). One pre-existing, out-of-scope
+  gap flagged, not fixed: `kitchen-settings`/`clients` routes still do a
+  whole-object `brand_kit` read-modify-write, so either can still clobber
+  a review URL saved mid-race — same systemic gap `tip_config` already
+  has since PLAN-20, needs its own pass across all `brand_kit` writers.
+  `BUILD-LOG-PLAN-21.md`.
 - **PLAN-22 (Kitchen display)**: ✅ **merged** (PR #62). Dedicated
   `/kitchen` route (same counter PIN session as `/counter`), ticket-age
   colour escalation, chime (muted by default, `AudioContext` primed

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, Clock3, Coffee, Loader2, Star } from 'lucide-react'
 import { formatCents } from '@/lib/money'
+import { isSettledOrderStatus } from '@/lib/orders/review-config'
 
 const REVIEW_STRINGS = {
   heading: 'Enjoyed your visit?',
@@ -69,8 +70,29 @@ export function OrderStatus({
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
-    setWasAlreadyShownAtLoad(localStorage.getItem(reviewShownKey(orderId)) === '1')
+    try {
+      setWasAlreadyShownAtLoad(localStorage.getItem(reviewShownKey(orderId)) === '1')
+    } catch {
+      // Storage disabled/blocked (private mode, permissions): fail toward
+      // "already shown" so a storage error can only suppress the prompt,
+      // never duplicate it.
+      setWasAlreadyShownAtLoad(true)
+    }
     setReviewChecked(true)
+  }, [orderId])
+
+  useEffect(() => {
+    // Two tabs open on the same pending order both start with the flag
+    // absent. If one tab shows the prompt and writes the flag, the other
+    // must react to that write instead of independently re-showing the
+    // prompt once its own poll observes the order settle.
+    function onStorage(event: StorageEvent) {
+      if (event.key === reviewShownKey(orderId) && event.newValue === '1') {
+        setWasAlreadyShownAtLoad(true)
+      }
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
   }, [orderId])
 
   useEffect(() => {
@@ -94,17 +116,18 @@ export function OrderStatus({
     }
   }, [orderId])
 
-  const settled = order
-    ? ['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'].includes(
-        order.status
-      )
-    : false
+  const settled = order ? isSettledOrderStatus(order.status) : false
   const showReviewPrompt =
     reviewChecked && settled && Boolean(reviewUrl) && !wasAlreadyShownAtLoad && !dismissed
 
   useEffect(() => {
     if (!showReviewPrompt) return
-    localStorage.setItem(reviewShownKey(orderId), '1')
+    try {
+      localStorage.setItem(reviewShownKey(orderId), '1')
+    } catch {
+      // Storage disabled/blocked — the prompt still renders this once; we
+      // accept a possible re-show on reload rather than crashing the page.
+    }
     void postReviewEvent(orderId, 'prompted')
   }, [showReviewPrompt, orderId])
 

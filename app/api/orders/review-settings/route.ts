@@ -33,7 +33,10 @@ export async function PATCH(request: NextRequest) {
     p_venue_id: gate.ctx.venueId,
     p_url: url || null,
   })
-  if (error) return NextResponse.json({ error: 'Failed to save review settings' }, { status: 500 })
+  if (error) {
+    console.error('[review-settings] set_venue_review_url failed:', error.message)
+    return NextResponse.json({ error: 'Failed to save review settings' }, { status: 500 })
+  }
   if (reviewProfileJson === null)
     return NextResponse.json({ error: 'Venue not found' }, { status: 404 })
   return NextResponse.json({

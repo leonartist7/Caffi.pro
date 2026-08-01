@@ -25,15 +25,22 @@ review-config.ts` (pure, no Supabase import): `parseReviewConfig`,
   component's own existing definition of "past a successful payment,"
   reused unchanged) **and** a URL is configured **and** the order hasn't
   already shown it.
-- **Once-per-order, guest-side, no migration**: `localStorage` key
-  `aro-review-shown:<orderId>`, checked once on mount _before_ the prompt
-  can ever render. The very first eligible render persists the flag and
-  fires `review.prompted` exactly once (a `useEffect` keyed on the
+- **Once per order, per browser profile, guest-side, no migration**:
+  `localStorage` key `aro-review-shown:<orderId>`, checked once on mount
+  _before_ the prompt can ever render. The first eligible render persists
+  the flag and fires `review.prompted` (a `useEffect` keyed on the
   boolean `showReviewPrompt`, so it only fires on the false→true
   transition, never again on re-renders while it stays visible). A
   reload reads the flag first and the prompt never renders again for
-  that order — satisfies "reloading does not re-prompt" literally, not
-  just "reappears then re-dismissible."
+  that order in that browser profile — satisfies "reloading does not
+  re-prompt" literally, not just "reappears then re-dismissible." This
+  is a plain-`localStorage` guarantee, not an atomic cross-tab
+  check-and-set: a `storage` event listener re-syncs the flag when a
+  _second_ tab on the same order writes it, and the server-side
+  `review-event` insert is separately deduplicated at the DB level
+  (`idx_events_review_once`) so the `review.prompted` event itself can
+  never land twice for one order regardless of how many tabs or reloads
+  raced to fire it.
 - **Anti-gating by construction**: the component has exactly two actions
   — "Leave a review" (external link, `target="_blank"`, fires
   `review.clicked`) and "No thanks" (hides it for the rest of this page
@@ -78,6 +85,66 @@ This branch was rebased onto `main` after PLAN-20 (#61) and PLAN-22
 `app/(dashboard)/orders/page.tsx` alongside the new `ReviewSettings` —
 no reconciliation needed for this file. PLAN-23/24/25 also merged during
 this build; none of their files overlap with PLAN-21's.
+
+## Post-review hardening (CodeRabbit + Codex, before merge)
+
+Both bots reviewed the PR once it left draft; real findings, all fixed
+in the same PR rather than deferred:
+
+- **Cross-venue data leak (🟠, the significant one)**: the confirmation
+  page derived `reviewUrl`/`currency` from `params.slug` alone, never
+  checking that the order at `params.id` actually belongs to that
+  venue. A crafted/mistyped URL pairing one venue's slug with another
+  venue's order UUID would have shown the wrong venue's review link.
+  Fixed by looking up the order's own `venue_id` server-side and
+  rejecting (404) any mismatch — there's no legitimate case where they
+  differ. Also added `key={params.id}` on `<OrderStatus>` so a
+  client-side order-to-order navigation always gets a fresh component
+  instance instead of carrying over stale per-order state.
+- **Unbounded anonymous review-event inserts (🔴 P1)**: the capability-
+  token trust model meant any guest with an order UUID could replay
+  `POST /api/orders/[id]/review-event` indefinitely, including before
+  paying. Fixed with two independent bounds: the route now rejects the
+  event unless the order is actually settled (`isSettledOrderStatus`,
+  shared with `OrderStatus.tsx` so the two definitions can't drift), and
+  a new partial unique index (`idx_events_review_once`, migration
+  `20260801083000`) makes the insert itself idempotent per
+  `(order, event type)` — a duplicate request is a 200 no-op, not a
+  second row.
+- **`ReviewSettings.tsx` stale-response race**: switching venues while a
+  GET was in flight could let a slower, stale response overwrite the
+  newly-selected venue's value, and `loading` was never reset on that
+  switch, leaving Save enabled against the wrong venue's data. Fixed
+  with a `cancelled` flag scoped to the effect plus re-arming `loading`
+  on every `venueId` change; added the missing non-ok-response error
+  toast too.
+- **Multi-tab review-prompt race**: two tabs open on the same pending
+  order both start with the `localStorage` flag absent; if one tab
+  showed the prompt and set the flag, the other had no way to observe
+  that before independently re-showing it once its own poll saw the
+  order settle. Fixed with a `storage` event listener that re-syncs the
+  flag across tabs — on top of the DB-level dedupe above, which is the
+  real backstop regardless of what any tab's local state thinks.
+- **`localStorage` access not guarded**: wrapped both the read and the
+  write in `try/catch` — private-mode/blocked storage can throw. Failure
+  on the read side is treated as "already shown" (fails toward showing
+  the prompt _less_, never more).
+- Small nitpick: the review-settings PATCH's 500 branch wasn't logging
+  the underlying Supabase error before returning the generic message —
+  added the `console.error`.
+
+**Deliberately not fixed here (pre-existing, out of scope)**: Codex also
+flagged that `set_venue_review_url`'s atomic merge only protects against
+concurrent writers who _also_ use an atomic RPC — `kitchen-settings` and
+the client `site_profile` route still do a whole-object read-modify-write
+of `brand_kit`, so either could still clobber a review URL saved between
+their read and their write. This is real, but it's an existing,
+systemic gap that already applied identically to `tip_config` before
+this PR (merged in PLAN-20) — not a regression introduced here.
+Fixing it properly means converting every `brand_kit` writer in the app
+to the same atomic-merge pattern, which is bigger than this PR's scope.
+Flagged here rather than improvised; needs its own pass across
+`kitchen-settings`, `clients/[id]`, and `clients` routes.
 
 ## Verification gap — honest about what was NOT checked
 
