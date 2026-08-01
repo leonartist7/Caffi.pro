@@ -59,6 +59,8 @@ export type AroEventType =
   | 'inventory.item_updated'
   | 'inventory.item_deleted'
   | 'inventory.movement_recorded'
+  | 'review.prompted'
+  | 'review.clicked'
 
 export interface AroEvent {
   type: AroEventType
@@ -124,6 +126,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'inventory.item_updated': 'Inventory item updated',
   'inventory.item_deleted': 'Inventory item deleted',
   'inventory.movement_recorded': 'Inventory movement recorded',
+  'review.prompted': 'Review prompt shown',
+  'review.clicked': 'Review link clicked',
 }
 
 export function eventLabel(type: string): string {

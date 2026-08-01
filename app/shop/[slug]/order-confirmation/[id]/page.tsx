@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getTenantBySlug } from '@/lib/get-tenant'
+import { getReviewConfig } from '@/lib/storefront'
 import { OrderStatus } from '@/components/storefront/OrderStatus'
 
 export default async function ConfirmationPage({
@@ -9,5 +10,13 @@ export default async function ConfirmationPage({
 }) {
   const tenant = await getTenantBySlug(params.slug)
   if (!tenant) notFound()
-  return <OrderStatus orderId={params.id} slug={params.slug} currency={tenant.currency || 'CAD'} />
+  const reviewConfig = await getReviewConfig(params.slug)
+  return (
+    <OrderStatus
+      orderId={params.id}
+      slug={params.slug}
+      currency={tenant.currency || 'CAD'}
+      reviewUrl={reviewConfig.url}
+    />
+  )
 }

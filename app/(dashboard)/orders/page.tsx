@@ -7,6 +7,7 @@ import { useTenant } from '@/contexts/TenantContext'
 import { formatCents } from '@/lib/money'
 import { FulfilmentSettings } from '@/components/orders/FulfilmentSettings'
 import { KitchenSettings } from '@/components/orders/KitchenSettings'
+import { ReviewSettings } from '@/components/orders/ReviewSettings'
 import { TipSettings } from '@/components/orders/TipSettings'
 
 interface OrderRow {
@@ -125,6 +126,7 @@ export default function OrdersPage() {
           <>
             <KitchenSettings venueId={selectedTenant.tenant_id} />
             <TipSettings venueId={selectedTenant.tenant_id} />
+            <ReviewSettings venueId={selectedTenant.tenant_id} />
             <FulfilmentSettings venueId={selectedTenant.tenant_id} />
           </>
         ) : null}

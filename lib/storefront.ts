@@ -3,6 +3,7 @@ import 'server-only'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { MenuCategory, MenuItem } from '@/lib/menu/types'
 import { parseTipConfig, type TipConfig } from '@/lib/orders/tip-config'
+import { parseReviewConfig, type ReviewConfig } from '@/lib/orders/review-config'
 
 export interface StorefrontData {
   venue: {
@@ -105,6 +106,16 @@ export async function getTipConfig(slug: string): Promise<TipConfig> {
     .eq('slug', slug)
     .maybeSingle()
   return parseTipConfig(venue?.brand_kit ?? null)
+}
+
+export async function getReviewConfig(slug: string): Promise<ReviewConfig> {
+  const admin = getSupabaseAdmin()
+  const { data: venue } = await admin
+    .from('venues')
+    .select('brand_kit')
+    .eq('slug', slug)
+    .maybeSingle()
+  return parseReviewConfig(venue?.brand_kit ?? null)
 }
 
 export async function getDeliveryZones(slug: string): Promise<DeliveryZone[]> {

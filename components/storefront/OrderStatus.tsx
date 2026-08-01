@@ -2,8 +2,31 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { CheckCircle2, Clock3, Coffee, Loader2 } from 'lucide-react'
+import { CheckCircle2, Clock3, Coffee, Loader2, Star } from 'lucide-react'
 import { formatCents } from '@/lib/money'
+
+const REVIEW_STRINGS = {
+  heading: 'Enjoyed your visit?',
+  body: "We'd love a quick public review — it takes a second.",
+  cta: 'Leave a review',
+  dismiss: 'No thanks',
+}
+
+function reviewShownKey(orderId: string): string {
+  return `aro-review-shown:${orderId}`
+}
+
+async function postReviewEvent(orderId: string, type: 'prompted' | 'clicked') {
+  try {
+    await fetch(`/api/orders/${encodeURIComponent(orderId)}/review-event`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type }),
+    })
+  } catch {
+    // Fire-and-forget: a lost analytics event must never block the guest.
+  }
+}
 
 interface StatusData {
   order_id: string
@@ -32,13 +55,23 @@ export function OrderStatus({
   orderId,
   slug,
   currency,
+  reviewUrl,
 }: {
   orderId: string
   slug: string
   currency: string
+  reviewUrl?: string | null
 }) {
   const [order, setOrder] = useState<StatusData | null>(null)
   const [missing, setMissing] = useState(false)
+  const [wasAlreadyShownAtLoad, setWasAlreadyShownAtLoad] = useState(true)
+  const [reviewChecked, setReviewChecked] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+
+  useEffect(() => {
+    setWasAlreadyShownAtLoad(localStorage.getItem(reviewShownKey(orderId)) === '1')
+    setReviewChecked(true)
+  }, [orderId])
 
   useEffect(() => {
     let active = true
@@ -61,6 +94,20 @@ export function OrderStatus({
     }
   }, [orderId])
 
+  const settled = order
+    ? ['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'].includes(
+        order.status
+      )
+    : false
+  const showReviewPrompt =
+    reviewChecked && settled && Boolean(reviewUrl) && !wasAlreadyShownAtLoad && !dismissed
+
+  useEffect(() => {
+    if (!showReviewPrompt) return
+    localStorage.setItem(reviewShownKey(orderId), '1')
+    void postReviewEvent(orderId, 'prompted')
+  }, [showReviewPrompt, orderId])
+
   if (missing)
     return <div className="py-20 text-center text-aro-muted">This order link is not available.</div>
   if (!order)
@@ -69,14 +116,6 @@ export function OrderStatus({
         <Loader2 className="h-7 w-7 animate-spin text-aro-terra" />
       </div>
     )
-  const settled = [
-    'paid',
-    'accepted',
-    'preparing',
-    'ready',
-    'out_for_delivery',
-    'completed',
-  ].includes(order.status)
   return (
     <div className="mx-auto max-w-xl rounded-[32px] border border-aro-hairline bg-aro-cream-warm p-6 text-center shadow-xl sm:p-10">
       <span
@@ -105,6 +144,33 @@ export function OrderStatus({
           </div>
         ) : null}
       </div>
+      {showReviewPrompt ? (
+        <div className="mt-6 rounded-2xl border border-aro-hairline bg-white/60 p-4 text-left">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 shrink-0 text-aro-terra" />
+            <h2 className="font-display text-lg text-aro-espresso">{REVIEW_STRINGS.heading}</h2>
+          </div>
+          <p className="mt-1 text-sm text-aro-muted">{REVIEW_STRINGS.body}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <a
+              href={reviewUrl ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => void postReviewEvent(orderId, 'clicked')}
+              className="inline-flex min-h-[44px] items-center rounded-full bg-aro-terra px-4 text-sm font-bold text-white"
+            >
+              {REVIEW_STRINGS.cta}
+            </a>
+            <button
+              type="button"
+              onClick={() => setDismissed(true)}
+              className="inline-flex min-h-[44px] items-center rounded-full px-4 text-sm font-semibold text-aro-muted hover:bg-aro-sand"
+            >
+              {REVIEW_STRINGS.dismiss}
+            </button>
+          </div>
+        </div>
+      ) : null}
       <Link
         href={`/shop/${slug}/menu`}
         className="mt-6 inline-flex items-center gap-2 rounded-full bg-aro-espresso px-5 py-3 text-sm font-bold text-aro-cream"
