@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { getProvider, PaymentProviderConfigurationError } from '@/lib/payments/provider'
 import { requireVenueRole } from '@/lib/authz'
+import { getTipConfig } from '@/lib/storefront'
 
 interface CreatedOrder {
   order_id: string
@@ -10,6 +11,7 @@ interface CreatedOrder {
   subtotal_cents: number
   delivery_fee_cents: number
   tax_cents: number
+  tip_cents: number
   total_cents: number
   currency: string
   replayed: boolean
@@ -27,6 +29,7 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   DELIVERY_ADDRESS_REQUIRED: 'Enter a delivery address.',
   OUTSIDE_DELIVERY_ZONE: 'That postal code is outside this delivery area.',
   DELIVERY_MINIMUM_NOT_MET: 'Your cart does not meet this delivery zone minimum.',
+  INVALID_TIP: 'That tip amount is not valid.',
 }
 
 function orderError(message: string): string {
@@ -48,7 +51,7 @@ export async function GET(request: NextRequest) {
   let query = getSupabaseAdmin()
     .from('orders')
     .select(
-      'order_id, order_type, status, guest_name, subtotal_cents, delivery_fee_cents, tax_cents, total_cents, placed_at'
+      'order_id, order_type, status, guest_name, subtotal_cents, delivery_fee_cents, tax_cents, tip_cents, total_cents, placed_at'
     )
     .eq('venue_id', gate.ctx.venueId)
     .order('placed_at', { ascending: false })
@@ -72,6 +75,7 @@ export async function POST(request: NextRequest) {
     items?: Array<{ item_id?: string; quantity?: number; modifier_ids?: string[]; notes?: string }>
     notes?: string
     member_pass_serial?: string | null
+    tip_cents?: number
   }
   try {
     body = await request.json()
@@ -80,6 +84,18 @@ export async function POST(request: NextRequest) {
   }
   if (!body.venue_slug || !body.client_uuid || !body.order_type || !Array.isArray(body.items)) {
     return NextResponse.json({ error: 'Missing required order fields' }, { status: 400 })
+  }
+  if (
+    body.tip_cents !== undefined &&
+    (!Number.isSafeInteger(body.tip_cents) || body.tip_cents < 0)
+  ) {
+    return NextResponse.json({ error: FRIENDLY_ERRORS.INVALID_TIP }, { status: 400 })
+  }
+
+  let tipCents = body.tip_cents ?? 0
+  if (body.order_type === 'delivery' && tipCents > 0) {
+    const tipConfig = await getTipConfig(body.venue_slug)
+    if (!tipConfig.delivery_enabled) tipCents = 0
   }
 
   const admin = getSupabaseAdmin()
@@ -95,6 +111,7 @@ export async function POST(request: NextRequest) {
     p_delivery_postal_code: body.delivery_postal_code || null,
     p_notes: body.notes || null,
     p_member_pass_serial: body.member_pass_serial || null,
+    p_tip_cents: tipCents,
   })
   if (error || !data) {
     console.error('[orders] atomic order creation failed:', error)

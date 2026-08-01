@@ -10,6 +10,8 @@ interface StatusData {
   status: string
   order_type: string
   first_name: string
+  subtotal_cents: number
+  tip_cents: number
   total_cents: number
   placed_at: string
 }
@@ -91,9 +93,17 @@ export function OrderStatus({
       <p className="mt-3 text-aro-muted">
         Thanks, {order.first_name}. This page updates automatically as your order moves.
       </p>
-      <div className="mt-6 flex items-center justify-between rounded-2xl bg-aro-sand/60 px-4 py-3">
-        <span className="text-sm capitalize">{order.order_type.replace('_', ' ')}</span>
-        <span className="font-mono font-bold">{formatCents(order.total_cents, currency)}</span>
+      <div className="mt-6 rounded-2xl bg-aro-sand/60 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <span className="text-sm capitalize">{order.order_type.replace('_', ' ')}</span>
+          <span className="font-mono font-bold">{formatCents(order.total_cents, currency)}</span>
+        </div>
+        {order.tip_cents > 0 ? (
+          <div className="mt-1 flex items-center justify-between text-xs text-aro-muted">
+            <span>Includes tip</span>
+            <span className="font-mono">{formatCents(order.tip_cents, currency)}</span>
+          </div>
+        ) : null}
       </div>
       <Link
         href={`/shop/${slug}/menu`}

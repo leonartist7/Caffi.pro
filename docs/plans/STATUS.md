@@ -76,6 +76,140 @@ Lane B work began.
   land). PLAN-25 needed no such recreation — it's a pure read-model with
   no overlapping files.
 - **Next**: PLAN-21 once PLAN-20 merges; PLAN-26 (86-ing / stock-out).
+  Also fixed a real bug: `transition_order_status` awarded points on
+  `total_cents` instead of `subtotal_cents`. `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, **PR #62 open**. Dedicated
+  `/kitchen` route; true Supabase Realtime flagged as an open architecture
+  decision (custom-cookie auth + zero RLS policies on `orders`), shipped a
+  3s poll instead, honestly labelled. `BUILD-LOG-PLAN-22.md`.
+- **PLAN-23 (Inventory foundation)**: ✅ built, **PR #63 open**. Items
+  CRUD, receive/waste/count/adjust movements, derived on-hand, below-par
+  flag. Append-only trigger and `ON DELETE RESTRICT` both proven from real
+  attempts, not cited. `BUILD-LOG-PLAN-23.md`.
+- **PLAN-24 (Perpetual depletion)**: ✅ built, PR pending. **Idempotency
+  design authored by a dedicated Opus-5 architect pass** before any code
+  was written (per the master plan's own doctrine — this was the one Lane
+  B item explicitly not pre-designed in the master plan document). Key
+  decisions: depletion runs inside `record_order_payment_success`'s own
+  transaction but inside a PL/pgSQL `BEGIN...EXCEPTION` sub-transaction
+  (implicit savepoint) so a stock bug can never reverse a sale; the
+  uniqueness guarantee is `(order_id, item_id)` paired with a `GROUP BY`
+  aggregation (not a naive single-row-per-order index, which breaks when
+  one order uses the same ingredient across two menu items); refund
+  reversal negates the stored sale rows rather than re-deriving from a
+  recipe that may have changed. **The central test — forcing a real
+  depletion failure via a temporary constraint and proving the payment
+  still commits with zero sale rows and a recorded `inventory.depletion_failed`
+  event — passed live**, both manually and via a new automated,
+  transactional `supabase/tests/depletion_tests.sql` (`ALL DEPLETION TESTS
+PASSED`, zero residue). One acceptance item (an "Oversold" pill on the
+  inventory list page) is deferred to a small follow-up PR once PLAN-23
+  merges, since that page is itself a PLAN-23 file not present on this
+  branch — the underlying data already supports it with zero further
+  backend work. `BUILD-LOG-PLAN-24.md`.
+- Built out of dependency order deliberately, twice: PLAN-21 (review
+  prompt) is waiting on PLAN-20 to merge (both touch `OrderStatus.tsx`);
+  PLAN-22/23 needed only PR-0/PLAN-10 and were picked up while PLAN-20 was
+  in review. PLAN-24 depends on PLAN-23 for its application-layer files
+  (not its DB schema, which was already live) — two small files
+  (`lib/inventory/types.ts`, one `lib/events.ts` entry) were necessarily
+  recreated on PLAN-24's branch and will need a straightforward
+  union-merge conflict resolution when both PRs land; flagged in
+  `BUILD-LOG-PLAN-24.md`.
+- **Next**: PLAN-21 once PLAN-20 merges; PLAN-25 (food costing — read-model,
+  no new tables) → PLAN-26 (86-ing).
+(`jjgccfrwjkwknyjtbtxa`) before starting; PLAN-10's schema batch (already
+merged by Lane A) confirmed live via `list_tables` before any Lane B work
+began.
+
+- **PLAN-20 (Tips on QR orders)**: ✅ built, migration applied live, **PR
+  #61 open**. Also fixed a real bug in the same PR: `transition_order_status`
+  was awarding loyalty points on `total_cents` instead of `subtotal_cents`,
+  silently inflating points on every tipped order. See `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, **PR #62 open**. Dedicated
+  `/kitchen` route. **Real architectural finding, escalated rather than
+  improvised**: true Supabase Realtime on `orders` isn't safely wireable
+  today (`orders` RLS has zero policies, counter/kitchen auth is a custom
+  cookie, not a Supabase session) — shipped a 3s poll instead, honestly
+  labelled, and flagged the JWT/RLS architecture decision needed before
+  real Realtime is attempted. See `BUILD-LOG-PLAN-22.md`.
+- **PLAN-23 (Inventory foundation)**: ✅ built, PR pending. Items CRUD,
+  receive/waste/count/adjust movements with server-side sign conventions,
+  derived on-hand (never stored), below-par flagging. Verified live: the
+  reconciling-delta math for physical counts, the append-only trigger
+  (attempted a real `UPDATE`/`DELETE`, both correctly rejected), and the
+  `ON DELETE RESTRICT` FK that blocks deleting an item with movement
+  history (correctly caught and turned into a friendly message). New page
+  at `/menu/inventory`; nav entry appended to `lib/modules.ts`. See
+  `BUILD-LOG-PLAN-23.md`.
+- Built out of dependency order deliberately: PLAN-21 (review prompt)
+  depends on PLAN-20 merging first (both touch `OrderStatus.tsx`); PLAN-22
+  and PLAN-23 needed only PR-0/PLAN-10 (both merged), so they were picked
+  up while PLAN-20 was in review rather than idling, per the lane's own
+  dependency graph (§10).
+- **Next**: PLAN-21 once PLAN-20 merges; PLAN-24 (perpetual depletion —
+  needs Fable-authored idempotency design per the master plan, since a
+  double-fired Stripe webhook decrementing stock twice is silent and
+  unrecoverable) → PLAN-25 (food costing) → PLAN-26 (86-ing).
+merged by Lane A) confirmed live via `list_tables` — `inventory_items`,
+`inventory_movements`, `menu_item_ingredients`, `tip_allocations`,
+`orders.tip_cents`/`accepted_at`/`ready_at` all present before any Lane B
+work began.
+
+- **PLAN-20 (Tips on QR orders)**: ✅ built, migration applied live, **PR
+  #61 open** (not yet merged as of this entry). `orders.tip_cents` flows
+  end-to-end checkout → RPC → Stripe → confirmation/counter/HQ. Also fixed
+  a real bug found in the same PR: `transition_order_status` was awarding
+  loyalty points on `total_cents` instead of `subtotal_cents`, silently
+  inflating points on every tipped order once PLAN-10 added `tip_cents`
+  into `total_cents`. See `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, PR open. Dedicated `/kitchen`
+  route (same counter PIN session as `/counter`), ticket-age colour
+  escalation, chime (muted by default, `AudioContext` primed inside the
+  unmute click for autoplay-policy correctness), wake-lock always-on
+  display mode. **Real architectural finding, escalated rather than
+  improvised**: true Supabase Realtime on `orders` is not safely wireable
+  today — `orders` RLS has zero policies (service-role only, verified
+  live) and the counter/kitchen session is a custom HMAC cookie, never a
+  Supabase Auth session, so a browser client has no legitimate way to
+  subscribe to `postgres_changes` without either loosening `orders` RLS
+  (tenant-isolation change) or minting a scoped custom JWT via a new
+  `SUPABASE_JWT_SECRET` for Realtime Authorization (not configured
+  anywhere in this env). Shipped a 3-second poll instead, honestly
+  labelled as polling, never claiming to be realtime. **This needs a
+  Fable-tier architecture decision before real Realtime is attempted** —
+  see `BUILD-LOG-PLAN-22.md` for the full finding and a concrete
+  recommendation for whoever picks it up.
+- Built out of dependency order deliberately: PLAN-21 (review prompt)
+  depends on PLAN-20 merging first (both touch `OrderStatus.tsx`); PLAN-22
+  needed only PR-0, so it was picked up while PLAN-20 was in review rather
+  than idling, per the lane's own dependency graph (§10).
+- **Next**: PLAN-21 once PLAN-20 merges → PLAN-23/24/25/26 (inventory →
+  depletion → costing/86-ing).
+- **PLAN-20 (Tips on QR orders)**: ✅ **built, migration applied live**,
+  PR open. `orders.tip_cents` flows end-to-end: checkout tip selector →
+  `create_storefront_order` (now 12-arg, tip-validated) → Stripe charge
+  (zero adapter changes needed — it already keyed off `total_cents`) →
+  confirmation/counter/HQ tip lines. **Real bug found and fixed in the
+  same PR**: `transition_order_status` was awarding loyalty points on
+  `total_cents` instead of `subtotal_cents`, which — now that PLAN-10 added
+  `tip_cents` into `total_cents` — was silently inflating points on every
+  tipped order. Fixed and regression-tested live (85 points on an 850-cent
+  subtotal with a 150-cent tip at a 10-point-per-euro rate, not the 100
+  the bug would have produced). `tsc`/`build`/`lint` green,
+  `get_advisors` clean (no new findings). See `BUILD-LOG-PLAN-20.md` for
+  full detail, including one known verification gap: no live browser
+  click-through was possible in this environment (no
+  `SUPABASE_SERVICE_ROLE_KEY` / `.env.local` to run the dev server against
+  Supabase) — verified instead by direct SQL against the live seeded
+  `the-roastery` venue plus `tsc`/`build`/code reading. Left two harmless,
+  clearly-labelled test rows (`PLAN20 Verification Member` + its
+  points-ledger entry) on that demo venue — could not be deleted because
+  `points_ledger` is genuinely append-only (proved this myself when my own
+  cleanup attempt was rejected by the ledger trigger).
+- **Next**: PLAN-21 (post-payment review prompt, depends on PLAN-20) →
+  PLAN-22 (kitchen display, needs only PR-0) → PLAN-23/24/25/26
+  (inventory → depletion → costing/86-ing).
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
