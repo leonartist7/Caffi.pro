@@ -76,6 +76,65 @@ began.
   needs Fable-authored idempotency design per the master plan, since a
   double-fired Stripe webhook decrementing stock twice is silent and
   unrecoverable) → PLAN-25 (food costing) → PLAN-26 (86-ing).
+merged by Lane A) confirmed live via `list_tables` — `inventory_items`,
+`inventory_movements`, `menu_item_ingredients`, `tip_allocations`,
+`orders.tip_cents`/`accepted_at`/`ready_at` all present before any Lane B
+work began.
+
+- **PLAN-20 (Tips on QR orders)**: ✅ built, migration applied live, **PR
+  #61 open** (not yet merged as of this entry). `orders.tip_cents` flows
+  end-to-end checkout → RPC → Stripe → confirmation/counter/HQ. Also fixed
+  a real bug found in the same PR: `transition_order_status` was awarding
+  loyalty points on `total_cents` instead of `subtotal_cents`, silently
+  inflating points on every tipped order once PLAN-10 added `tip_cents`
+  into `total_cents`. See `BUILD-LOG-PLAN-20.md`.
+- **PLAN-22 (Kitchen display)**: ✅ built, PR open. Dedicated `/kitchen`
+  route (same counter PIN session as `/counter`), ticket-age colour
+  escalation, chime (muted by default, `AudioContext` primed inside the
+  unmute click for autoplay-policy correctness), wake-lock always-on
+  display mode. **Real architectural finding, escalated rather than
+  improvised**: true Supabase Realtime on `orders` is not safely wireable
+  today — `orders` RLS has zero policies (service-role only, verified
+  live) and the counter/kitchen session is a custom HMAC cookie, never a
+  Supabase Auth session, so a browser client has no legitimate way to
+  subscribe to `postgres_changes` without either loosening `orders` RLS
+  (tenant-isolation change) or minting a scoped custom JWT via a new
+  `SUPABASE_JWT_SECRET` for Realtime Authorization (not configured
+  anywhere in this env). Shipped a 3-second poll instead, honestly
+  labelled as polling, never claiming to be realtime. **This needs a
+  Fable-tier architecture decision before real Realtime is attempted** —
+  see `BUILD-LOG-PLAN-22.md` for the full finding and a concrete
+  recommendation for whoever picks it up.
+- Built out of dependency order deliberately: PLAN-21 (review prompt)
+  depends on PLAN-20 merging first (both touch `OrderStatus.tsx`); PLAN-22
+  needed only PR-0, so it was picked up while PLAN-20 was in review rather
+  than idling, per the lane's own dependency graph (§10).
+- **Next**: PLAN-21 once PLAN-20 merges → PLAN-23/24/25/26 (inventory →
+  depletion → costing/86-ing).
+- **PLAN-20 (Tips on QR orders)**: ✅ **built, migration applied live**,
+  PR open. `orders.tip_cents` flows end-to-end: checkout tip selector →
+  `create_storefront_order` (now 12-arg, tip-validated) → Stripe charge
+  (zero adapter changes needed — it already keyed off `total_cents`) →
+  confirmation/counter/HQ tip lines. **Real bug found and fixed in the
+  same PR**: `transition_order_status` was awarding loyalty points on
+  `total_cents` instead of `subtotal_cents`, which — now that PLAN-10 added
+  `tip_cents` into `total_cents` — was silently inflating points on every
+  tipped order. Fixed and regression-tested live (85 points on an 850-cent
+  subtotal with a 150-cent tip at a 10-point-per-euro rate, not the 100
+  the bug would have produced). `tsc`/`build`/`lint` green,
+  `get_advisors` clean (no new findings). See `BUILD-LOG-PLAN-20.md` for
+  full detail, including one known verification gap: no live browser
+  click-through was possible in this environment (no
+  `SUPABASE_SERVICE_ROLE_KEY` / `.env.local` to run the dev server against
+  Supabase) — verified instead by direct SQL against the live seeded
+  `the-roastery` venue plus `tsc`/`build`/code reading. Left two harmless,
+  clearly-labelled test rows (`PLAN20 Verification Member` + its
+  points-ledger entry) on that demo venue — could not be deleted because
+  `points_ledger` is genuinely append-only (proved this myself when my own
+  cleanup attempt was rejected by the ledger trigger).
+- **Next**: PLAN-21 (post-payment review prompt, depends on PLAN-20) →
+  PLAN-22 (kitchen display, needs only PR-0) → PLAN-23/24/25/26
+  (inventory → depletion → costing/86-ing).
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 

@@ -5,11 +5,33 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { Coffee, MapPin, ShoppingBag, Truck } from 'lucide-react'
 import { useOrderingCart } from '@/contexts/OrderingCartContext'
 import type { DeliveryZone } from '@/lib/storefront'
-import { formatCents } from '@/lib/money'
+import { formatCents, dollarsToCents } from '@/lib/money'
+import {
+  maxTipCents,
+  shouldPromptTip,
+  type OrderType,
+  type TipConfig,
+} from '@/lib/orders/tip-config'
 
-type OrderType = 'pickup' | 'dine_in' | 'delivery'
+const STRINGS = {
+  tipHeading: 'Add a tip?',
+  tipSubtext: '100% goes to the team.',
+  noTip: 'No tip',
+  customTip: 'Custom',
+  customTipPlaceholder: 'Amount',
+  tipTooHigh: "That's more than we can charge — try a smaller amount.",
+  tipInvalid: 'Enter a valid amount, like 5 or 5.50.',
+}
 
-export function CheckoutForm({ slug, zones }: { slug: string; zones: DeliveryZone[] }) {
+export function CheckoutForm({
+  slug,
+  zones,
+  tipConfig,
+}: {
+  slug: string
+  zones: DeliveryZone[]
+  tipConfig: TipConfig
+}) {
   const cart = useOrderingCart()
   const router = useRouter()
   const search = useSearchParams()
@@ -26,15 +48,50 @@ export function CheckoutForm({ slug, zones }: { slug: string; zones: DeliveryZon
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [stubbed, setStubbed] = useState(false)
+  const [tipSelection, setTipSelection] = useState<number | 'none' | 'custom'>(
+    tipConfig.presets_pct[0] ?? 'none'
+  )
+  const [customTip, setCustomTip] = useState('')
+  const [tipError, setTipError] = useState('')
 
   useEffect(() => {
     if (!cart.items.length) router.replace(`/shop/${slug}/menu`)
   }, [cart.items.length, router, slug])
 
   const selectedZone = zones.find(zone => zone.zone_id === zoneId)
+  const tipPrompted = shouldPromptTip(orderType, tipConfig)
+  const maxTip = maxTipCents(cart.subtotalCents)
+
+  const tipCents = useMemo(() => {
+    if (!tipPrompted) return 0
+    if (tipSelection === 'none') return 0
+    if (tipSelection === 'custom') {
+      try {
+        return Math.min(Math.max(0, dollarsToCents(customTip || '0')), maxTip)
+      } catch {
+        return 0
+      }
+    }
+    return Math.round((cart.subtotalCents * tipSelection) / 100)
+  }, [tipPrompted, tipSelection, customTip, cart.subtotalCents, maxTip])
+
+  useEffect(() => {
+    if (tipSelection !== 'custom' || !customTip) {
+      setTipError('')
+      return
+    }
+    try {
+      const cents = dollarsToCents(customTip)
+      setTipError(cents > maxTip ? STRINGS.tipTooHigh : '')
+    } catch {
+      setTipError(STRINGS.tipInvalid)
+    }
+  }, [tipSelection, customTip, maxTip])
+
+  const deliveryFeeCents = orderType === 'delivery' ? (selectedZone?.fee_cents ?? 0) : 0
   const estimatedTotal = useMemo(
-    () => cart.subtotalCents + (orderType === 'delivery' ? (selectedZone?.fee_cents ?? 0) : 0),
-    [cart.subtotalCents, orderType, selectedZone]
+    () => cart.subtotalCents + deliveryFeeCents + tipCents,
+    [cart.subtotalCents, deliveryFeeCents, tipCents]
   )
 
   async function submit(event: React.FormEvent) {
@@ -66,6 +123,7 @@ export function CheckoutForm({ slug, zones }: { slug: string; zones: DeliveryZon
           })),
           notes,
           member_pass_serial: passSerial || null,
+          tip_cents: tipCents,
         }),
       })
       const body = await response.json().catch(() => ({}))
@@ -183,6 +241,69 @@ export function CheckoutForm({ slug, zones }: { slug: string; zones: DeliveryZon
           </section>
         ) : null}
 
+        {tipPrompted ? (
+          <section className="rounded-[26px] border border-aro-hairline bg-aro-cream-warm p-5">
+            <h2 className="font-display text-2xl text-aro-espresso">{STRINGS.tipHeading}</h2>
+            <p className="mt-1 text-sm text-aro-muted">{STRINGS.tipSubtext}</p>
+            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {tipConfig.presets_pct.map(pct => (
+                <button
+                  key={pct}
+                  type="button"
+                  aria-pressed={tipSelection === pct}
+                  onClick={() => setTipSelection(pct)}
+                  className={`min-h-[44px] rounded-2xl border px-3 py-3 text-sm font-bold ${
+                    tipSelection === pct
+                      ? 'border-aro-terra bg-aro-terra/10 text-aro-espresso'
+                      : 'border-aro-hairline bg-white/50 text-aro-ink'
+                  }`}
+                >
+                  {pct}%
+                  <span className="mt-0.5 block font-mono text-xs font-normal text-aro-muted">
+                    {formatCents(Math.round((cart.subtotalCents * pct) / 100), cart.currency)}
+                  </span>
+                </button>
+              ))}
+              <button
+                type="button"
+                aria-pressed={tipSelection === 'custom'}
+                onClick={() => setTipSelection('custom')}
+                className={`min-h-[44px] rounded-2xl border px-3 py-3 text-sm font-bold ${
+                  tipSelection === 'custom'
+                    ? 'border-aro-terra bg-aro-terra/10 text-aro-espresso'
+                    : 'border-aro-hairline bg-white/50 text-aro-ink'
+                }`}
+              >
+                {STRINGS.customTip}
+              </button>
+              <button
+                type="button"
+                aria-pressed={tipSelection === 'none'}
+                onClick={() => setTipSelection('none')}
+                className={`min-h-[44px] rounded-2xl border px-3 py-3 text-sm font-bold ${
+                  tipSelection === 'none'
+                    ? 'border-aro-terra bg-aro-terra/10 text-aro-espresso'
+                    : 'border-aro-hairline bg-white/50 text-aro-ink'
+                }`}
+              >
+                {STRINGS.noTip}
+              </button>
+            </div>
+            {tipSelection === 'custom' ? (
+              <div className="mt-3">
+                <input
+                  inputMode="decimal"
+                  value={customTip}
+                  onChange={event => setCustomTip(event.target.value)}
+                  placeholder={STRINGS.customTipPlaceholder}
+                  className="min-h-[44px] w-full rounded-2xl border border-aro-hairline bg-white/60 px-4 py-3 font-mono outline-none focus:border-aro-terra"
+                />
+                {tipError ? <p className="mt-2 text-sm text-aro-rose">{tipError}</p> : null}
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
         <section className="rounded-[26px] border border-aro-hairline bg-aro-cream-warm p-5">
           <Field
             label="Order notes"
@@ -220,12 +341,28 @@ export function CheckoutForm({ slug, zones }: { slug: string; zones: DeliveryZon
             </div>
           ))}
         </div>
-        <div className="mt-5 border-t border-aro-cream/15 pt-4">
-          <div className="flex justify-between text-sm text-aro-cream/65">
+        <div className="mt-5 space-y-1.5 border-t border-aro-cream/15 pt-4 text-sm text-aro-cream/65">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span className="font-mono">{formatCents(cart.subtotalCents, cart.currency)}</span>
+          </div>
+          {orderType === 'delivery' && deliveryFeeCents ? (
+            <div className="flex justify-between">
+              <span>Delivery fee</span>
+              <span className="font-mono">{formatCents(deliveryFeeCents, cart.currency)}</span>
+            </div>
+          ) : null}
+          {tipPrompted && tipCents ? (
+            <div className="flex justify-between">
+              <span>Tip</span>
+              <span className="font-mono">{formatCents(tipCents, cart.currency)}</span>
+            </div>
+          ) : null}
+          <div className="flex justify-between pt-1 text-base font-bold text-aro-cream">
             <span>Estimated total</span>
             <span className="font-mono">{formatCents(estimatedTotal, cart.currency)}</span>
           </div>
-          <p className="mt-2 text-xs text-aro-cream/50">
+          <p className="pt-1 text-xs text-aro-cream/50">
             Tax and final pricing are securely recalculated before payment.
           </p>
         </div>
@@ -242,7 +379,12 @@ export function CheckoutForm({ slug, zones }: { slug: string; zones: DeliveryZon
           </div>
         ) : null}
         <button
-          disabled={submitting || !cart.items.length || (orderType === 'delivery' && !zones.length)}
+          disabled={
+            submitting ||
+            !cart.items.length ||
+            (orderType === 'delivery' && !zones.length) ||
+            Boolean(tipError)
+          }
           className="mt-5 w-full rounded-full bg-aro-terra px-5 py-4 text-sm font-bold text-white disabled:opacity-50"
         >
           {submitting ? 'Securing your order...' : 'Continue to secure payment'}
