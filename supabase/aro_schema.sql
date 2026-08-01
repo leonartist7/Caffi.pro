@@ -608,6 +608,11 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_venue_ts ON events(venue_id, ts DESC);
 CREATE INDEX IF NOT EXISTS idx_events_type_ts ON events(type, ts DESC);
+-- PLAN-21 follow-up: bounds anonymous review-event replay to one row per
+-- (order, event type) — see 20260801083000_lane_b_review_event_dedup.sql.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_events_review_once
+    ON events (type, (payload ->> 'order_id'))
+    WHERE type IN ('review.prompted', 'review.clicked');
 
 -- ----------------------------------------------------------------------------
 -- 12 · DERIVED MEMBER STATUS — the heart of the product; never stored.
@@ -2067,6 +2072,29 @@ $$;
 
 REVOKE ALL ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) TO service_role;
+
+-- PLAN-21: post-payment review prompt. Same atomic single-statement
+-- pattern as set_venue_tip_delivery_enabled, applied to
+-- brand_kit->'review_profile'->'url' instead.
+CREATE OR REPLACE FUNCTION public.set_venue_review_url(p_venue_id UUID, p_url TEXT)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    UPDATE venues
+    SET brand_kit = COALESCE(brand_kit, '{}'::jsonb) ||
+        jsonb_build_object(
+            'review_profile',
+            COALESCE(brand_kit->'review_profile', '{}'::jsonb) ||
+                jsonb_build_object('url', p_url)
+        )
+    WHERE venue_id = p_venue_id
+    RETURNING brand_kit->'review_profile';
+$$;
+
+REVOKE ALL ON FUNCTION public.set_venue_review_url(UUID, TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_venue_review_url(UUID, TEXT) TO service_role;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_points_ledger_order_award
     ON public.points_ledger(order_id) WHERE order_id IS NOT NULL AND reason = 'order';
