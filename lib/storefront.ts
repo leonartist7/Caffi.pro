@@ -2,6 +2,7 @@ import 'server-only'
 
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { MenuCategory, MenuItem } from '@/lib/menu/types'
+import { parseTipConfig, type TipConfig } from '@/lib/orders/tip-config'
 
 export interface StorefrontData {
   venue: {
@@ -93,6 +94,16 @@ export async function getStorefront(slug: string): Promise<StorefrontData | null
         })),
     })) as MenuItem[],
   }
+}
+
+export async function getTipConfig(slug: string): Promise<TipConfig> {
+  const admin = getSupabaseAdmin()
+  const { data: venue } = await admin
+    .from('venues')
+    .select('brand_kit')
+    .eq('slug', slug)
+    .maybeSingle()
+  return parseTipConfig(venue?.brand_kit ?? null)
 }
 
 export async function getDeliveryZones(slug: string): Promise<DeliveryZone[]> {

@@ -7,12 +7,14 @@ import { useTenant } from '@/contexts/TenantContext'
 import { formatCents } from '@/lib/money'
 import { FulfilmentSettings } from '@/components/orders/FulfilmentSettings'
 import { KitchenSettings } from '@/components/orders/KitchenSettings'
+import { TipSettings } from '@/components/orders/TipSettings'
 
 interface OrderRow {
   order_id: string
   order_type: string
   status: string
   guest_name: string | null
+  tip_cents: number
   total_cents: number
   placed_at: string
 }
@@ -101,8 +103,13 @@ export default function OrdersPage() {
                   <span className="w-fit rounded-full bg-aro-sand px-3 py-1 text-xs font-semibold capitalize">
                     {order.status.replace('_', ' ')}
                   </span>
-                  <span className="font-mono font-bold text-aro-terra">
+                  <span className="text-right font-mono font-bold text-aro-terra">
                     {formatCents(order.total_cents)}
+                    {order.tip_cents > 0 ? (
+                      <span className="mt-0.5 block text-[10px] font-normal text-aro-muted">
+                        incl. {formatCents(order.tip_cents)} tip
+                      </span>
+                    ) : null}
                   </span>
                 </article>
               ))}
@@ -117,6 +124,7 @@ export default function OrdersPage() {
         {selectedTenant ? (
           <>
             <KitchenSettings venueId={selectedTenant.tenant_id} />
+            <TipSettings venueId={selectedTenant.tenant_id} />
             <FulfilmentSettings venueId={selectedTenant.tenant_id} />
           </>
         ) : null}

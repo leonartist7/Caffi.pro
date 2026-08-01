@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   const admin = getSupabaseAdmin()
   const { data: venue } = await admin
     .from('venues')
-    .select('brand_kit')
+    .select('brand_kit, currency')
     .eq('venue_id', session.venueId)
     .maybeSingle()
   const kitchenConfig = parseKitchenConfig(venue?.brand_kit ?? null)
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     ? await admin.from('order_item_modifiers').select('*').in('order_item_id', itemIds)
     : { data: [] }
   return NextResponse.json({
+    currency: venue?.currency || 'CAD',
     orders: (orders ?? []).map(order => ({
       ...order,
       items: (items ?? [])
