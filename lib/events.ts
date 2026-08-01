@@ -52,6 +52,7 @@ export type AroEventType =
   | 'admin.impersonation_started'
   | 'admin.impersonation_ended'
   // --- Lane B ---
+  | 'inventory.depletion_failed'
   | 'inventory.item_created'
   | 'inventory.item_updated'
   | 'inventory.item_deleted'
@@ -114,6 +115,7 @@ export const EVENT_LABELS: Record<string, string> = {
   'admin.impersonation_started': 'Admin operating as venue',
   'admin.impersonation_ended': 'Admin exited venue',
   // --- Lane B ---
+  'inventory.depletion_failed': 'Stock depletion failed',
   'inventory.item_created': 'Inventory item created',
   'inventory.item_updated': 'Inventory item updated',
   'inventory.item_deleted': 'Inventory item deleted',
