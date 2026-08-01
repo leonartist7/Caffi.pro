@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { parseKitchenConfig } from '@/lib/orders/kitchen-config'
 
 export async function GET(request: NextRequest) {
   const session = verifyCounterToken(request.cookies.get(COUNTER_COOKIE)?.value)
@@ -8,9 +9,10 @@ export async function GET(request: NextRequest) {
   const admin = getSupabaseAdmin()
   const { data: venue } = await admin
     .from('venues')
-    .select('currency')
+    .select('brand_kit, currency')
     .eq('venue_id', session.venueId)
     .maybeSingle()
+  const kitchenConfig = parseKitchenConfig(venue?.brand_kit ?? null)
   const { data: orders, error } = await admin
     .from('orders')
     .select('*')
@@ -39,5 +41,6 @@ export async function GET(request: NextRequest) {
           ),
         })),
     })),
+    kitchen_config: kitchenConfig,
   })
 }

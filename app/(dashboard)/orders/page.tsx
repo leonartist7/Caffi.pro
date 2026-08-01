@@ -6,6 +6,7 @@ import { toast } from 'sonner'
 import { useTenant } from '@/contexts/TenantContext'
 import { formatCents } from '@/lib/money'
 import { FulfilmentSettings } from '@/components/orders/FulfilmentSettings'
+import { KitchenSettings } from '@/components/orders/KitchenSettings'
 import { TipSettings } from '@/components/orders/TipSettings'
 
 interface OrderRow {
@@ -122,6 +123,7 @@ export default function OrdersPage() {
         )}
         {selectedTenant ? (
           <>
+            <KitchenSettings venueId={selectedTenant.tenant_id} />
             <TipSettings venueId={selectedTenant.tenant_id} />
             <FulfilmentSettings venueId={selectedTenant.tenant_id} />
           </>
