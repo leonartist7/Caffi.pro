@@ -15,6 +15,7 @@ import {
   Bell,
   CalendarDays,
   Sparkles,
+  TrendingUp,
   Boxes,
 } from 'lucide-react'
 
@@ -45,6 +46,7 @@ export type ModuleKey =
   | 'notifications'
   | 'locations'
   // --- Lane B ---
+  | 'costing'
   | 'inventory'
 
 export interface ModuleDef {
@@ -104,6 +106,7 @@ export const MODULES: ModuleDef[] = [
   },
   { key: 'locations', label: 'Locations', href: '/cafes', icon: MapPin, status: 'coming_soon' },
   // --- Lane B ---
+  { key: 'costing', label: 'Costing', href: '/menu/costing', icon: TrendingUp, status: 'live' },
   {
     key: 'inventory',
     label: 'Inventory',
