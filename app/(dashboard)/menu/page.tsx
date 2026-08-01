@@ -12,10 +12,12 @@ import {
   Search,
   SlidersHorizontal,
   Trash2,
+  Wheat,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { CategoryDialog, type CategoryDraft } from '@/components/menu/CategoryDialog'
 import { ItemDialog, type ItemDraft, type ModifierGroupDraft } from '@/components/menu/ItemDialog'
+import { RecipeDialog } from '@/components/menu/RecipeDialog'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useTenant } from '@/contexts/TenantContext'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -111,6 +113,7 @@ export default function MenuPage() {
   const [editingCategory, setEditingCategory] = useState<MenuCategory | null>(null)
   const [itemDialog, setItemDialog] = useState(false)
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null)
+  const [recipeItem, setRecipeItem] = useState<MenuItem | null>(null)
 
   const loadMenu = useCallback(async () => {
     if (!selectedTenant) {
@@ -487,6 +490,15 @@ export default function MenuPage() {
                           </button>
                           <button
                             type="button"
+                            onClick={() => setRecipeItem(item)}
+                            aria-label={`Edit recipe for ${item.name}`}
+                            title="Recipe"
+                            className="rounded-full p-2 text-aro-muted hover:bg-aro-sand hover:text-aro-espresso"
+                          >
+                            <Wheat className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => {
                               setEditingItem(item)
                               setItemDialog(true)
@@ -545,6 +557,12 @@ export default function MenuPage() {
         confirmText={confirmState.confirmText}
         cancelText={confirmState.cancelText}
         variant={confirmState.variant}
+      />
+      <RecipeDialog
+        open={Boolean(recipeItem)}
+        itemId={recipeItem?.item_id ?? null}
+        itemName={recipeItem?.name ?? ''}
+        onClose={() => setRecipeItem(null)}
       />
     </main>
   )

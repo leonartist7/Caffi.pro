@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import { ArrowLeft, Ban, Clock3, RefreshCw } from 'lucide-react'
+import { formatCents } from '@/lib/money'
 
 interface QueueOrder {
   order_id: string
@@ -9,6 +10,8 @@ interface QueueOrder {
   order_type: string
   guest_name: string
   placed_at: string
+  tip_cents: number
+  total_cents: number
   items: Array<{
     order_item_id: string
     name_snapshot: string
@@ -38,6 +41,7 @@ export function OrdersQueue({
 }) {
   const [orders, setOrders] = useState<QueueOrder[]>([])
   const [eightySixed, setEightySixed] = useState<EightySixedItem[]>([])
+  const [currency, setCurrency] = useState('CAD')
   const [busy, setBusy] = useState('')
   const load = useCallback(async () => {
     const res = await fetch('/api/counter/orders')
@@ -46,6 +50,7 @@ export function OrdersQueue({
       const body = await res.json()
       setOrders(body.orders ?? [])
       setEightySixed(body.eighty_sixed ?? [])
+      setCurrency(body.currency || 'CAD')
     }
   }, [onSessionExpired])
   useEffect(() => {
@@ -126,6 +131,12 @@ export function OrdersQueue({
                       ) : null}
                     </div>
                   ))}
+                  {order.tip_cents > 0 ? (
+                    <p className="flex justify-between border-t border-aro-hairline pt-2 text-sm font-semibold text-aro-terra">
+                      <span>Tip</span>
+                      <span className="font-mono">{formatCents(order.tip_cents, currency)}</span>
+                    </p>
+                  ) : null}
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-2">
                   {next ? (

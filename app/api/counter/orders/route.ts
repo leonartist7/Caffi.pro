@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { parseKitchenConfig } from '@/lib/orders/kitchen-config'
 
 export async function GET(request: NextRequest) {
   const session = verifyCounterToken(request.cookies.get(COUNTER_COOKIE)?.value)
   if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   const admin = getSupabaseAdmin()
+  const { data: venue } = await admin
+    .from('venues')
+    .select('brand_kit, currency')
+    .eq('venue_id', session.venueId)
+    .maybeSingle()
+  const kitchenConfig = parseKitchenConfig(venue?.brand_kit ?? null)
   const { data: orders, error } = await admin
     .from('orders')
     .select('*')
@@ -28,6 +35,7 @@ export async function GET(request: NextRequest) {
     .eq('is_86ed', true)
     .order('name')
   return NextResponse.json({
+    currency: venue?.currency || 'CAD',
     orders: (orders ?? []).map(order => ({
       ...order,
       items: (items ?? [])
@@ -40,5 +48,6 @@ export async function GET(request: NextRequest) {
         })),
     })),
     eighty_sixed: eightySixed ?? [],
+    kitchen_config: kitchenConfig,
   })
 }

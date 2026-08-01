@@ -1779,6 +1779,32 @@ BEGIN
         )
     );
 
+    -- PLAN-24: depletion is best-effort by design. This inner
+    -- BEGIN...EXCEPTION is a sub-transaction (implicit savepoint): a
+    -- failure rolls back the stock movements ONLY. The payment, the order
+    -- status, and the order.paid event above are already durable and
+    -- still commit. An order must never be lost to a stock bug.
+    BEGIN
+        PERFORM public.deplete_order_stock(v_payment.order_id);
+    EXCEPTION WHEN OTHERS THEN
+        BEGIN
+            INSERT INTO events (actor, venue_id, type, payload)
+            VALUES (
+                'system',
+                v_payment.venue_id,
+                'inventory.depletion_failed',
+                jsonb_build_object(
+                    'order_id', v_payment.order_id,
+                    'phase', 'depletion',
+                    'sqlstate', SQLSTATE,
+                    'message', SQLERRM
+                )
+            );
+        EXCEPTION WHEN OTHERS THEN
+            RAISE WARNING 'depletion failure event unwritable for order %', v_payment.order_id;
+        END;
+    END;
+
     RETURN QUERY SELECT v_payment.order_id, v_payment.venue_id, true, false;
 END;
 $$;
@@ -1793,7 +1819,7 @@ CREATE OR REPLACE FUNCTION public.create_storefront_order(
     p_venue_slug TEXT, p_client_uuid UUID, p_order_type TEXT, p_items JSONB,
     p_guest JSONB, p_table_token UUID, p_zone_id UUID,
     p_delivery_address TEXT, p_delivery_postal_code TEXT, p_notes TEXT,
-    p_member_pass_serial UUID
+    p_member_pass_serial UUID, p_tip_cents INTEGER DEFAULT 0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1820,6 +1846,7 @@ DECLARE
     v_subtotal INTEGER := 0;
     v_delivery_fee INTEGER := 0;
     v_tax INTEGER;
+    v_tip INTEGER;
     v_total INTEGER;
     v_priced_items JSONB := '[]'::JSONB;
     v_order_item_id UUID;
@@ -1841,7 +1868,8 @@ BEGIN
             'order_id', v_existing.order_id, 'venue_id', v_existing.venue_id,
             'status', v_existing.status, 'subtotal_cents', v_existing.subtotal_cents,
             'delivery_fee_cents', v_existing.delivery_fee_cents,
-            'tax_cents', v_existing.tax_cents, 'total_cents', v_existing.total_cents,
+            'tax_cents', v_existing.tax_cents, 'tip_cents', v_existing.tip_cents,
+            'total_cents', v_existing.total_cents,
             'currency', COALESCE(v_venue.currency, 'CAD'), 'replayed', true
         );
     END IF;
@@ -1955,12 +1983,17 @@ BEGIN
         v_delivery_fee := v_zone.fee_cents;
     END IF;
 
+    v_tip := COALESCE(p_tip_cents, 0);
+    IF v_tip < 0 OR v_tip > GREATEST(v_subtotal * 3, 5000) THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INVALID_TIP';
+    END IF;
+
     v_tax := ROUND((v_subtotal + v_delivery_fee) * v_venue.tax_rate_bp / 10000.0);
-    v_total := v_subtotal + v_delivery_fee + v_tax;
+    v_total := v_subtotal + v_delivery_fee + v_tax + v_tip;
     INSERT INTO public.orders (
         order_id, venue_id, member_id, client_uuid, order_type, table_id, zone_id,
         guest_name, guest_phone, guest_email, delivery_address, notes,
-        subtotal_cents, delivery_fee_cents, tax_cents, total_cents
+        subtotal_cents, delivery_fee_cents, tax_cents, tip_cents, total_cents
     ) VALUES (
         v_order_id, v_venue.venue_id, v_member_id, p_client_uuid, p_order_type,
         v_table_id, CASE WHEN p_order_type = 'delivery' THEN p_zone_id ELSE NULL END,
@@ -1968,7 +2001,7 @@ BEGIN
         NULLIF(BTRIM(COALESCE(p_guest->>'email', '')), ''),
         CASE WHEN p_order_type = 'delivery' THEN BTRIM(p_delivery_address) ELSE NULL END,
         NULLIF(BTRIM(COALESCE(p_notes, '')), ''),
-        v_subtotal, v_delivery_fee, v_tax, v_total
+        v_subtotal, v_delivery_fee, v_tax, v_tip, v_total
     );
 
     FOR v_priced_item IN SELECT value FROM jsonb_array_elements(v_priced_items)
@@ -1991,24 +2024,49 @@ BEGIN
     INSERT INTO public.events (actor, venue_id, type, payload) VALUES (
         CASE WHEN v_member_id IS NULL THEN 'guest' ELSE 'member:' || v_member_id::TEXT END,
         v_venue.venue_id, 'order.placed', jsonb_build_object(
-            'order_id', v_order_id, 'order_type', p_order_type, 'total_cents', v_total
+            'order_id', v_order_id, 'order_type', p_order_type, 'total_cents', v_total,
+            'tip_cents', v_tip
         )
     );
     RETURN jsonb_build_object(
         'order_id', v_order_id, 'venue_id', v_venue.venue_id, 'status', 'pending',
         'subtotal_cents', v_subtotal, 'delivery_fee_cents', v_delivery_fee,
-        'tax_cents', v_tax, 'total_cents', v_total,
+        'tax_cents', v_tax, 'tip_cents', v_tip, 'total_cents', v_total,
         'currency', COALESCE(v_venue.currency, 'CAD'), 'replayed', false
     );
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.create_storefront_order(
-    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID
+    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID, INTEGER
 ) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_storefront_order(
-    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID
+    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID, INTEGER
 ) TO service_role;
+
+-- PLAN-20 follow-up: atomic delivery-tip toggle. A single UPDATE that only
+-- ever touches brand_kit->'tip_config'->'delivery_enabled', merged against
+-- the row's current brand_kit at lock time -- immune to a concurrent writer
+-- (e.g. the client site-profile route) clobbering unrelated keys.
+CREATE OR REPLACE FUNCTION public.set_venue_tip_delivery_enabled(p_venue_id UUID, p_delivery_enabled BOOLEAN)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    UPDATE venues
+    SET brand_kit = COALESCE(brand_kit, '{}'::jsonb) ||
+        jsonb_build_object(
+            'tip_config',
+            COALESCE(brand_kit->'tip_config', '{}'::jsonb) ||
+                jsonb_build_object('delivery_enabled', p_delivery_enabled)
+        )
+    WHERE venue_id = p_venue_id
+    RETURNING brand_kit->'tip_config';
+$$;
+
+REVOKE ALL ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) TO service_role;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_points_ledger_order_award
     ON public.points_ledger(order_id) WHERE order_id IS NOT NULL AND reason = 'order';
@@ -2043,11 +2101,18 @@ BEGIN
         (p_new_status = 'refunded' AND v_order.status IN ('paid','accepted','preparing','ready','out_for_delivery','canceled'))
     ) THEN RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ILLEGAL_ORDER_TRANSITION'; END IF;
 
-    UPDATE public.orders SET status = p_new_status, updated_at = NOW() WHERE order_id = p_order_id;
+    -- Kitchen ticket-age timestamps (PLAN-22 reads these).
+    UPDATE public.orders SET
+        status = p_new_status,
+        updated_at = NOW(),
+        accepted_at = CASE WHEN p_new_status = 'accepted' THEN NOW() ELSE accepted_at END,
+        ready_at = CASE WHEN p_new_status = 'ready' THEN NOW() ELSE ready_at END
+    WHERE order_id = p_order_id;
     IF p_new_status = 'completed' AND v_order.member_id IS NOT NULL THEN
         SELECT COALESCE((loyalty_config->>'points_per_euro')::NUMERIC, 0) INTO v_rate
         FROM public.venues WHERE venue_id = p_venue_id;
-        v_points := FLOOR(v_order.total_cents * v_rate / 100.0);
+        -- subtotal_cents only: tips and delivery/tax never earn points (PLAN-20).
+        v_points := FLOOR(v_order.subtotal_cents * v_rate / 100.0);
         IF v_points > 0 THEN
             INSERT INTO public.points_ledger (
                 tenant_id, member_id, order_id, points_change, reason, description
@@ -2057,6 +2122,30 @@ BEGIN
             ) ON CONFLICT (order_id) WHERE order_id IS NOT NULL AND reason = 'order' DO NOTHING;
         END IF;
     END IF;
+
+    -- PLAN-24: a refund writes compensating stock movements in the same
+    -- transaction as the status change, inside its own savepoint so a
+    -- stock failure can never block or reverse the refund.
+    IF p_new_status = 'refunded' THEN
+        BEGIN
+            PERFORM public.reverse_order_stock_depletion(p_order_id);
+        EXCEPTION WHEN OTHERS THEN
+            BEGIN
+                INSERT INTO public.events(actor, venue_id, type, payload) VALUES (
+                    'system', p_venue_id, 'inventory.depletion_failed',
+                    jsonb_build_object(
+                        'order_id', p_order_id,
+                        'phase', 'reversal',
+                        'sqlstate', SQLSTATE,
+                        'message', SQLERRM
+                    )
+                );
+            EXCEPTION WHEN OTHERS THEN
+                RAISE WARNING 'reversal failure event unwritable for order %', p_order_id;
+            END;
+        END;
+    END IF;
+
     INSERT INTO public.events(actor, venue_id, type, payload) VALUES (
         COALESCE(p_actor, 'system'), p_venue_id, 'order.status_changed',
         jsonb_build_object('order_id', p_order_id, 'from', v_order.status, 'to', p_new_status)
@@ -2926,7 +3015,7 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
     venue_id UUID NOT NULL REFERENCES venues(venue_id) ON DELETE CASCADE,
     item_id UUID NOT NULL,
     qty NUMERIC NOT NULL,                      -- signed: receive/count +, waste/sale -
-    reason TEXT NOT NULL CHECK (reason IN ('receive', 'count', 'waste', 'sale', 'adjust')),
+    reason TEXT NOT NULL CHECK (reason IN ('receive', 'count', 'waste', 'sale', 'adjust', 'sale_reversal')),
     order_id UUID,
     note TEXT,
     membership_id UUID REFERENCES memberships(membership_id) ON DELETE SET NULL,
@@ -2948,6 +3037,94 @@ CREATE INDEX IF NOT EXISTS idx_inventory_movements_item_created
     ON inventory_movements(item_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_inventory_movements_order
     ON inventory_movements(order_id) WHERE order_id IS NOT NULL;
+
+-- PLAN-24: one movement row per (order, inventory item) per kind. Partial,
+-- so manual movements (order_id IS NULL) are unconstrained. Paired with the
+-- GROUP BY in deplete_order_stock(): an order that uses the same ingredient
+-- across two lines writes ONE summed row, never two.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_movements_order_sale
+    ON inventory_movements(order_id, item_id)
+    WHERE order_id IS NOT NULL AND reason = 'sale';
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_inventory_movements_order_sale_reversal
+    ON inventory_movements(order_id, item_id)
+    WHERE order_id IS NOT NULL AND reason = 'sale_reversal';
+
+-- PLAN-24: depletion. Safe to call any number of times for any order — the
+-- index above makes every call after the first a no-op (returns rows
+-- inserted, 0 on replay). An order with no recipe links produces zero rows
+-- and no error.
+CREATE OR REPLACE FUNCTION public.deplete_order_stock(p_order_id UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    v_rows INTEGER := 0;
+BEGIN
+    INSERT INTO public.inventory_movements (
+        venue_id, item_id, qty, reason, order_id, note
+    )
+    SELECT
+        o.venue_id,
+        mii.inventory_item_id,
+        -SUM(mii.qty_per_unit * oi.quantity),
+        'sale',
+        o.order_id,
+        'Auto-depleted on payment'
+    FROM public.orders o
+    JOIN public.order_items oi
+      ON oi.order_id = o.order_id
+    JOIN public.menu_item_ingredients mii
+      ON mii.item_id = oi.item_id
+     AND mii.venue_id = o.venue_id
+    WHERE o.order_id = p_order_id
+      AND o.status NOT IN ('pending', 'canceled', 'refunded')
+    GROUP BY o.venue_id, o.order_id, mii.inventory_item_id
+    HAVING SUM(mii.qty_per_unit * oi.quantity) > 0
+    ON CONFLICT (order_id, item_id)
+        WHERE order_id IS NOT NULL AND reason = 'sale'
+        DO NOTHING;
+
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    RETURN v_rows;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.deplete_order_stock(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.deplete_order_stock(UUID) TO service_role;
+
+-- PLAN-24: reversal. Negates the STORED sale rows — never re-derived from
+-- the recipe, which may have changed since the sale. Append-only: the
+-- original 'sale' rows are left exactly as they are.
+CREATE OR REPLACE FUNCTION public.reverse_order_stock_depletion(p_order_id UUID)
+RETURNS INTEGER
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    v_rows INTEGER := 0;
+BEGIN
+    INSERT INTO public.inventory_movements (
+        venue_id, item_id, qty, reason, order_id, note
+    )
+    SELECT
+        m.venue_id,
+        m.item_id,
+        -m.qty,
+        'sale_reversal',
+        m.order_id,
+        'Reversed on refund of order ' || LEFT(m.order_id::TEXT, 8)
+    FROM public.inventory_movements m
+    WHERE m.order_id = p_order_id
+      AND m.reason = 'sale'
+    ON CONFLICT (order_id, item_id)
+        WHERE order_id IS NOT NULL AND reason = 'sale_reversal'
+        DO NOTHING;
+
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    RETURN v_rows;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.reverse_order_stock_depletion(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.reverse_order_stock_depletion(UUID) TO service_role;
 
 CREATE OR REPLACE FUNCTION public.forbid_inventory_movement_mutation()
 RETURNS trigger
@@ -3102,6 +3279,71 @@ FOR EACH ROW EXECUTE FUNCTION public.trg_menu_availability_after_ingredient_chan
 
 REVOKE ALL ON FUNCTION public.trg_menu_availability_after_ingredient_change() FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.trg_menu_availability_after_ingredient_change() TO service_role;
+-- PLAN-25: food costing & margin report. Read-model only — no new tables.
+-- All cost/margin arithmetic lives here in Postgres NUMERIC (exact
+-- decimal) math, never in JavaScript.
+CREATE OR REPLACE FUNCTION public.get_food_costing_report(p_venue_id UUID)
+RETURNS TABLE (
+    item_id UUID,
+    name TEXT,
+    price_cents INTEGER,
+    recipe_status TEXT,
+    cost_cents INTEGER,
+    margin_cents INTEGER,
+    margin_pct NUMERIC,
+    units_sold BIGINT,
+    margin_contribution_cents BIGINT
+)
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+    WITH recipe AS (
+        SELECT
+            mii.item_id,
+            COUNT(*) FILTER (WHERE ii.cost_per_unit_cents IS NULL) AS missing_cost_count,
+            SUM(mii.qty_per_unit * ii.cost_per_unit_cents) AS raw_cost
+        FROM menu_item_ingredients mii
+        JOIN inventory_items ii ON ii.item_id = mii.inventory_item_id
+        WHERE mii.venue_id = p_venue_id
+        GROUP BY mii.item_id
+    ),
+    -- "Sold" mirrors deplete_order_stock's own definition of a real sale
+    -- (PLAN-24) — the costing report and the depletion trigger can never
+    -- quietly disagree about what counts.
+    sales AS (
+        SELECT oi.item_id, SUM(oi.quantity) AS units_sold
+        FROM order_items oi
+        JOIN orders o ON o.order_id = oi.order_id
+        WHERE o.venue_id = p_venue_id
+          AND o.status NOT IN ('pending', 'canceled', 'refunded')
+        GROUP BY oi.item_id
+    )
+    SELECT
+        mi.item_id,
+        mi.name,
+        mi.price_cents,
+        CASE
+            WHEN r.item_id IS NULL THEN 'none'
+            WHEN r.missing_cost_count > 0 THEN 'partial'
+            ELSE 'complete'
+        END AS recipe_status,
+        CASE WHEN r.item_id IS NOT NULL AND r.missing_cost_count = 0
+             THEN ROUND(r.raw_cost)::INTEGER END AS cost_cents,
+        CASE WHEN r.item_id IS NOT NULL AND r.missing_cost_count = 0
+             THEN mi.price_cents - ROUND(r.raw_cost)::INTEGER END AS margin_cents,
+        CASE WHEN r.item_id IS NOT NULL AND r.missing_cost_count = 0 AND mi.price_cents > 0
+             THEN ROUND((mi.price_cents - r.raw_cost) / mi.price_cents * 100, 1) END AS margin_pct,
+        COALESCE(s.units_sold, 0) AS units_sold,
+        CASE WHEN r.item_id IS NOT NULL AND r.missing_cost_count = 0
+             THEN (mi.price_cents - ROUND(r.raw_cost)::INTEGER) * COALESCE(s.units_sold, 0) END
+             AS margin_contribution_cents
+    FROM menu_items mi
+    LEFT JOIN recipe r ON r.item_id = mi.item_id
+    LEFT JOIN sales s ON s.item_id = mi.item_id
+    WHERE mi.venue_id = p_venue_id
+    ORDER BY margin_contribution_cents DESC NULLS LAST, mi.name;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_food_costing_report(UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_food_costing_report(UUID) TO service_role;
 
 -- ==========================================================================
 -- LANE C · TEAM & PLATFORM

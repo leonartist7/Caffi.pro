@@ -53,6 +53,12 @@ export type AroEventType =
   | 'admin.impersonation_ended'
   | 'menu.item_86ed'
   | 'menu.item_restored'
+  // --- Lane B ---
+  | 'inventory.depletion_failed'
+  | 'inventory.item_created'
+  | 'inventory.item_updated'
+  | 'inventory.item_deleted'
+  | 'inventory.movement_recorded'
 
 export interface AroEvent {
   type: AroEventType
@@ -112,6 +118,12 @@ export const EVENT_LABELS: Record<string, string> = {
   'admin.impersonation_ended': 'Admin exited venue',
   'menu.item_86ed': 'Menu item 86ed',
   'menu.item_restored': 'Menu item restored',
+  // --- Lane B ---
+  'inventory.depletion_failed': 'Stock depletion failed',
+  'inventory.item_created': 'Inventory item created',
+  'inventory.item_updated': 'Inventory item updated',
+  'inventory.item_deleted': 'Inventory item deleted',
+  'inventory.movement_recorded': 'Inventory movement recorded',
 }
 
 export function eventLabel(type: string): string {
