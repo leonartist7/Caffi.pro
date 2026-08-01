@@ -48,6 +48,7 @@ export async function getStorefront(slug: string): Promise<StorefrontData | null
       .select('*')
       .eq('venue_id', venue.venue_id)
       .eq('is_active', true)
+      .eq('is_86ed', false)
       .order('sort_order')
       .order('name'),
   ])

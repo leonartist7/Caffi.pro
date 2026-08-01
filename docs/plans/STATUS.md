@@ -56,6 +56,7 @@ Lane B work began.
   Idempotency design authored by a dedicated Opus-5 architect pass; the
   savepoint-isolation guarantee proven live by forcing a real failure.
   `BUILD-LOG-PLAN-24.md`.
+- **PLAN-25 (Food costing & margin report)**: ✅ built, **PR #65 open**.
 - **PLAN-25 (Food costing & margin report)**: ✅ built, PR pending.
   Read-model only, no new tables — a `LANGUAGE sql STABLE` function doing
   all cost/margin arithmetic in Postgres NUMERIC (exact decimal), never
@@ -67,6 +68,28 @@ Lane B work began.
   item) confirmed the report ranks by earned margin, not percentage alone;
   zero-price item showed `NULL` margin_pct, never `Infinity`/`NaN`.
   `BUILD-LOG-PLAN-25.md`.
+- **PLAN-26 (86-ing / stock-out)**: ✅ built, PR pending. Two flags on
+  `menu_items` (`is_86ed`, `auto_86ed`) with a `CHECK` enforcing
+  auto-implies-86'd; a single recompute function driven by two triggers
+  (`inventory_movements` insert — covers manual movements and PLAN-24's
+  automatic sale depletion alike — and `menu_item_ingredients` insert/
+  update/delete, for immediate effect on recipe changes). Manual-outranks-
+  automatic is structural: the recompute function only ever touches a row
+  it itself set `auto_86ed = true` on; the manual toggle endpoint always
+  clears that flag. Checkout rejection reuses the existing
+  `ITEM_UNAVAILABLE` catalog-lookup mechanism from `create_storefront_order`
+  rather than a parallel path. **Verified live, fully transactional (zero
+  residue)**: immediate auto-86 on a fresh ingredient link (no movement
+  needed), a 2-ingredient item staying 86'd until _both_ ingredients are
+  restocked, and the central proof — a manually-86'd item staying 86'd
+  through a restock that, in the same transaction, auto-restored a
+  different item depending on the identical ingredient. Two trigger
+  functions were caught by `get_advisors` defaulting to `PUBLIC` EXECUTE
+  grants and hardened to `service_role`-only before commit. **Deferred**:
+  a kitchen-side 86'd indicator — `app/kitchen/**` (PLAN-22) doesn't exist
+  on this branch yet and has no menu-browsing surface today regardless;
+  the counter-side banner (which does have a real, existing surface) is
+  built. `BUILD-LOG-PLAN-26.md`.
 - Built out of dependency order deliberately, more than once: PLAN-21
   (review prompt) is waiting on PLAN-20 to merge (both touch
   `OrderStatus.tsx`); PLAN-22/23 needed only PR-0/PLAN-10; PLAN-24 needed
@@ -74,6 +97,13 @@ Lane B work began.
   application files from PLAN-23's unmerged PR (flagged in
   `BUILD-LOG-PLAN-24.md`, a straightforward union-merge conflict when both
   land). PLAN-25 needed no such recreation — it's a pure read-model with
+  no overlapping files. PLAN-26 mirrored `create_storefront_order` against
+  whatever's actually on `main` today (still the pre-tip 11-arg version) —
+  expect a normal 3-way reconciliation of that function's `aro_schema.sql`
+  entry once PLAN-20/22/23/24/25/26 land in sequence.
+- **Next**: PLAN-21 once PLAN-20 merges. All items v2R assigns to Lane B
+  (PLAN-20, 22–26) have now been built; remaining work is driving each PR
+  to green and through review.
   no overlapping files.
 - **Next**: PLAN-21 once PLAN-20 merges; PLAN-26 (86-ing / stock-out).
   Also fixed a real bug: `transition_order_status` awarded points on

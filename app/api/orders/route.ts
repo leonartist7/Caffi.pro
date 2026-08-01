@@ -38,6 +38,9 @@ function orderError(message: string): string {
   if (message.includes('MODIFIER_SELECTION_INVALID:')) {
     return `Check your choices for ${message.split('MODIFIER_SELECTION_INVALID:')[1].split(/[\n"]/, 1)[0]}.`
   }
+  if (message.includes('ITEM_86ED:')) {
+    return `Sorry — ${message.split('ITEM_86ED:')[1].split(/[\n"]/, 1)[0]} just sold out. Please remove it from your cart and refresh the menu.`
+  }
   return 'We could not validate this order. Refresh the menu and try again.'
 }
 

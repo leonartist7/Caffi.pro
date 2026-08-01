@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { ArrowLeft, Clock3, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Ban, Clock3, RefreshCw } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 
 interface QueueOrder {
@@ -19,6 +19,11 @@ interface QueueOrder {
     modifiers: Array<{ id: string; name_snapshot: string }>
   }>
 }
+interface EightySixedItem {
+  item_id: string
+  name: string
+  auto_86ed: boolean
+}
 const NEXT: Record<string, string> = {
   paid: 'accepted',
   accepted: 'preparing',
@@ -35,6 +40,7 @@ export function OrdersQueue({
   onSessionExpired: () => void
 }) {
   const [orders, setOrders] = useState<QueueOrder[]>([])
+  const [eightySixed, setEightySixed] = useState<EightySixedItem[]>([])
   const [currency, setCurrency] = useState('CAD')
   const [busy, setBusy] = useState('')
   const load = useCallback(async () => {
@@ -43,6 +49,7 @@ export function OrdersQueue({
     if (res.ok) {
       const body = await res.json()
       setOrders(body.orders ?? [])
+      setEightySixed(body.eighty_sixed ?? [])
       setCurrency(body.currency || 'CAD')
     }
   }, [onSessionExpired])
@@ -73,6 +80,14 @@ export function OrdersQueue({
           <RefreshCw className="h-5 w-5" />
         </button>
       </header>
+      {eightySixed.length > 0 ? (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-aro-rose/30 bg-aro-rose/10 px-4 py-3">
+          <Ban className="h-4 w-4 shrink-0 text-aro-rose" />
+          <p className="text-sm font-semibold text-aro-rose">
+            86&apos;d right now: {eightySixed.map(item => item.name).join(', ')}
+          </p>
+        </div>
+      ) : null}
       {orders.length === 0 ? (
         <div className="py-20 text-center text-aro-muted">No active paid orders.</div>
       ) : (

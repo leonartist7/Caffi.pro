@@ -4,7 +4,7 @@ import { emitEvent } from '@/lib/events'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 const ITEM_COLUMNS =
-  'item_id, venue_id, category_id, name, description, price_cents, image_url, is_active, sort_order, dietary_tags, created_at, updated_at'
+  'item_id, venue_id, category_id, name, description, price_cents, image_url, is_active, sort_order, dietary_tags, created_at, updated_at, is_86ed, auto_86ed'
 
 function normalizeTags(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.some(tag => typeof tag !== 'string')) return null

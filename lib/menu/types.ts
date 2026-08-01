@@ -45,4 +45,8 @@ export interface MenuItem {
   created_at: string
   updated_at: string
   modifier_groups: MenuModifierGroup[]
+  /** 86'd: hidden from the storefront and rejected at checkout right now. */
+  is_86ed: boolean
+  /** Whether the current is_86ed state was set by stock recompute, not a person. */
+  auto_86ed: boolean
 }
