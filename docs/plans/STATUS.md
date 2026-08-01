@@ -39,6 +39,41 @@ Unchanged — nothing started, all correctly deferred.
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
 
+## Lane B — Commerce & kitchen ops
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane B (`PLAN-20`–`PLAN-29`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`) before starting; PLAN-10's schema batch (already
+merged by Lane A) confirmed live via `list_tables` — `inventory_items`,
+`inventory_movements`, `menu_item_ingredients`, `tip_allocations`,
+`orders.tip_cents`/`accepted_at`/`ready_at` all present before any Lane B
+work began.
+
+- **PLAN-20 (Tips on QR orders)**: ✅ **built, migration applied live**,
+  PR open. `orders.tip_cents` flows end-to-end: checkout tip selector →
+  `create_storefront_order` (now 12-arg, tip-validated) → Stripe charge
+  (zero adapter changes needed — it already keyed off `total_cents`) →
+  confirmation/counter/HQ tip lines. **Real bug found and fixed in the
+  same PR**: `transition_order_status` was awarding loyalty points on
+  `total_cents` instead of `subtotal_cents`, which — now that PLAN-10 added
+  `tip_cents` into `total_cents` — was silently inflating points on every
+  tipped order. Fixed and regression-tested live (85 points on an 850-cent
+  subtotal with a 150-cent tip at a 10-point-per-euro rate, not the 100
+  the bug would have produced). `tsc`/`build`/`lint` green,
+  `get_advisors` clean (no new findings). See `BUILD-LOG-PLAN-20.md` for
+  full detail, including one known verification gap: no live browser
+  click-through was possible in this environment (no
+  `SUPABASE_SERVICE_ROLE_KEY` / `.env.local` to run the dev server against
+  Supabase) — verified instead by direct SQL against the live seeded
+  `the-roastery` venue plus `tsc`/`build`/code reading. Left two harmless,
+  clearly-labelled test rows (`PLAN20 Verification Member` + its
+  points-ledger entry) on that demo venue — could not be deleted because
+  `points_ledger` is genuinely append-only (proved this myself when my own
+  cleanup attempt was rejected by the ledger trigger).
+- **Next**: PLAN-21 (post-payment review prompt, depends on PLAN-20) →
+  PLAN-22 (kitchen display, needs only PR-0) → PLAN-23/24/25/26
+  (inventory → depletion → costing/86-ing).
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
