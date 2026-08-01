@@ -1813,7 +1813,7 @@ CREATE OR REPLACE FUNCTION public.create_storefront_order(
     p_venue_slug TEXT, p_client_uuid UUID, p_order_type TEXT, p_items JSONB,
     p_guest JSONB, p_table_token UUID, p_zone_id UUID,
     p_delivery_address TEXT, p_delivery_postal_code TEXT, p_notes TEXT,
-    p_member_pass_serial UUID
+    p_member_pass_serial UUID, p_tip_cents INTEGER DEFAULT 0
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -1840,6 +1840,7 @@ DECLARE
     v_subtotal INTEGER := 0;
     v_delivery_fee INTEGER := 0;
     v_tax INTEGER;
+    v_tip INTEGER;
     v_total INTEGER;
     v_priced_items JSONB := '[]'::JSONB;
     v_order_item_id UUID;
@@ -1861,7 +1862,8 @@ BEGIN
             'order_id', v_existing.order_id, 'venue_id', v_existing.venue_id,
             'status', v_existing.status, 'subtotal_cents', v_existing.subtotal_cents,
             'delivery_fee_cents', v_existing.delivery_fee_cents,
-            'tax_cents', v_existing.tax_cents, 'total_cents', v_existing.total_cents,
+            'tax_cents', v_existing.tax_cents, 'tip_cents', v_existing.tip_cents,
+            'total_cents', v_existing.total_cents,
             'currency', COALESCE(v_venue.currency, 'CAD'), 'replayed', true
         );
     END IF;
@@ -1972,12 +1974,17 @@ BEGIN
         v_delivery_fee := v_zone.fee_cents;
     END IF;
 
+    v_tip := COALESCE(p_tip_cents, 0);
+    IF v_tip < 0 OR v_tip > GREATEST(v_subtotal * 3, 5000) THEN
+        RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'INVALID_TIP';
+    END IF;
+
     v_tax := ROUND((v_subtotal + v_delivery_fee) * v_venue.tax_rate_bp / 10000.0);
-    v_total := v_subtotal + v_delivery_fee + v_tax;
+    v_total := v_subtotal + v_delivery_fee + v_tax + v_tip;
     INSERT INTO public.orders (
         order_id, venue_id, member_id, client_uuid, order_type, table_id, zone_id,
         guest_name, guest_phone, guest_email, delivery_address, notes,
-        subtotal_cents, delivery_fee_cents, tax_cents, total_cents
+        subtotal_cents, delivery_fee_cents, tax_cents, tip_cents, total_cents
     ) VALUES (
         v_order_id, v_venue.venue_id, v_member_id, p_client_uuid, p_order_type,
         v_table_id, CASE WHEN p_order_type = 'delivery' THEN p_zone_id ELSE NULL END,
@@ -1985,7 +1992,7 @@ BEGIN
         NULLIF(BTRIM(COALESCE(p_guest->>'email', '')), ''),
         CASE WHEN p_order_type = 'delivery' THEN BTRIM(p_delivery_address) ELSE NULL END,
         NULLIF(BTRIM(COALESCE(p_notes, '')), ''),
-        v_subtotal, v_delivery_fee, v_tax, v_total
+        v_subtotal, v_delivery_fee, v_tax, v_tip, v_total
     );
 
     FOR v_priced_item IN SELECT value FROM jsonb_array_elements(v_priced_items)
@@ -2008,24 +2015,49 @@ BEGIN
     INSERT INTO public.events (actor, venue_id, type, payload) VALUES (
         CASE WHEN v_member_id IS NULL THEN 'guest' ELSE 'member:' || v_member_id::TEXT END,
         v_venue.venue_id, 'order.placed', jsonb_build_object(
-            'order_id', v_order_id, 'order_type', p_order_type, 'total_cents', v_total
+            'order_id', v_order_id, 'order_type', p_order_type, 'total_cents', v_total,
+            'tip_cents', v_tip
         )
     );
     RETURN jsonb_build_object(
         'order_id', v_order_id, 'venue_id', v_venue.venue_id, 'status', 'pending',
         'subtotal_cents', v_subtotal, 'delivery_fee_cents', v_delivery_fee,
-        'tax_cents', v_tax, 'total_cents', v_total,
+        'tax_cents', v_tax, 'tip_cents', v_tip, 'total_cents', v_total,
         'currency', COALESCE(v_venue.currency, 'CAD'), 'replayed', false
     );
 END;
 $$;
 
 REVOKE ALL ON FUNCTION public.create_storefront_order(
-    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID
+    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID, INTEGER
 ) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.create_storefront_order(
-    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID
+    TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID, INTEGER
 ) TO service_role;
+
+-- PLAN-20 follow-up: atomic delivery-tip toggle. A single UPDATE that only
+-- ever touches brand_kit->'tip_config'->'delivery_enabled', merged against
+-- the row's current brand_kit at lock time -- immune to a concurrent writer
+-- (e.g. the client site-profile route) clobbering unrelated keys.
+CREATE OR REPLACE FUNCTION public.set_venue_tip_delivery_enabled(p_venue_id UUID, p_delivery_enabled BOOLEAN)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    UPDATE venues
+    SET brand_kit = COALESCE(brand_kit, '{}'::jsonb) ||
+        jsonb_build_object(
+            'tip_config',
+            COALESCE(brand_kit->'tip_config', '{}'::jsonb) ||
+                jsonb_build_object('delivery_enabled', p_delivery_enabled)
+        )
+    WHERE venue_id = p_venue_id
+    RETURNING brand_kit->'tip_config';
+$$;
+
+REVOKE ALL ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) TO service_role;
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_points_ledger_order_award
     ON public.points_ledger(order_id) WHERE order_id IS NOT NULL AND reason = 'order';
