@@ -51,6 +51,11 @@ export type AroEventType =
   | 'sentry.test'
   | 'admin.impersonation_started'
   | 'admin.impersonation_ended'
+  // --- Lane B ---
+  | 'inventory.item_created'
+  | 'inventory.item_updated'
+  | 'inventory.item_deleted'
+  | 'inventory.movement_recorded'
 
 export interface AroEvent {
   type: AroEventType
@@ -108,6 +113,11 @@ export const EVENT_LABELS: Record<string, string> = {
   'sentry.test': 'Sentry test event',
   'admin.impersonation_started': 'Admin operating as venue',
   'admin.impersonation_ended': 'Admin exited venue',
+  // --- Lane B ---
+  'inventory.item_created': 'Inventory item created',
+  'inventory.item_updated': 'Inventory item updated',
+  'inventory.item_deleted': 'Inventory item deleted',
+  'inventory.movement_recorded': 'Inventory movement recorded',
 }
 
 export function eventLabel(type: string): string {
