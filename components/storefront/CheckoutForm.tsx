@@ -20,6 +20,7 @@ const STRINGS = {
   customTip: 'Custom',
   customTipPlaceholder: 'Amount',
   tipTooHigh: "That's more than we can charge — try a smaller amount.",
+  tipInvalid: 'Enter a valid amount, like 5 or 5.50.',
 }
 
 export function CheckoutForm({
@@ -83,7 +84,7 @@ export function CheckoutForm({
       const cents = dollarsToCents(customTip)
       setTipError(cents > maxTip ? STRINGS.tipTooHigh : '')
     } catch {
-      setTipError('')
+      setTipError(STRINGS.tipInvalid)
     }
   }, [tipSelection, customTip, maxTip])
 
@@ -249,6 +250,7 @@ export function CheckoutForm({
                 <button
                   key={pct}
                   type="button"
+                  aria-pressed={tipSelection === pct}
                   onClick={() => setTipSelection(pct)}
                   className={`min-h-[44px] rounded-2xl border px-3 py-3 text-sm font-bold ${
                     tipSelection === pct
@@ -264,6 +266,7 @@ export function CheckoutForm({
               ))}
               <button
                 type="button"
+                aria-pressed={tipSelection === 'custom'}
                 onClick={() => setTipSelection('custom')}
                 className={`min-h-[44px] rounded-2xl border px-3 py-3 text-sm font-bold ${
                   tipSelection === 'custom'
@@ -275,6 +278,7 @@ export function CheckoutForm({
               </button>
               <button
                 type="button"
+                aria-pressed={tipSelection === 'none'}
                 onClick={() => setTipSelection('none')}
                 className={`min-h-[44px] rounded-2xl border px-3 py-3 text-sm font-bold ${
                   tipSelection === 'none'

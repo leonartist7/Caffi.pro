@@ -2009,6 +2009,30 @@ GRANT EXECUTE ON FUNCTION public.create_storefront_order(
     TEXT, UUID, TEXT, JSONB, JSONB, UUID, UUID, TEXT, TEXT, TEXT, UUID, INTEGER
 ) TO service_role;
 
+-- PLAN-20 follow-up: atomic delivery-tip toggle. A single UPDATE that only
+-- ever touches brand_kit->'tip_config'->'delivery_enabled', merged against
+-- the row's current brand_kit at lock time -- immune to a concurrent writer
+-- (e.g. the client site-profile route) clobbering unrelated keys.
+CREATE OR REPLACE FUNCTION public.set_venue_tip_delivery_enabled(p_venue_id UUID, p_delivery_enabled BOOLEAN)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+    UPDATE venues
+    SET brand_kit = COALESCE(brand_kit, '{}'::jsonb) ||
+        jsonb_build_object(
+            'tip_config',
+            COALESCE(brand_kit->'tip_config', '{}'::jsonb) ||
+                jsonb_build_object('delivery_enabled', p_delivery_enabled)
+        )
+    WHERE venue_id = p_venue_id
+    RETURNING brand_kit->'tip_config';
+$$;
+
+REVOKE ALL ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.set_venue_tip_delivery_enabled(UUID, BOOLEAN) TO service_role;
+
 CREATE UNIQUE INDEX IF NOT EXISTS uq_points_ledger_order_award
     ON public.points_ledger(order_id) WHERE order_id IS NOT NULL AND reason = 'order';
 

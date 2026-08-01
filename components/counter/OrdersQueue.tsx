@@ -35,11 +35,16 @@ export function OrdersQueue({
   onSessionExpired: () => void
 }) {
   const [orders, setOrders] = useState<QueueOrder[]>([])
+  const [currency, setCurrency] = useState('CAD')
   const [busy, setBusy] = useState('')
   const load = useCallback(async () => {
     const res = await fetch('/api/counter/orders')
     if (res.status === 401) return onSessionExpired()
-    if (res.ok) setOrders((await res.json()).orders ?? [])
+    if (res.ok) {
+      const body = await res.json()
+      setOrders(body.orders ?? [])
+      setCurrency(body.currency || 'CAD')
+    }
   }, [onSessionExpired])
   useEffect(() => {
     void load()
@@ -114,7 +119,7 @@ export function OrdersQueue({
                   {order.tip_cents > 0 ? (
                     <p className="flex justify-between border-t border-aro-hairline pt-2 text-sm font-semibold text-aro-terra">
                       <span>Tip</span>
-                      <span className="font-mono">{formatCents(order.tip_cents)}</span>
+                      <span className="font-mono">{formatCents(order.tip_cents, currency)}</span>
                     </p>
                   ) : null}
                 </div>

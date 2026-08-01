@@ -6,6 +6,11 @@ export async function GET(request: NextRequest) {
   const session = verifyCounterToken(request.cookies.get(COUNTER_COOKIE)?.value)
   if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   const admin = getSupabaseAdmin()
+  const { data: venue } = await admin
+    .from('venues')
+    .select('currency')
+    .eq('venue_id', session.venueId)
+    .maybeSingle()
   const { data: orders, error } = await admin
     .from('orders')
     .select('*')
@@ -22,6 +27,7 @@ export async function GET(request: NextRequest) {
     ? await admin.from('order_item_modifiers').select('*').in('order_item_id', itemIds)
     : { data: [] }
   return NextResponse.json({
+    currency: venue?.currency || 'CAD',
     orders: (orders ?? []).map(order => ({
       ...order,
       items: (items ?? [])

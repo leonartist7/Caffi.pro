@@ -16,12 +16,17 @@ export function TipSettings({ venueId }: { venueId: string }) {
   const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/orders/tip-settings?venue_id=${venueId}`)
-    if (res.ok) {
-      const body = await res.json()
-      setDeliveryEnabled(Boolean(body.tip_config?.delivery_enabled))
+    try {
+      const res = await fetch(`/api/orders/tip-settings?venue_id=${venueId}`)
+      if (res.ok) {
+        const body = await res.json()
+        setDeliveryEnabled(Boolean(body.tip_config?.delivery_enabled))
+      }
+    } catch {
+      toast.error('Could not load tip settings')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [venueId])
 
   useEffect(() => {
@@ -32,16 +37,22 @@ export function TipSettings({ venueId }: { venueId: string }) {
     const next = !deliveryEnabled
     setSaving(true)
     setDeliveryEnabled(next)
-    const res = await fetch('/api/orders/tip-settings', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ venue_id: venueId, delivery_enabled: next }),
-    })
-    if (!res.ok) {
+    try {
+      const res = await fetch('/api/orders/tip-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId, delivery_enabled: next }),
+      })
+      if (!res.ok) {
+        setDeliveryEnabled(!next)
+        toast.error('Could not save tip settings')
+      }
+    } catch {
       setDeliveryEnabled(!next)
       toast.error('Could not save tip settings')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
   }
 
   return (

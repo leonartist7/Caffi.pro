@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { getProvider, PaymentProviderConfigurationError } from '@/lib/payments/provider'
 import { requireVenueRole } from '@/lib/authz'
+import { getTipConfig } from '@/lib/storefront'
 
 interface CreatedOrder {
   order_id: string
@@ -84,6 +85,18 @@ export async function POST(request: NextRequest) {
   if (!body.venue_slug || !body.client_uuid || !body.order_type || !Array.isArray(body.items)) {
     return NextResponse.json({ error: 'Missing required order fields' }, { status: 400 })
   }
+  if (
+    body.tip_cents !== undefined &&
+    (!Number.isSafeInteger(body.tip_cents) || body.tip_cents < 0)
+  ) {
+    return NextResponse.json({ error: FRIENDLY_ERRORS.INVALID_TIP }, { status: 400 })
+  }
+
+  let tipCents = body.tip_cents ?? 0
+  if (body.order_type === 'delivery' && tipCents > 0) {
+    const tipConfig = await getTipConfig(body.venue_slug)
+    if (!tipConfig.delivery_enabled) tipCents = 0
+  }
 
   const admin = getSupabaseAdmin()
   const { data, error } = await admin.rpc('create_storefront_order', {
@@ -98,8 +111,7 @@ export async function POST(request: NextRequest) {
     p_delivery_postal_code: body.delivery_postal_code || null,
     p_notes: body.notes || null,
     p_member_pass_serial: body.member_pass_serial || null,
-    p_tip_cents:
-      Number.isInteger(body.tip_cents) && (body.tip_cents as number) >= 0 ? body.tip_cents : 0,
+    p_tip_cents: tipCents,
   })
   if (error || !data) {
     console.error('[orders] atomic order creation failed:', error)

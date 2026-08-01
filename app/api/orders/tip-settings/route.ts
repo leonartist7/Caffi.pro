@@ -28,19 +28,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'delivery_enabled must be a boolean' }, { status: 400 })
   }
   const admin = getSupabaseAdmin()
-  const { data: venue } = await admin
-    .from('venues')
-    .select('brand_kit')
-    .eq('venue_id', gate.ctx.venueId)
-    .maybeSingle()
-  const brandKit = (
-    venue?.brand_kit && typeof venue.brand_kit === 'object' ? venue.brand_kit : {}
-  ) as Record<string, unknown>
-  const nextTipConfig = { ...parseTipConfig(brandKit), delivery_enabled: body.delivery_enabled }
-  const { error } = await admin
-    .from('venues')
-    .update({ brand_kit: { ...brandKit, tip_config: nextTipConfig } })
-    .eq('venue_id', gate.ctx.venueId)
+  const { data: tipConfigJson, error } = await admin.rpc('set_venue_tip_delivery_enabled', {
+    p_venue_id: gate.ctx.venueId,
+    p_delivery_enabled: body.delivery_enabled,
+  })
   if (error) return NextResponse.json({ error: 'Failed to save tip settings' }, { status: 500 })
-  return NextResponse.json({ tip_config: nextTipConfig })
+  if (tipConfigJson === null)
+    return NextResponse.json({ error: 'Venue not found' }, { status: 404 })
+  return NextResponse.json({ tip_config: parseTipConfig({ tip_config: tipConfigJson }) })
 }
