@@ -126,6 +126,60 @@ union the prose.)
   and the open Realtime architecture decision from PLAN-22 (needs a
   Fable-tier call before anyone attempts it).
 
+## Lane C — Team & platform polish
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch (Lane A) and all of Lane B
+(PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
+`tip_allocations`, `orders.tip_cents` all live via `list_tables`. (PLAN-30
+through PLAN-32 all landed as separate PRs in the same session — none had
+merged to `main` by the time the next one branched, so this section is
+duplicated verbatim in each of their PRs' `STATUS.md` diffs; the first one
+to actually merge is the version of this section that sticks; whoever
+merges the next should keep the merged version's entries and just append
+its own, not silently drop an already-merged item's writeup.)
+
+- **PLAN-30 (Owner shell nav unification)**: ✅ **built** (PR pending).
+  `owner-shell.tsx`'s hardcoded `NAV` array now derives from
+  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper). The
+  three previously-dead links now resolve to real pages: `/rewards-admin`
+  (full CRUD), `/campaigns` (honest `ComingSoon` state — blocked on a
+  vendor decision, v2R §8), `/venue-settings` (tip/review settings, live
+  against PLAN-20/21's existing routes — not literal `/settings`, which
+  would have collided with the HQ dashboard's existing route at the same
+  URL). Pre-existing gap found and flagged, not fixed (outside this PR's
+  file ownership): `/home`, `/creative`, `/regulars` don't check
+  impersonation when resolving their venue, so an `aro_admin` impersonating
+  a venue gets a blank page today. Post-review correction: the "Soon"
+  badge's `bg-aro-sand`/`text-aro-muted` pairing measured 4.38:1 (fails AA)
+  — fixed to `text-aro-ink-soft` (6.63:1). `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **built** (PR
+  pending). Style-only token refit of the 11 shared components v2R names.
+  Zero `coffee-*`/`cream-*`/`dark-*` remaining, zero logic/prop/structure
+  changes. **Confirmed design finding**: zero of the ~46 files already on
+  the aro token system anywhere in the repo use a `dark:` variant — the
+  aro palette has no dark counterpart, it's one warm palette. This PR's
+  refit follows that precedent, which means `ThemeToggle.tsx` is now fully
+  decorative on every aro-token page — a pre-existing condition extended
+  to three more files, not introduced here; flagged as a product decision
+  above a style-only refit. Contrast measured for every new pairing;
+  post-review correction fixed the same Soon-badge issue as PLAN-30 (this
+  PR shipped the identical pairing independently in `Sidebar`/`MobileNav`)
+  and corrected two hand-calculation transcription errors in the PLAN
+  file's own contrast table (both pairs still passed AA, but one — white
+  on `aro-plum` — only by 4.55:1, not the originally claimed 5.51:1).
+  `BUILD-LOG-PLAN-31.md`.
+- **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
+  ✅ **built** (PR pending). Style-only refit of the 4 pages, including
+  `analytics/page.tsx`'s Recharts color props (treated as in-scope style
+  values, same category as PLAN-31's `iconBgColor` default — Recharts has
+  no className-based way to color an SVG line/bar/pie segment). A
+  contrast bug was caught **before** it shipped this time: a first pass at
+  the dashboard's "New leads" tile measured 4.03:1 and was fixed to
+  14.24:1 before ever being committed, by keeping the accent color on the
+  icon only and moving text to `aro-ink`. `BUILD-LOG-PLAN-32.md`.
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
