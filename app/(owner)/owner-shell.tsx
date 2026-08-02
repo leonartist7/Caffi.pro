@@ -110,7 +110,7 @@ export function OwnerShell({
                 <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {item.label}
                 {item.soon && (
-                  <span className="ml-auto rounded-full bg-aro-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-aro-muted">
+                  <span className="ml-auto rounded-full bg-aro-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-aro-ink-soft">
                     {STRINGS.soon}
                   </span>
                 )}
@@ -155,7 +155,7 @@ export function OwnerShell({
                   <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {item.label}
                   {item.soon && (
-                    <span className="ml-auto rounded-full bg-aro-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-aro-muted">
+                    <span className="ml-auto rounded-full bg-aro-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-aro-ink-soft">
                       {STRINGS.soon}
                     </span>
                   )}

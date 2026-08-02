@@ -1,5 +1,19 @@
 # BUILD-LOG-PLAN-30 — Owner shell nav unification
 
+## Post-review correction (found while working PLAN-32)
+
+The "Soon" badge (`bg-aro-sand` + `text-aro-muted`, both instances in
+`owner-shell.tsx`) measured **4.38:1** against the W3C relative-luminance
+formula — under the 4.5:1 WCAG AA floor for normal-size text (verified
+with a small Node script, not by hand, after a hand calculation flagged it
+as suspiciously close to the line). `aro-muted` is `rgba(ink, 0.64)`; on
+`aro-cream`/white it clears AA (4.55/4.89), but the `aro-sand` fill this
+badge actually sits on is lighter, and the extra headroom isn't there.
+Fixed by swapping to `text-aro-ink-soft` (`rgba(ink, 0.78)`), which
+measures **6.63:1** on `aro-sand` — comfortable margin. Same fix applied
+to `components/Sidebar.tsx`/`MobileNav.tsx` in PLAN-31 (that PR shipped
+the identical pairing for its own "Soon" badges).
+
 ## What shipped
 
 - `lib/modules.ts`: `OWNER_ITEMS` (Home, Regulars — fixed, non-toggleable,
