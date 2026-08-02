@@ -61,6 +61,10 @@ export type AroEventType =
   | 'inventory.movement_recorded'
   | 'review.prompted'
   | 'review.clicked'
+  // --- Lane C ---
+  | 'shift.started'
+  | 'shift.ended'
+  | 'shift.corrected'
 
 export interface AroEvent {
   type: AroEventType
@@ -128,6 +132,10 @@ export const EVENT_LABELS: Record<string, string> = {
   'inventory.movement_recorded': 'Inventory movement recorded',
   'review.prompted': 'Review prompt shown',
   'review.clicked': 'Review link clicked',
+  // --- Lane C ---
+  'shift.started': 'Clocked in',
+  'shift.ended': 'Clocked out',
+  'shift.corrected': 'Shift corrected',
 }
 
 export function eventLabel(type: string): string {

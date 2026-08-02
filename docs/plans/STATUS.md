@@ -126,6 +126,61 @@ union the prose.)
   and the open Realtime architecture decision from PLAN-22 (needs a
   Fable-tier call before anyone attempts it).
 
+## Lane C — Team & platform polish
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); `staff_shifts`/`tip_allocations` (PLAN-10) both
+live before any Lane C work began. Each item is its own branch off fresh
+`origin/main` (never stacked), so — same as Lane B's PRs landing
+back-to-back — these will show up as separate open PRs until they merge;
+resolve a STATUS.md conflict here by replacing this whole section, not
+unioning prose, same rule as Lane B's note above.
+
+- **PLAN-30 (Owner shell nav unification)**: 🟡 **built, PR #68 open
+  (draft)**. Nav now derives from `lib/modules.ts` instead of a hardcoded
+  array; `/rewards-admin`, `/campaigns`, `/venue-settings` all real pages.
+  `tsc`/build/eslint green.
+- **PLAN-31 (HQ aro refit part 1 — shared components)**: 🟡 **built, PR
+  #69 open (draft)**. 11 shared components refit to `aro` tokens, zero
+  `coffee-*`/`cream-*`/`dark-*` remaining in scope.
+- **PLAN-32 (HQ aro refit part 2 — dashboard/clients/activity/analytics)**:
+  🟡 **built, PR #70 open (draft)**. 4 pages refit, style-only diff.
+- **PLAN-33 (HQ aro refit part 3 — settings/staff/rewards + sweep)**: 🟡
+  **built, PR #71 open (draft)**. 3 pages refit + a repo-wide sweep found
+  and fixed a gap in `layout-client.tsx`.
+- **PLAN-34 (Team management suite)**: 🟡 **built, PR #72 open (draft)**.
+  Staff page split into a server-gated wrong-door redirect
+  (`staff`-role → `/counter`) + client component, plus a profile edit
+  modal. Manager-escalation prevention and deactivation-history
+  preservation were already correctly server-enforced before this PR —
+  verified by reading `app/api/staff/**`, not rebuilt.
+- **PLAN-35 (Time clock)**: ✅ **built this session**. Clock in/out through
+  the counter PIN session (`app/api/counter/shift`), backed entirely by
+  PLAN-10's `staff_shifts` — zero new migrations. The DB's partial unique
+  index (`uq_staff_shifts_open_per_membership`) is the actual "one open
+  shift" guarantee, proven live with a real insert that hit `23505`, not
+  reimplemented in application code. Owner-facing shift list + two
+  distinct correction actions at `app/(dashboard)/staff/shifts`: "close a
+  stuck shift" (in-place `ended_at` on the original `source='counter'`
+  row — proven live to preserve `shift_id`/`started_at`/`source`
+  untouched) vs. "add a missed shift" (a wholly separate `source='manual'`
+  row) — these are two different real-world situations, not one design
+  with two names; see `BUILD-LOG-PLAN-35.md` for why collapsing them into
+  one action would either double-count hours or leave a person unable to
+  clock in again. Duration is computed at read time everywhere, never
+  stored. `scripts/verify-live.mjs` gained the authenticated-non-owner
+  -denied check for `staff_shifts` (couldn't execute the full script
+  live in this sandbox — no populated env keys — so the underlying RLS
+  fact it asserts was verified directly via `pg_policies` instead, see
+  build log). `tsc`/build/eslint green, grep gate clean.
+- **Not yet started**: PLAN-36 (tip allocation report — money-adjacent,
+  needs an Opus-5 architect pass before any code per the lane's own
+  brief), PLAN-37 (CSV export, depends on PLAN-36's output shape). v2R's
+  Lane C table (§6) enumerates concrete items only through PLAN-37 —
+  the `PLAN-30…PLAN-39` range in its file-ownership header is a nominal
+  range, not a claim that PLAN-38/39 exist as separate specced items.
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
