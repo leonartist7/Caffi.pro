@@ -93,13 +93,20 @@ the pages PLAN-32/33 refit next, so doing them first shrinks those diffs.
 
 formula, computed from the exact hex values in `tailwind.config.ts`)
 
-| Pair                                                              | Foreground L | Background L | Ratio      | AA (4.5:1 normal text)?                                                       |
-| ----------------------------------------------------------------- | ------------ | ------------ | ---------- | ----------------------------------------------------------------------------- |
-| `text-aro-ink` (#2A1F18) on solid `bg-aro-rose` (#DC8B7E)         | 0.0154       | 0.3519       | **6.15:1** | ✅ Pass                                                                       |
-| `text-aro-ink` (#2A1F18) on solid `bg-aro-sage` (#9DAA7E)         | 0.0154       | 0.3744       | **6.49:1** | ✅ Pass                                                                       |
-| `text-white` on solid `bg-aro-rose` (#DC8B7E) — rejected          | 1.0          | 0.3519       | 2.61:1     | ❌ Fail — not used                                                            |
-| `text-aro-ink` on `bg-aro-honey` (#E8AC58, ConfirmDialog warning) | 0.0154       | 0.4870       | **8.34:1** | ✅ Pass                                                                       |
-| `text-white` on `bg-aro-plum` (#8D6B8D, ConfirmDialog info)       | 1.0          | 0.1414       | **5.51:1** | ✅ Pass — already in production use (impersonation banner, `owner-shell.tsx`) |
+**Corrected 2026-08-02** (while working PLAN-32): the original table below
+was computed by hand and two entries were wrong. Verified with a Node
+script against the exact hex values instead of trusting hand arithmetic —
+see `BUILD-LOG-PLAN-31.md`'s post-review correction note.
+
+| Pair                                                                   | Ratio (exact) | AA (4.5:1 normal text)?                                                                                          |
+| ---------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `text-aro-ink` (#2A1F18) on solid `bg-aro-rose` (#DC8B7E)              | **6.15:1**    | ✅ Pass                                                                                                          |
+| `text-aro-ink` (#2A1F18) on solid `bg-aro-sage` (#9DAA7E)              | **6.49:1**    | ✅ Pass                                                                                                          |
+| `text-white` on solid `bg-aro-rose` (#DC8B7E) — rejected               | 2.61:1        | ❌ Fail — not used                                                                                               |
+| `text-aro-ink` on `bg-aro-honey` (#E8AC58, ConfirmDialog warning)      | **8.01:1**    | ✅ Pass (hand calc originally said 8.34 — corrected)                                                             |
+| `text-white` on `bg-aro-plum` (#8D6B8D, ConfirmDialog info)            | **4.55:1**    | ✅ Pass, but narrowly (hand calc originally said 5.51 — a transcription error, corrected) — no headroom to spare |
+| `bg-aro-sand` + `text-aro-muted` ("Soon" badge, as originally shipped) | 4.38:1        | ❌ **Fail** — not caught until PLAN-32; fixed below                                                              |
+| `bg-aro-sand` + `text-aro-ink-soft` ("Soon" badge, corrected)          | **6.63:1**    | ✅ Pass — the fix actually shipped in `Sidebar.tsx`/`MobileNav.tsx`                                              |
 
 Icon-only (non-text) elements against a light tint background (e.g. an
 alert icon on `bg-aro-rose/15`) are graphical, not text — WCAG 1.4.11's

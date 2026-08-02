@@ -110,7 +110,7 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
               {item.soon && !isCollapsed && (
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-aro-sand text-aro-muted'
+                    isActive ? 'bg-white/20 text-white' : 'bg-aro-sand text-aro-ink-soft'
                   }`}
                 >
                   Soon

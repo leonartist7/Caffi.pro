@@ -1,5 +1,17 @@
 # BUILD-LOG-PLAN-31 — HQ aro refit, part 1: shared components
 
+## Post-review correction (found while working PLAN-32)
+
+The "Soon" badge pairing this PR shipped for `Sidebar.tsx`/`MobileNav.tsx`
+(`bg-aro-sand` + `text-aro-muted`) measured **4.38:1** via a precise script
+— under the 4.5:1 WCAG AA floor for normal-size text (the PLAN file's
+contrast table above only tabulated the _new_ rose/sage/honey/plum pairs
+this PR introduced; this pre-existing pairing, copied verbatim from the
+pre-refit `Sidebar.tsx`, wasn't re-measured against its new `aro-sand`
+background at the time). Fixed by swapping to `text-aro-ink-soft`
+(6.63:1). Same fix applied to `owner-shell.tsx` in PLAN-30, which shipped
+the identical pairing.
+
 ## What shipped
 
 Style-only token refit of the 11 files v2R names: `components/Sidebar.tsx`,
