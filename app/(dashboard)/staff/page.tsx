@@ -176,9 +176,9 @@ export default function AdminStaffPage() {
   if (!selectedTenant) {
     return (
       <div className="text-center py-12">
-        <Coffee className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">No Client Selected</h2>
-        <p className="text-gray-600">Please select a client from the dropdown above.</p>
+        <Coffee className="w-16 h-16 text-aro-clay mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-aro-ink mb-2">No Client Selected</h2>
+        <p className="text-aro-muted">Please select a client from the dropdown above.</p>
       </div>
     )
   }
@@ -188,10 +188,10 @@ export default function AdminStaffPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="h-8 w-64 bg-gray-200 dark:bg-dark-700 rounded animate-pulse" />
-            <div className="h-4 w-48 bg-gray-200 dark:bg-dark-700 rounded animate-pulse" />
+            <div className="h-8 w-64 bg-aro-sand rounded animate-pulse" />
+            <div className="h-4 w-48 bg-aro-sand rounded animate-pulse" />
           </div>
-          <div className="h-10 w-32 bg-gray-200 dark:bg-dark-700 rounded animate-pulse" />
+          <div className="h-10 w-32 bg-aro-sand rounded animate-pulse" />
         </div>
         <SkeletonList items={5} />
       </div>
@@ -202,15 +202,15 @@ export default function AdminStaffPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
-          <p className="text-gray-600 mt-1">Manage staff members for this client</p>
+          <h1 className="font-display text-3xl font-bold text-aro-ink">Staff Management</h1>
+          <p className="text-aro-muted mt-1">Manage staff members for this client</p>
         </div>
         <button
           onClick={() => {
             resetForm()
             setModalOpen(true)
           }}
-          className="bg-coffee-700 hover:bg-coffee-800 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          className="bg-aro-terra hover:brightness-95 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
         >
           <Plus className="w-5 h-5" />
           <span>Invite Staff</span>
@@ -218,12 +218,12 @@ export default function AdminStaffPage() {
       </div>
 
       {/* Info Card */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-aro-plum/10 border border-aro-plum/30 rounded-lg p-4">
         <div className="flex items-start space-x-3">
-          <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+          <Shield className="w-6 h-6 text-aro-plum flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-900">Team access</h3>
-            <p className="text-sm text-blue-700 mt-1">
+            <h3 className="font-semibold text-aro-ink">Team access</h3>
+            <p className="text-sm text-aro-ink-soft mt-1">
               Owner/manager invites sign in like you do. Staff invites are for the counter — after
               accepting, set a counter PIN below so they can log in at <code>/counter</code>.
             </p>
@@ -236,16 +236,16 @@ export default function AdminStaffPage() {
         {staffMembers.map(staff => (
           <div
             key={staff.staff_id}
-            className={`bg-white rounded-lg shadow border p-4 ${!staff.is_active ? 'opacity-60' : ''}`}
+            className={`bg-white rounded-lg shadow border border-aro-hairline p-4 ${!staff.is_active ? 'opacity-60' : ''}`}
           >
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-full bg-coffee-100 text-coffee-700 flex items-center justify-center font-bold text-lg">
+                <div className="w-12 h-12 rounded-full bg-aro-sand text-aro-ink-soft flex items-center justify-center font-bold text-lg">
                   {(staff.full_name || staff.email || '?').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900">{staff.full_name || 'Unnamed'}</h3>
-                  <p className="text-sm text-gray-600">{staff.email}</p>
+                  <h3 className="font-bold text-aro-ink">{staff.full_name || 'Unnamed'}</h3>
+                  <p className="text-sm text-aro-muted">{staff.email}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-1">
@@ -255,7 +255,7 @@ export default function AdminStaffPage() {
                       setPinTarget(staff)
                       setPinValue('')
                     }}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-aro-muted hover:bg-aro-sand/40 rounded-lg"
                     title={staff.has_pin ? 'Change counter PIN' : 'Set counter PIN'}
                   >
                     <KeyRound className="w-4 h-4" />
@@ -265,14 +265,14 @@ export default function AdminStaffPage() {
                   <>
                     <button
                       onClick={() => copyInviteLink(staff.invite_url)}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                      className="p-2 text-aro-muted hover:bg-aro-sand/40 rounded-lg"
                       title="Copy invite link"
                     >
                       <Link2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => revokeInvite(staff)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                      className="p-2 text-aro-rose hover:bg-aro-rose/10 rounded-lg"
                       title="Revoke invite"
                     >
                       <Mail className="w-4 h-4" />
@@ -281,7 +281,7 @@ export default function AdminStaffPage() {
                 ) : (
                   <button
                     onClick={() => toggleActiveStatus(staff)}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                    className="p-2 text-aro-muted hover:bg-aro-sand/40 rounded-lg"
                     title={staff.is_active ? 'Deactivate' : 'Reactivate'}
                   >
                     {staff.is_active ? (
@@ -296,21 +296,21 @@ export default function AdminStaffPage() {
 
             <div className="space-y-2 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Role:</span>
-                <span className="px-3 py-1 bg-coffee-100 text-coffee-700 rounded-full font-medium capitalize">
+                <span className="text-aro-muted">Role:</span>
+                <span className="px-3 py-1 bg-aro-sand text-aro-ink-soft rounded-full font-medium capitalize">
                   {staff.role}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
-                <span className="text-gray-600">Status:</span>
+                <span className="text-aro-muted">Status:</span>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${
                     staff.status === 'invited'
-                      ? 'bg-blue-100 text-blue-700'
+                      ? 'bg-aro-plum text-white'
                       : staff.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-700'
+                        ? 'bg-aro-sage text-aro-ink'
+                        : 'bg-aro-sand text-aro-ink-soft'
                   }`}
                 >
                   {staff.status === 'invited' ? 'Invited' : staff.is_active ? 'Active' : 'Inactive'}
@@ -319,8 +319,8 @@ export default function AdminStaffPage() {
 
               {staff.role === 'staff' && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-600">Counter PIN:</span>
-                  <span className="font-medium text-gray-900">
+                  <span className="text-aro-muted">Counter PIN:</span>
+                  <span className="font-medium text-aro-ink">
                     {staff.has_pin ? 'Set' : 'Not set'}
                   </span>
                 </div>
@@ -330,15 +330,15 @@ export default function AdminStaffPage() {
         ))}
 
         {staffMembers.length === 0 && (
-          <div className="col-span-full text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <Shield className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-500">No staff members yet</p>
+          <div className="col-span-full text-center py-12 bg-aro-sand/25 rounded-lg border-2 border-dashed border-aro-hairline">
+            <Shield className="w-12 h-12 text-aro-clay mx-auto mb-3" />
+            <p className="text-aro-muted">No staff members yet</p>
             <button
               onClick={() => {
                 resetForm()
                 setModalOpen(true)
               }}
-              className="text-coffee-700 hover:underline mt-2"
+              className="text-aro-terra hover:underline mt-2"
             >
               Invite your first staff member
             </button>
@@ -348,38 +348,40 @@ export default function AdminStaffPage() {
 
       {/* Invite Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-aro-ink/60 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Invite Staff Member</h2>
+            <h2 className="text-2xl font-bold text-aro-ink mb-4">Invite Staff Member</h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <label className="block text-sm font-medium text-aro-ink-soft mb-1">
+                  Full Name
+                </label>
                 <input
                   type="text"
                   value={formData.full_name}
                   onChange={e => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
+                  className="w-full px-3 py-2 border border-aro-hairline rounded-lg focus:ring-2 focus:ring-aro-terra focus:border-aro-terra"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <label className="block text-sm font-medium text-aro-ink-soft mb-1">Email *</label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
+                  className="w-full px-3 py-2 border border-aro-hairline rounded-lg focus:ring-2 focus:ring-aro-terra focus:border-aro-terra"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                <label className="block text-sm font-medium text-aro-ink-soft mb-1">Role *</label>
                 <select
                   value={formData.role}
                   onChange={e => setFormData({ ...formData, role: e.target.value as Role })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
+                  className="w-full px-3 py-2 border border-aro-hairline rounded-lg focus:ring-2 focus:ring-aro-terra focus:border-aro-terra"
                 >
                   <option value="staff">Staff (counter access)</option>
                   <option value="manager">Manager</option>
@@ -394,13 +396,13 @@ export default function AdminStaffPage() {
                     setModalOpen(false)
                     resetForm()
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-aro-hairline rounded-lg hover:bg-aro-sand/40"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-coffee-700 hover:bg-coffee-800 text-white rounded-lg"
+                  className="px-4 py-2 bg-aro-terra hover:brightness-95 text-white rounded-lg"
                 >
                   Send Invite
                 </button>
@@ -411,25 +413,25 @@ export default function AdminStaffPage() {
       )}
 
       {inviteLink && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-aro-ink/60 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-lg w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-2">Invite link</h2>
-            <p className="text-sm text-gray-600 mb-4">Copy and send this link to your teammate.</p>
+            <h2 className="text-xl font-bold text-aro-ink mb-2">Invite link</h2>
+            <p className="text-sm text-aro-muted mb-4">Copy and send this link to your teammate.</p>
             <input
               readOnly
               value={inviteLink}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              className="w-full px-3 py-2 border border-aro-hairline rounded-lg text-sm"
             />
             <div className="flex justify-end space-x-3 pt-4">
               <button
                 onClick={() => setInviteLink(null)}
-                className="px-4 py-2 border border-gray-300 rounded-lg"
+                className="px-4 py-2 border border-aro-hairline rounded-lg"
               >
                 Close
               </button>
               <button
                 onClick={() => copyInviteLink(inviteLink)}
-                className="px-4 py-2 bg-coffee-700 text-white rounded-lg"
+                className="px-4 py-2 bg-aro-terra text-white rounded-lg"
               >
                 Copy
               </button>
@@ -440,10 +442,10 @@ export default function AdminStaffPage() {
 
       {/* Set PIN Modal */}
       {pinTarget && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-aro-ink/60 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-sm w-full p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">Set Counter PIN</h2>
-            <p className="text-sm text-gray-600 mb-4">
+            <h2 className="text-xl font-bold text-aro-ink mb-1">Set Counter PIN</h2>
+            <p className="text-sm text-aro-muted mb-4">
               For {pinTarget.full_name || pinTarget.email}
             </p>
             <form onSubmit={handleSetPin} className="space-y-4">
@@ -454,7 +456,7 @@ export default function AdminStaffPage() {
                 placeholder="4-6 digits"
                 value={pinValue}
                 onChange={e => setPinValue(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-coffee-500 focus:border-coffee-500"
+                className="w-full px-3 py-2 border border-aro-hairline rounded-lg text-center text-2xl tracking-widest focus:ring-2 focus:ring-aro-terra focus:border-aro-terra"
               />
               <div className="flex justify-end space-x-3">
                 <button
@@ -463,14 +465,14 @@ export default function AdminStaffPage() {
                     setPinTarget(null)
                     setPinValue('')
                   }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="px-4 py-2 border border-aro-hairline rounded-lg hover:bg-aro-sand/40"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pinValue.length < 4}
-                  className="px-4 py-2 bg-coffee-700 hover:bg-coffee-800 text-white rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 bg-aro-terra hover:brightness-95 text-white rounded-lg disabled:opacity-50"
                 >
                   Save PIN
                 </button>

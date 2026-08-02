@@ -126,6 +126,62 @@ union the prose.)
   and the open Realtime architecture decision from PLAN-22 (needs a
   Fable-tier call before anyone attempts it).
 
+## Lane C — Team & platform polish
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch (Lane A) and all of Lane B
+(PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
+`tip_allocations`, `orders.tip_cents` all live via `list_tables`. (PLAN-30
+through PLAN-33 all landed as separate PRs in the same session — none had
+merged to `main` by the time the next one branched, so this section is
+duplicated verbatim in each of their PRs' `STATUS.md` diffs; the first one
+to actually merge is the version of this section that sticks; whoever
+merges the next should keep the merged version's entries and just append
+its own, not silently drop an already-merged item's writeup.)
+
+- **PLAN-30 (Owner shell nav unification)**: ✅ **built** (PR #68, draft).
+  Nav derives from `lib/modules.ts`; `/rewards-admin`, `/campaigns`,
+  `/venue-settings` all built. Real route-collision finding resolved
+  (`/venue-settings` instead of literal `/settings`, which would collide
+  with the HQ dashboard's existing route). Pre-existing impersonation gap
+  found on `/home`/`/creative`/`/regulars`, flagged not fixed (outside
+  this PR's file ownership). Post-review correction: the "Soon" badge's
+  `bg-aro-sand`/`text-aro-muted` pairing measured 4.38:1 (fails AA) — fixed
+  to `text-aro-ink-soft` (6.63:1). `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **built**
+  (PR #69, draft). All 11 shared components refit, zero legacy tokens,
+  diff confirmed style-only. Confirmed design finding: zero of the ~46
+  files already on the aro token system use a `dark:` variant — the
+  palette has no dark counterpart, so `ThemeToggle` is now fully
+  decorative on every aro page (a pre-existing condition extended, not
+  introduced). Caught the same Soon-badge contrast bug independently and
+  fixed it, plus corrected two hand-calculation transcription errors in
+  its own contrast table after re-verifying with a script.
+  `BUILD-LOG-PLAN-31.md`.
+- **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
+  ✅ **built** (PR #70, draft). All 4 pages refit, including Recharts
+  color props on the analytics page (treated as in-scope style values —
+  no className-based way to color chart SVG). A contrast bug in a new
+  "New leads" tile was caught and fixed _before_ it was ever committed.
+  `BUILD-LOG-PLAN-32.md`.
+- **PLAN-33 (HQ aro refit, part 3 — settings/staff/rewards + sweep)**:
+  ✅ **built** (PR pending). Refit the final 3 pages plus a real gap the
+  repo-wide sweep found: `app/(dashboard)/layout-client.tsx` was never
+  assigned to any of PLAN-31/32/33's file lists despite being Lane C's own
+  file and in this document's own refit inventory — fixed here (2 lines).
+  **The sweep itself required a temporary local merge** of the still-open
+  PLAN-31/32 branches to verify the true combined repo-wide state (a sweep
+  on a branch forked from unmerged `main` alone would falsely flag every
+  file those two PRs already fixed) — merge was verification-only, never
+  pushed, reset away before the real commit. Final repo-wide result:
+  only `app/shop/[slug]/error.tsx` (Lane B) remains; Lane A's two members
+  files are already clean (PLAN-11), not merely excused. This closes out
+  the N8 HQ refit across all three PRs: 18 files, zero
+  `coffee-*`/`cream-*`/`dark-*` left except the one Lane B file, three
+  real accessibility bugs found and fixed across the three PRs.
+  `BUILD-LOG-PLAN-33.md`.
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
