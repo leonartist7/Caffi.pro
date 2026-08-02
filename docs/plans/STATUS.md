@@ -126,6 +126,73 @@ union the prose.)
   and the open Realtime architecture decision from PLAN-22 (needs a
   Fable-tier call before anyone attempts it).
 
+## Lane C — Team & platform polish
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch (Lane A) and all of Lane B
+(PLAN-20–26) confirmed merged before any Lane C work began. (PLAN-30
+through PLAN-34 all landed as separate PRs in the same session — none had
+merged to `main` by the time the next one branched, so this section is
+duplicated verbatim in each of their PRs' `STATUS.md` diffs; the first one
+to actually merge is the version of this section that sticks; whoever
+merges the next should keep the merged version's entries and just append
+its own, not silently drop an already-merged item's writeup.)
+
+- **PLAN-30 (Owner shell nav unification)**: ✅ built (PR #68, draft). Nav
+  derives from `lib/modules.ts`; `/rewards-admin`, `/campaigns`,
+  `/venue-settings` all built (not literal `/settings` — route collision
+  with the HQ dashboard's own route). Pre-existing impersonation gap on
+  `/home`/`/creative`/`/regulars` found, flagged not fixed. Soon-badge
+  contrast bug found and fixed post-review (4.38:1 → 6.63:1).
+  `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ built
+  (PR #69, draft). 11 shared components refit, zero legacy tokens.
+  Confirmed design finding: the aro palette has no dark-mode counterpart,
+  so `dark:` classes are deleted repo-wide, not translated — `ThemeToggle`
+  is now fully decorative on every aro page (pre-existing, not introduced
+  here). Same Soon-badge bug independently caught and fixed; two
+  hand-calculation transcription errors in its own contrast table
+  corrected after switching to a verification script. `BUILD-LOG-PLAN-31.md`.
+- **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
+  ✅ built (PR #70, draft). 4 pages refit including Recharts color props.
+  A contrast bug in a new "New leads" tile caught and fixed _before_
+  commit. `BUILD-LOG-PLAN-32.md`.
+- **PLAN-33 (HQ aro refit, part 3 — settings/staff/rewards + sweep)**:
+  ✅ built (PR #71, draft). Final 3 pages refit plus a real gap the
+  repo-wide sweep found: `app/(dashboard)/layout-client.tsx` was never
+  assigned to any of the three refit PRs' file lists despite being Lane
+  C's own file — fixed (2 lines). The sweep itself required a temporary,
+  never-pushed local merge of PLAN-31+32 to verify the true combined
+  state (a sweep on a branch forked from unmerged `main` alone would
+  falsely flag files those PRs already fixed). Final repo-wide result:
+  only Lane B's `app/shop/[slug]/error.tsx` remains; Lane A's two members
+  files already clean from PLAN-11. This closes the N8 HQ refit across
+  all three PRs. `BUILD-LOG-PLAN-33.md`.
+- **PLAN-34 (Team management suite)**: ✅ built (PR pending). Extends the
+  existing `app/api/staff/**`, doesn't invent a new surface — read the
+  routes in full before writing anything, since manager-escalation
+  prevention and deactivation-history preservation were **already fully
+  server-enforced** (confirmed live against `memberships`'s
+  `role` CHECK constraint via Supabase MCP, matching the route's own
+  `VALID_ROLES`). The one real gap: `/staff` had zero server-side role
+  gating (like every other `(dashboard)` page except `/dashboard`
+  itself) — a `staff`-role user hitting it got the full page shell then
+  silently-failing API calls, a 403 wall by another name. Fixed: split
+  into a server-gated wrapper (`page.tsx`) that wrong-door-redirects
+  staff-only users to `/counter` before any client JS ships, plus the
+  existing client component (`staff-client.tsx`, now `aro`-token from the
+  start) with one new addition — an Edit modal for name/role, wired to
+  the existing `PATCH` route (no new API surface, no new authorization
+  logic). **Known merge friction, flagged not fixed**: PLAN-33 (#71,
+  still open) refits the same page's tokens as a single file; this PR
+  splits it into two — whichever merges second needs to manually combine
+  both diffs, same class of friction as the `STATUS.md` duplication above.
+  Not verified live (no service-role key in this sandbox) — the
+  escalation-prevention and redirect claims are verified by reading the
+  exact code paths and cross-checking the live schema, not a live
+  session. `BUILD-LOG-PLAN-34.md`.
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
