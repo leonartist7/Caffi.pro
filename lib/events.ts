@@ -61,6 +61,8 @@ export type AroEventType =
   | 'inventory.movement_recorded'
   | 'review.prompted'
   | 'review.clicked'
+  // --- Lane C ---
+  | 'tip_allocation.saved'
 
 export interface AroEvent {
   type: AroEventType
@@ -128,6 +130,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'inventory.movement_recorded': 'Inventory movement recorded',
   'review.prompted': 'Review prompt shown',
   'review.clicked': 'Review link clicked',
+  // --- Lane C ---
+  'tip_allocation.saved': 'Tip allocation saved',
 }
 
 export function eventLabel(type: string): string {
