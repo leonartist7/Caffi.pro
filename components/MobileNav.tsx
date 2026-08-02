@@ -38,7 +38,7 @@ export default function MobileNav({ isAroAdmin }: { isAroAdmin: boolean }) {
       {/* Mobile Menu Button - Fixed Bottom Right */}
       <button
         onClick={() => setIsOpen(true)}
-        className="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-coffee shadow-2xl flex items-center justify-center text-cream-100 hover:scale-110 transition-transform duration-300"
+        className="lg:hidden fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-aro-terra shadow-2xl flex items-center justify-center text-white hover:scale-110 transition-transform duration-300"
         aria-label="Open menu"
       >
         <MenuIcon className="w-6 h-6" />
@@ -56,30 +56,27 @@ export default function MobileNav({ isAroAdmin }: { isAroAdmin: boolean }) {
       <div
         className={`
           lg:hidden fixed top-0 right-0 h-screen w-80 max-w-[85vw] z-50
-          bg-gradient-to-b from-coffee-50 to-cream-100
-          dark:from-dark-900 dark:to-dark-800
-          border-l border-coffee-200/50 dark:border-dark-700
+          bg-aro-cream-warm
+          border-l border-aro-hairline
           backdrop-blur-xl shadow-2xl
           transform transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         `}
       >
         {/* Header */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-coffee-200/50 dark:border-dark-700">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-aro-hairline">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-coffee flex items-center justify-center shadow-lg">
-              <Coffee className="w-6 h-6 text-cream-100" />
+            <div className="w-10 h-10 rounded-xl bg-aro-terra flex items-center justify-center shadow-lg">
+              <Coffee className="w-6 h-6 text-white" />
             </div>
-            <div className="font-bold text-xl bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-              Caffi Pro
-            </div>
+            <div className="font-display font-bold text-xl text-aro-ink">Caffi Pro</div>
           </div>
 
           <button
             onClick={() => setIsOpen(false)}
-            className="p-2 rounded-lg hover:bg-coffee-200/50 dark:hover:bg-dark-700 transition-all"
+            className="p-2 rounded-lg hover:bg-aro-sand/60 transition-all"
           >
-            <X className="w-6 h-6 text-coffee-600 dark:text-cream-300" />
+            <X className="w-6 h-6 text-aro-ink-soft" />
           </button>
         </div>
 
@@ -99,35 +96,29 @@ export default function MobileNav({ isAroAdmin }: { isAroAdmin: boolean }) {
                   transition-all duration-300 ease-out
                   ${
                     isActive
-                      ? 'bg-gradient-coffee text-cream-100 shadow-lg'
-                      : 'text-coffee-700 dark:text-cream-300 hover:bg-coffee-200/30 dark:hover:bg-dark-700/50'
+                      ? 'bg-aro-terra text-white shadow-lg'
+                      : 'text-aro-ink-soft hover:bg-aro-sand/40'
                   }
                 `}
               >
                 <Icon
                   className={`
                     w-5 h-5 transition-all duration-300
-                    ${
-                      isActive
-                        ? 'text-cream-100'
-                        : 'text-coffee-600 dark:text-cream-400 group-hover:scale-110'
-                    }
+                    ${isActive ? 'text-white' : 'text-aro-muted group-hover:scale-110'}
                   `}
                 />
                 <span className="flex-1 font-medium">{item.name}</span>
                 {item.soon ? (
                   <span
                     className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                      isActive
-                        ? 'bg-cream-100/20 text-cream-100'
-                        : 'bg-coffee-200/60 dark:bg-dark-700 text-coffee-500 dark:text-cream-500'
+                      isActive ? 'bg-white/20 text-white' : 'bg-aro-sand text-aro-muted'
                     }`}
                   >
                     Soon
                   </span>
                 ) : (
                   isActive && (
-                    <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-cream-100 animate-pulse" />
+                    <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
                   )
                 )}
               </Link>
@@ -136,20 +127,20 @@ export default function MobileNav({ isAroAdmin }: { isAroAdmin: boolean }) {
         </nav>
 
         {/* Theme Toggle */}
-        <div className="p-4 border-t border-coffee-200/50 dark:border-dark-700">
+        <div className="p-4 border-t border-aro-hairline">
           <button
             onClick={() => {
               toggleTheme()
               setIsOpen(false)
             }}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-coffee-200/30 dark:bg-dark-700/50 hover:bg-coffee-300/50 dark:hover:bg-dark-600 transition-all group"
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl bg-aro-sand/40 hover:bg-aro-sand/70 transition-all group"
           >
             {theme === 'dark' ? (
-              <Sun className="w-5 h-5 text-amber-500 group-hover:rotate-180 transition-transform duration-500" />
+              <Sun className="w-5 h-5 text-aro-saffron group-hover:rotate-180 transition-transform duration-500" />
             ) : (
-              <Moon className="w-5 h-5 text-indigo-600 group-hover:-rotate-12 transition-transform duration-300" />
+              <Moon className="w-5 h-5 text-aro-plum group-hover:-rotate-12 transition-transform duration-300" />
             )}
-            <span className="font-medium text-coffee-700 dark:text-cream-300">
+            <span className="font-medium text-aro-ink-soft">
               {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
             </span>
           </button>
