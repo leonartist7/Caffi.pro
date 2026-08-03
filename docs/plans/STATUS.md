@@ -126,6 +126,58 @@ union the prose.)
   and the open Realtime architecture decision from PLAN-22 (needs a
   Fable-tier call before anyone attempts it).
 
+## Lane C — Team & platform polish
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-37`, the
+range v2R's file-ownership header nominally extends to `PLAN-39` but only
+enumerates concrete items through `PLAN-37`). Preflight confirmed live
+Supabase MCP access to `aro-platform` (`jjgccfrwjkwknyjtbtxa`);
+`staff_shifts`/`tip_allocations` (PLAN-10) both live before any Lane C
+work began. Each item is its own branch off fresh `origin/main` (never
+stacked), so these show up as separate open PRs until they merge; resolve
+a STATUS.md conflict here by replacing this whole section, not unioning
+prose, same rule as Lane B's note above.
+
+- **PLAN-30 (Owner shell nav unification)**: 🟡 **built, PR #68 open
+  (draft)**.
+- **PLAN-31 (HQ aro refit part 1 — shared components)**: 🟡 **built, PR
+  #69 open (draft)**.
+- **PLAN-32 (HQ aro refit part 2 — dashboard/clients/activity/analytics)**:
+  🟡 **built, PR #70 open (draft)**.
+- **PLAN-33 (HQ aro refit part 3 — settings/staff/rewards + sweep)**: 🟡
+  **built, PR #71 open (draft)**.
+- **PLAN-34 (Team management suite)**: 🟡 **built, PR #72 open (draft)**.
+- **PLAN-35 (Time clock)**: 🟡 **built, PR #73 open (draft)**. Clock
+  in/out on the counter PIN session, backed entirely by PLAN-10's
+  `staff_shifts` — zero new migrations. Owner-facing shift list with two
+  correction actions (close-a-stuck-shift vs. add-a-missed-shift), each
+  proven live to do exactly what its name says and nothing else.
+- **PLAN-36 (Tip allocation report)**: ✅ **built this session.**
+  Money-adjacent — an Opus-5 architect pass (Fable 5 unavailable in this
+  environment) authored the full allocation design before any code:
+  two-level apportionment (pool → membership → their own shifts),
+  largest-remainder/`BigInt` arithmetic proven exact on a deliberately
+  indivisible amount ($100.00 / 3 → `3333/3333/3334`), zero floats
+  anywhere in `lib/tips/allocate.ts` (grep-verifiable). **One genuine
+  policy question was escalated** — whether owner/manager memberships
+  share in the tip pool by default, which is jurisdiction-dependent and
+  moves a whole share of money, not cents. Asked the user directly; no
+  answer came back. Resolved via the architect's own explicit fallback
+  for that exact situation: **no stored or pre-selected default anywhere**
+  — the report requires an explicit include/exclude choice every run,
+  never silently applied. Zero new tables — populates the already-live
+  `tip_allocations` (PLAN-10) via one new `SECURITY DEFINER`,
+  `service_role`-only RPC proven live to replace a period's rows
+  atomically rather than accumulate duplicates across repeated saves.
+  Owner-only (`requireVenueRole(['owner'])`). Full design, the escalation,
+  and 16 passing verification scenarios (incl. the indivisible-amount
+  proof): `docs/plans/PLAN-36-tip-allocation.md`,
+  `docs/plans/BUILD-LOG-PLAN-36.md`. **Still needs the mandatory
+  architect-tier pre-merge math review** (same tier, second pass) before
+  this PR leaves draft — not yet done as of this update.
+- **Not yet started**: PLAN-37 (CSV export, depends on PLAN-36's row
+  shape).
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the

@@ -1,9 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
-import { Plus, Shield, Coffee, KeyRound, UserX, UserCheck, Mail, Link2 } from 'lucide-react'
+import {
+  Plus,
+  Shield,
+  Coffee,
+  KeyRound,
+  UserX,
+  UserCheck,
+  Mail,
+  Link2,
+  DollarSign,
+} from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useConfirm } from '@/hooks/useConfirm'
 import { SkeletonList } from '@/components/SkeletonLoader'
@@ -205,16 +216,25 @@ export default function AdminStaffPage() {
           <h1 className="text-3xl font-bold text-gray-900">Staff Management</h1>
           <p className="text-gray-600 mt-1">Manage staff members for this client</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm()
-            setModalOpen(true)
-          }}
-          className="bg-coffee-700 hover:bg-coffee-800 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Invite Staff</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/tips"
+            className="border border-coffee-200 hover:bg-coffee-50 text-coffee-700 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <DollarSign className="w-5 h-5" />
+            <span>Tips</span>
+          </Link>
+          <button
+            onClick={() => {
+              resetForm()
+              setModalOpen(true)
+            }}
+            className="bg-coffee-700 hover:bg-coffee-800 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Invite Staff</span>
+          </button>
+        </div>
       </div>
 
       {/* Info Card */}
