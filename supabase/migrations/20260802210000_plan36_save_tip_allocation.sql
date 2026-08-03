@@ -17,6 +17,15 @@
 -- caller is the service-role client behind an already-run
 -- requireVenueRole(venueId, ['owner']) check in the API route, never a
 -- direct client call.
+--
+-- Serializes on (venue_id, period_start, period_end) via a transaction-
+-- scoped advisory lock before the delete: two concurrent saves for the
+-- same never-before-saved period would otherwise each find no rows to
+-- delete and both insert a full set, doubling the stored allocation.
+-- pg_advisory_xact_lock auto-releases at the end of this function's own
+-- implicit transaction, so it can never leak past this call. Different
+-- venues/periods hash to (near-certainly) different lock keys and stay
+-- independently lockable.
 
 CREATE OR REPLACE FUNCTION public.save_tip_allocation(
     p_venue_id UUID,
@@ -33,6 +42,10 @@ BEGIN
     IF p_period_end < p_period_start THEN
         RAISE EXCEPTION 'save_tip_allocation: period_end must be >= period_start';
     END IF;
+
+    PERFORM pg_advisory_xact_lock(
+        hashtextextended(p_venue_id::text || '|' || p_period_start::text || '|' || p_period_end::text, 0)
+    );
 
     DELETE FROM tip_allocations
     WHERE venue_id = p_venue_id

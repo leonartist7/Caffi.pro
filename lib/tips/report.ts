@@ -92,13 +92,26 @@ interface RawShiftRow {
 export async function runTipReport(input: TipReportInput): Promise<TipReportResult> {
   const admin = getSupabaseAdmin()
 
-  const { data: orderRows, error: orderError } = await admin
-    .from('orders')
-    .select('tip_cents, status')
-    .eq('venue_id', input.venueId)
-    .gte('placed_at', input.periodStart.toISOString())
-    .lt('placed_at', input.periodEnd.toISOString())
-  if (orderError) throw new Error(`runTipReport: orders query failed: ${orderError.message}`)
+  // Paginated rather than a single .select(): PostgREST caps rows per
+  // request (this project's max_rows = 1000), so a period with more
+  // matching orders than that would otherwise silently undercount the
+  // pool — a page short of PAGE_SIZE is the only reliable "no more rows"
+  // signal, since the last page can coincidentally be exactly full.
+  const PAGE_SIZE = 1000
+  const orderRows: { tip_cents: number | null; status: string }[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data: page, error: orderError } = await admin
+      .from('orders')
+      .select('tip_cents, status')
+      .eq('venue_id', input.venueId)
+      .gte('placed_at', input.periodStart.toISOString())
+      .lt('placed_at', input.periodEnd.toISOString())
+      .order('placed_at', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (orderError) throw new Error(`runTipReport: orders query failed: ${orderError.message}`)
+    orderRows.push(...(page ?? []))
+    if (!page || page.length < PAGE_SIZE) break
+  }
 
   let poolCents = 0
   let excludedCanceledCents = 0
@@ -119,15 +132,24 @@ export async function runTipReport(input: TipReportInput): Promise<TipReportResu
     // 'pending' is neither pooled nor tracked as excluded — it isn't real money yet.
   }
 
-  const { data: shiftRows, error: shiftError } = await admin
-    .from('staff_shifts')
-    .select('shift_id, membership_id, started_at, ended_at, memberships(full_name, role)')
-    .eq('venue_id', input.venueId)
-    .lt('started_at', input.periodEnd.toISOString())
-    .or(`ended_at.is.null,ended_at.gt.${input.periodStart.toISOString()}`)
-  if (shiftError) throw new Error(`runTipReport: shifts query failed: ${shiftError.message}`)
+  // Same pagination reasoning as the orders query above.
+  const shiftRows: RawShiftRow[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data: page, error: shiftError } = await admin
+      .from('staff_shifts')
+      .select('shift_id, membership_id, started_at, ended_at, memberships(full_name, role)')
+      .eq('venue_id', input.venueId)
+      .lt('started_at', input.periodEnd.toISOString())
+      .or(`ended_at.is.null,ended_at.gt.${input.periodStart.toISOString()}`)
+      .order('started_at', { ascending: true })
+      .order('shift_id', { ascending: true })
+      .range(from, from + PAGE_SIZE - 1)
+    if (shiftError) throw new Error(`runTipReport: shifts query failed: ${shiftError.message}`)
+    shiftRows.push(...((page ?? []) as unknown as RawShiftRow[]))
+    if (!page || page.length < PAGE_SIZE) break
+  }
 
-  const raw: RawShift[] = ((shiftRows ?? []) as unknown as RawShiftRow[]).map(r => {
+  const raw: RawShift[] = shiftRows.map(r => {
     const rel = Array.isArray(r.memberships) ? r.memberships[0] : r.memberships
     return {
       shiftId: r.shift_id,
@@ -252,6 +274,9 @@ export async function saveTipReport(
     p_period_end: input.periodEnd.toISOString(),
     p_rows: payload,
   })
-  if (error) return { ok: false, error: error.message }
+  if (error) {
+    console.error('[tips/report] save_tip_allocation RPC failed:', error.message)
+    return { ok: false, error: 'Could not save the allocation' }
+  }
   return { ok: true }
 }
