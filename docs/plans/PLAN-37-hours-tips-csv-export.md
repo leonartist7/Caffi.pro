@@ -5,13 +5,11 @@ tip allocations for a period, for the owner to hand to their accountant or
 payroll provider. **A report, not payroll** — which is exactly why it is
 buildable while payroll is not.
 
-> **Status: ground truth only.** The implementation is deliberately not
-> started. PLAN-37's own acceptance line requires its values to match the
-> PLAN-36 report "exactly, row for row", so it consumes PLAN-36's output
-> contract directly. PLAN-36 (PR #74) is still awaiting its mandatory
-> architect-tier math review; if that review changes the allocation
-> output shape, building against the current contract would be wasted.
-> The sections below are the parts that are independent of that outcome.
+> **Status: implemented.** PLAN-36's mandatory architect-tier math review
+> returned (one real bug found and fixed in `findOverlappingShifts`, a
+> docstring correction, no change to the report's row shape), so the
+> ground truth below held without revision. Verification detail:
+> `docs/plans/BUILD-LOG-PLAN-37.md`.
 
 ## Ground truth (verified by reading the codebase, before designing)
 

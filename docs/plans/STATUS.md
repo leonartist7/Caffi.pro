@@ -172,11 +172,50 @@ prose, same rule as Lane B's note above.
   Owner-only (`requireVenueRole(['owner'])`). Full design, the escalation,
   and 16 passing verification scenarios (incl. the indivisible-amount
   proof): `docs/plans/PLAN-36-tip-allocation.md`,
-  `docs/plans/BUILD-LOG-PLAN-36.md`. **Still needs the mandatory
-  architect-tier pre-merge math review** (same tier, second pass) before
-  this PR leaves draft — not yet done as of this update.
-- **Not yet started**: PLAN-37 (CSV export, depends on PLAN-36's row
-  shape).
+  `docs/plans/BUILD-LOG-PLAN-36.md`.
+
+  **Mandatory architect-tier pre-merge math review: done, PR out of
+  draft.** An independent pass (given no context from the design/build
+  session) ran a property-based harness — 20k+ randomized trials plus
+  every named edge case — against `allocate()`/`computeAllocation()` and
+  found one real bug: `findOverlappingShifts` only compared each shift to
+  its immediate predecessor in start-time order, so a long shift fully
+  containing two shorter, mutually non-overlapping later shifts only
+  flagged the first containment. That function drives the
+  double-counted-hours warning shown before an owner saves an hours-basis
+  allocation, so the miss was live-consequential, not cosmetic. Fixed
+  (all-later-shifts comparison with an early break) and re-verified clean
+  (`abd12f7`). Also corrected `allocate()`'s docstring, which overclaimed
+  an unconditional sum-to-pool guarantee the all-zero-weight case can't
+  satisfy — doc-only, callers already guard it correctly at both levels.
+  PR #74 is ready for review.
+
+- **PLAN-37 (Hours + tips CSV export)**: 🟡 **built, PR #75 open.**
+  Ground truth first (`docs/plans/PLAN-37-hours-tips-csv-export.md`),
+  written while PLAN-36 was still under review, then implemented once
+  that review returned and the row shape was confirmed stable. Server
+  route (`app/api/tips/export`, owner-only) calls PLAN-36's
+  `runTipReport()` directly — no re-querying or re-deriving, so CSV
+  values match the report row for row by construction. New `lib/csv.ts`:
+  RFC 4180 field escaping, UTF-8 BOM, and integer-exact
+  cents/minutes-to-decimal-string conversions (verified via an exhaustive
+  round-trip check over a wide cents range plus the escaping/BOM/
+  empty-period cases — `10.10` never renders as `10.1` or
+  `10.100000001`). Filename carries venue slug + period
+  (`venues.slug` confirmed live `NOT NULL`). Emits `report.exported`
+  server-side as the compensation-data-leaving-the-system audit trail.
+  Empty period (zero shifts, zero pool) still produces a valid
+  header-only CSV, not a zero-byte file. The include/exclude
+  owner-manager choice is recorded both per-row and in a trailing notice
+  line, which also carries the "calculation aid, not a payroll record"
+  disclosure into the exported file itself. Full detail:
+  `docs/plans/BUILD-LOG-PLAN-37.md`.
+
+  Built on a branch merged from PLAN-36's (not yet in `main`) so the
+  `runTipReport()` import resolves for real typecheck/build/lint — normal
+  stacked-PR practice; PR #75's diff will show PLAN-36's commits too
+  until #74 merges to `main`, at which point it collapses to just this
+  item's own changes.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 

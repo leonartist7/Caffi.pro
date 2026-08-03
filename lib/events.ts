@@ -63,6 +63,7 @@ export type AroEventType =
   | 'review.clicked'
   // --- Lane C ---
   | 'tip_allocation.saved'
+  | 'report.exported'
 
 export interface AroEvent {
   type: AroEventType
@@ -132,6 +133,7 @@ export const EVENT_LABELS: Record<string, string> = {
   'review.clicked': 'Review link clicked',
   // --- Lane C ---
   'tip_allocation.saved': 'Tip allocation saved',
+  'report.exported': 'Report exported',
 }
 
 export function eventLabel(type: string): string {
