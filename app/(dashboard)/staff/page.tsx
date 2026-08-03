@@ -218,7 +218,7 @@ export default function AdminStaffPage() {
         </div>
         <div className="flex items-center gap-2">
           <Link
-            href="/tips"
+            href="/tips-admin"
             className="border border-coffee-200 hover:bg-coffee-50 text-coffee-700 px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
             <DollarSign className="w-5 h-5" />

@@ -10,6 +10,7 @@ import {
   Gift,
   Megaphone,
   Settings,
+  DollarSign,
   Menu,
   X,
   ShieldAlert,
@@ -25,13 +26,21 @@ import {
  * screens rather than merely shrinking.
  *
  * Rewards/Campaigns remain placeholder links (they resolve to their own
- * surfaces or fall back gracefully); Home, Regulars, Creative and Settings
- * are real.
+ * surfaces or fall back gracefully); Home, Regulars, Creative, Tips and
+ * Settings are real.
+ *
+ * Tips is owner-only server-side (`requireVenueRole(['owner'])` — an
+ * explicit override of this codebase's usual owner+manager default, see
+ * PLAN-36) even though this shell also renders for managers; a manager
+ * who follows it gets a clear error toast on the first action rather
+ * than silently-wrong figures, same failure shape as any other
+ * owner-only action reachable from a shared owner+manager surface.
  */
 const NAV = [
   { href: '/home', label: 'Home', icon: Home },
   { href: '/regulars', label: 'Regulars', icon: Users },
   { href: '/creative', label: 'Creative', icon: Sparkles },
+  { href: '/tips', label: 'Tips', icon: DollarSign },
   { href: '/rewards-admin', label: 'Rewards', icon: Gift },
   { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
   { href: '/settings', label: 'Settings', icon: Settings },

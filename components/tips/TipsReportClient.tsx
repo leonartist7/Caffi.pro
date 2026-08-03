@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
 import { AlertTriangle, Download, Info, Loader2 } from 'lucide-react'
 import { formatCents } from '@/lib/money'
@@ -76,8 +75,20 @@ const REFUSAL_MESSAGES: Record<string, string> = {
     'This period has pooled tips but no recorded shifts — nothing can be allocated.',
 }
 
-export default function TipsPage() {
-  const { selectedTenant } = useTenant()
+/**
+ * The tip allocation report UI, parameterized by venueId so it can be
+ * rendered from both the HQ admin's client-selector shell ((dashboard),
+ * PLAN-36's original surface) and the venue owner's own shell ((owner) —
+ * added post-review once an independent pass found the original page
+ * structurally unreachable for a real solo owner, since (dashboard)'s
+ * venue selector only ever resolves for aro_admin). period_start/
+ * period_end are sent as bare datetime-local wall-clock strings, not
+ * `.toISOString()` instants — the server resolves them against the
+ * venue's own configured timezone (never this browser's), so a period
+ * boundary means the same instant regardless of who's typing it in or
+ * where.
+ */
+export function TipsReportClient({ venueId }: { venueId: string }) {
   const initial = defaultPeriod()
   const [periodStart, setPeriodStart] = useState(initial.start)
   const [periodEnd, setPeriodEnd] = useState(initial.end)
@@ -90,16 +101,13 @@ export default function TipsPage() {
   const [saving, setSaving] = useState(false)
 
   function buildParams(includeManualWeights: boolean) {
-    if (!selectedTenant || includeOwnerManager === null) return null
-    const start = new Date(periodStart)
-    const end = new Date(periodEnd)
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null
+    if (includeOwnerManager === null || !periodStart || !periodEnd) return null
     const params = new URLSearchParams({
-      venue_id: selectedTenant.tenant_id,
+      venue_id: venueId,
       basis,
       include_owner_manager: String(includeOwnerManager),
-      period_start: start.toISOString(),
-      period_end: end.toISOString(),
+      period_start: periodStart,
+      period_end: periodEnd,
     })
     if (basis === 'manual' && includeManualWeights) {
       params.set('manual_weights', JSON.stringify(manualWeights))
@@ -143,25 +151,28 @@ export default function TipsPage() {
   }
 
   async function saveReport() {
-    if (!selectedTenant || includeOwnerManager === null || !result?.ok) return
+    if (includeOwnerManager === null || !result?.ok) return
     setSaving(true)
     try {
-      const start = new Date(periodStart)
-      const end = new Date(periodEnd)
       const res = await fetch('/api/tips/allocation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          venue_id: selectedTenant.tenant_id,
+          venue_id: venueId,
           basis,
           include_owner_manager: includeOwnerManager,
-          period_start: start.toISOString(),
-          period_end: end.toISOString(),
+          period_start: periodStart,
+          period_end: periodEnd,
           manual_weights: basis === 'manual' ? manualWeights : undefined,
         }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Failed to save')
+      const data = (await res.json()) as ReportResult | { error: string }
+      if (!res.ok) throw new Error('error' in data ? data.error : 'Failed to save')
+      // The server recomputes from live data before saving — if anything
+      // changed since the preview (a new order, a corrected shift), the
+      // saved snapshot can differ from what's on screen. Replace the
+      // preview with what was actually persisted so the two never diverge.
+      setResult(data as ReportResult)
       toast.success('Allocation saved')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to save')
@@ -170,16 +181,9 @@ export default function TipsPage() {
     }
   }
 
-  if (!selectedTenant) {
-    return (
-      <div className="text-center py-12">
-        <h2 className="text-2xl font-display font-bold text-aro-ink mb-2">No client selected</h2>
-        <p className="text-aro-ink-soft">Please select a client from the dropdown above.</p>
-      </div>
-    )
-  }
-
   const canRun = includeOwnerManager !== null && periodStart && periodEnd
+  const saveBlocked =
+    result?.ok === true && !result.periodOngoing && result.openShiftWarnings.length > 0
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -234,6 +238,7 @@ export default function TipsPage() {
             {(['hours', 'equal', 'manual'] as Basis[]).map(b => (
               <button
                 key={b}
+                aria-pressed={basis === b}
                 onClick={() => {
                   setBasis(b)
                   setRoster(null)
@@ -261,6 +266,7 @@ export default function TipsPage() {
           </p>
           <div className="flex gap-2">
             <button
+              aria-pressed={includeOwnerManager === true}
               onClick={() => {
                 setIncludeOwnerManager(true)
                 setRoster(null)
@@ -275,6 +281,7 @@ export default function TipsPage() {
               Include
             </button>
             <button
+              aria-pressed={includeOwnerManager === false}
               onClick={() => {
                 setIncludeOwnerManager(false)
                 setRoster(null)
@@ -411,7 +418,7 @@ export default function TipsPage() {
                 </a>
                 <button
                   onClick={() => void saveReport()}
-                  disabled={saving}
+                  disabled={saving || saveBlocked}
                   className="rounded-lg bg-aro-terra text-white px-4 py-2 text-sm font-medium disabled:opacity-50"
                 >
                   {saving ? 'Saving…' : 'Save this allocation'}
@@ -436,7 +443,8 @@ export default function TipsPage() {
                   {result.rows.map(r => (
                     <tr key={r.shiftId}>
                       <td className="px-4 py-3 text-aro-ink font-medium">
-                        {r.fullName ?? r.membershipId}
+                        {r.fullName ?? r.membershipId}{' '}
+                        <span className="text-aro-ink-soft font-normal">({r.role})</span>
                       </td>
                       <td className="px-4 py-3 text-aro-ink-soft">
                         {new Date(r.startedAt).toLocaleDateString()}

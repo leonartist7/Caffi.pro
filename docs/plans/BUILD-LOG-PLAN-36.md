@@ -178,3 +178,133 @@ period_start, period_end)` triple — across all bases, not just the one
   never writes anything. The atomic RPC's whole-period delete-then-insert
   means switching basis and re-saving replaces the prior snapshot rather
   than leaving two conflicting row sets for the same period.
+
+## Post-review pass (Codex + CodeRabbit, commit `abd12f7` onward)
+
+Both an independent math review (this PR's own draft gate — see the PR
+description) and the automated reviewers ran once the PR left draft.
+Every finding checked against the actual code before acting; several
+converged from both reviewers independently, which is itself a signal
+they were real.
+
+**Fixed:**
+
+- **Owner venue access was structurally broken (Codex, P1 — the most
+  consequential finding here).** The original page lived only under
+  `(dashboard)`, whose venue selector (`useTenant()` → `/api/clients`) is
+  `requireAroAdmin()`-gated — confirmed by reading that route, not
+  assumed. A real solo owner has no path to a `selectedTenant` there at
+  all (`TenantContext.setSelectedTenant` is only ever called from
+  `/clients` and `TenantSelector`, both admin-only), so the page rendered
+  "No client selected" permanently for its actual intended user. Fixed by
+  extracting the UI into `components/tips/TipsReportClient.tsx`
+  (parameterized by `venueId`, no `useTenant()` dependency) and adding a
+  real owner-facing `app/(owner)/tips/page.tsx` that resolves `venueId`
+  the same way the `(owner)` layout itself does — impersonation first,
+  then `resolveOwnerVenueId` — plus a nav entry in `owner-shell.tsx`. The
+  original page becomes a thin `(dashboard)`-only wrapper. Both routes
+  resolving to literal `/tips` is a build-time collision (route groups
+  don't affect the URL — same class of issue PLAN-30 hit and resolved for
+  `/settings` vs `/venue-settings`); resolved the same way, moving the
+  admin-only path to `/tips-admin` since the owner path is the real
+  primary surface. A manager following the new owner-shell "Tips" link
+  still gets a clean 403 → error-toast on first action, same as any other
+  owner-only action reachable from an owner+manager-shared surface — not
+  a crash, not silently wrong figures, so left as-is rather than also
+  plumbing per-role nav visibility through the shell.
+- **Venue-local timezone, not the browser's or this server's (Codex,
+  P1).** `new Date(datetime-local-string)` parses in whichever timezone
+  the _reader_ happens to be in — a real bug for a period boundary, which
+  must mean the same instant regardless of who's typing it in or where.
+  Added `localDateTimeStringToUtc` + exported `tzOffsetMs` to
+  `lib/owner-stats.ts` (generalizing the existing `mondayStartInTz`
+  offset trick to arbitrary wall-clock time, not just midnight) and
+  `getVenueTimezone`. `period_start`/`period_end` are now sent as bare
+  `datetime-local` strings with no client-side conversion at all; the
+  server looks up the venue's own `timezone` column and interprets them
+  there. Verified against real DST boundaries (Toronto Aug/Jan, Edmonton)
+  — see `verify-tz.mjs` in the review scratchpad.
+- **Concurrent saves could double-count (Codex P1 + CodeRabbit, both
+  independently).** `save_tip_allocation`'s delete-then-insert had no
+  lock — two overlapping saves for a never-before-saved period could each
+  find nothing to delete and both insert. Added a transaction-scoped
+  `pg_advisory_xact_lock` keyed on `(venue_id, period_start, period_end)`
+  before the delete; auto-releases at the function's own implicit
+  transaction end, so it can't leak. Re-applied live and sanity-checked
+  (a real call against a live venue completes without error).
+- **`saveTipReport`'s raw RPC error leaked to the client (CodeRabbit,
+  Major).** `admin.rpc(...)`'s `error.message` was returned verbatim as
+  the client-facing error string — a Postgres/RPC failure could leak
+  internal schema/constraint detail. Now logged server-side, generic
+  message returned. Also wrapped the `saveTipReport` call itself in
+  try/catch in the route (a rejected promise, not just an `{error}`
+  tuple, previously escaped unhandled).
+- **The saved allocation could silently differ from what's on screen
+  (Codex, P1).** `POST` correctly recomputes from live data before
+  saving, but the client discarded that response and kept showing the
+  `GET` preview. If an order or shift changed between preview and save,
+  the owner could copy figures that don't match what was persisted. Now
+  `setResult(data)` on a successful save.
+- **1000-row silent undercount (Codex, P1).** Both the `orders` and
+  `staff_shifts` queries in `runTipReport` were unpaginated single
+  `.select()` calls; PostgREST caps rows per request at this project's
+  configured `max_rows` (1000). A period with more matching rows than
+  that would silently undercount the pool/hours with no error. Both
+  queries now page via `.range()` until a short page confirms the end,
+  with an explicit `.order()` added for stable, deterministic row
+  presentation (the CodeRabbit nitpick on `shiftRows` ordering, fixed for
+  free by the same change).
+- **Role not shown in the results table despite being on every row
+  (Codex, P2).** The report's whole design point for `include_owner_manager`
+  is that every row visibly carries who it is — the table just wasn't
+  rendering it. Added.
+- **Accessibility: toggle buttons had no `aria-pressed` (CodeRabbit,
+  Major).** The basis and owner/manager toggles conveyed selection by
+  background color alone. Added `aria-pressed` to both groups.
+- **Save button stayed enabled when saving was already guaranteed to
+  409 (CodeRabbit, Minor).** A historical period with open-shift warnings
+  blocks saving (`saveTipReport`'s own check) but the button didn't
+  reflect that, so the only feedback was an avoidable failed request.
+  Now disabled in that state too.
+- **Duplicated manual-weights validation between GET and POST
+  (CodeRabbit, nitpick).** Two independent loops validating "non-negative
+  safe integer" could drift apart. Extracted `parseManualWeights`, used
+  by both.
+
+**Checked and not applicable — skipped with reason:**
+
+- **"Managers see the Tips link and hit a dead end" (Codex, P2, on
+  `staff/page.tsx`).** Traced the actual mechanics rather than trusting
+  the premise: this specific page (`(dashboard)/staff`, function name
+  `AdminStaffPage`) is gated behind the same admin-only `selectedTenant`
+  as the original bug above — a manager reaches "No client selected"
+  here too, Tips link included, never the link itself. This is the same
+  root cause as the P1 fix above, not a separate manifestation of it;
+  nothing further to fix on this specific file.
+
+**Flagged, not fixed — real, disproportionate to fix here:**
+
+- **No persisted marker for a validly-empty allocation (Codex, P2).** A
+  period with zero shifts and zero pool is a real, valid save
+  (`p_rows` legitimately empty) — but `tip_allocations` has no row
+  representing "explicitly saved as empty," so it's indistinguishable
+  from "never saved." Fixing this cleanly needs a period-level marker
+  (a new table or column), which is in real tension with this PR's own
+  stated design constraint ("Zero new tables — populates the
+  already-live `tip_allocations`"). Given the practical case is narrow
+  (a period with literally no money and no hours has little downstream
+  consequence either way, and PLAN-37's CSV export reads the live report
+  each time, never this saved snapshot), left as an honest gap rather
+  than abandoning that constraint unilaterally.
+- **No committed test file for `lib/tips/allocate.ts` (CodeRabbit,
+  nitpick, "heavy lift").** Correct in isolation, but this repo has no
+  configured test runner anywhere, and every sibling Lane C item (PLAN-30
+  through this one) deliberately uses the same ad hoc `npx tsx`
+  verification-script convention instead, precisely because standing up
+  a test framework is a repo-wide infrastructure decision, not a
+  per-PR one. Introducing a test runner unilaterally from one PR would be
+  a bigger, unrequested architectural change than the finding itself.
+  The ad hoc scripts already achieve the same coverage this suggestion
+  asks for (divisibility/rounding, zero-weight/pool/shift cases, BigInt
+  scale, two-level proportionality, overlap detection) — see this file's
+  own verification section above.
