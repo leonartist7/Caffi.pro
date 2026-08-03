@@ -11,9 +11,15 @@ export interface Unit {
 
 /**
  * Largest-remainder (Hamilton) apportionment. Splits `poolCents` across
- * `units` proportional to weight, integer-exact: the result always sums
- * to exactly `poolCents`, a zero-weight unit always gets exactly 0, and
- * no unit ever receives more than one extra cent over its exact share.
+ * `units` proportional to weight, integer-exact: a zero-weight unit
+ * always gets exactly 0, and no unit ever receives more than one extra
+ * cent over its exact share. The result sums to exactly `poolCents`
+ * whenever at least one unit has nonzero weight; if every unit's weight
+ * is 0, there is no weight basis to apportion the pool by, so every
+ * unit gets exactly 0 and the result does not sum to `poolCents` — this
+ * case is the caller's responsibility to guard against (as
+ * `computeAllocation` does at both levels) rather than something this
+ * primitive can resolve on its own.
  * Tie-break for the remainder cents: remainder desc, then weight desc,
  * then id asc (plain string compare) — a fully deterministic ordering
  * carrying no correlation to any attribute of the unit itself.
@@ -152,12 +158,17 @@ export function findOverlappingShifts(counted: CountedShift[]): CountedShift[] {
     const sorted = [...shifts].sort(
       (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime()
     )
-    for (let i = 1; i < sorted.length; i++) {
-      const prev = sorted[i - 1]
-      const cur = sorted[i]
-      if (new Date(cur.startedAt).getTime() < new Date(prev.endedAt).getTime()) {
-        if (!overlapping.includes(prev)) overlapping.push(prev)
-        if (!overlapping.includes(cur)) overlapping.push(cur)
+    // Compare each shift against every later one, not just its immediate successor:
+    // a long shift can fully contain two shorter, mutually non-overlapping later
+    // shifts, so an adjacent-pair-only check misses the second containment.
+    for (let i = 0; i < sorted.length; i++) {
+      const a = sorted[i]
+      const aEnd = new Date(a.endedAt).getTime()
+      for (let j = i + 1; j < sorted.length; j++) {
+        const b = sorted[j]
+        if (new Date(b.startedAt).getTime() >= aEnd) break // sorted by start: no later j can overlap a either
+        if (!overlapping.includes(a)) overlapping.push(a)
+        if (!overlapping.includes(b)) overlapping.push(b)
       }
     }
   }
