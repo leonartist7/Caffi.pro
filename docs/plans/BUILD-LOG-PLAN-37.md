@@ -104,6 +104,32 @@ accident.
   `kitchen-settings`, `activity`, etc.) uses `venue_id`, confirmed by
   grep before the live check settled it.
 
+## Reconciled with PLAN-36's post-review fixes
+
+PLAN-36's own PR (#74) went through Codex + CodeRabbit review after
+leaving draft, which found real issues in the exact contract this item
+consumes — re-merged those fixes in and adjusted this item to match:
+
+- `period_start`/`period_end` are no longer `.toISOString()` instants —
+  the shared `TipsReportClient` now sends bare `datetime-local`
+  wall-clock strings, and this route resolves them against the venue's
+  own timezone the same way `/api/tips/allocation` now does
+  (`getVenueTimezone` + `localDateTimeStringToUtc`), not the browser's or
+  this server's. Without this fix the export would have inherited
+  PLAN-36's timezone bug independently, on its own request path.
+- The Export CSV link/button moved from the original `(dashboard)`-only
+  `tips/page.tsx` into `components/tips/TipsReportClient.tsx`, since that
+  page no longer exists in that form — PLAN-36's review found the
+  original page structurally unreachable for a real solo owner and split
+  the UI into a shared, `venueId`-parameterized component rendered from
+  both `(dashboard)/tips-admin` (aro_admin) and the new `(owner)/tips`
+  (real owners). CSV export now works from both, which is the right
+  outcome — the owner is the export's actual primary audience, not just
+  the admin path this item originally only had access to.
+- `runTipReport`'s `orders`/`staff_shifts` queries now paginate past
+  PostgREST's 1000-row cap (PLAN-36's fix) — the export inherits this for
+  free since it calls the same function.
+
 ## Honest gaps
 
 - No live browser click-through of the "Export CSV" link or a real

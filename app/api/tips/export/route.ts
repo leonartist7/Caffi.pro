@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireVenueRole } from '@/lib/authz'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { emitEvent } from '@/lib/events'
+import { getVenueTimezone, localDateTimeStringToUtc } from '@/lib/owner-stats'
 import { runTipReport, type TipReportInput } from '@/lib/tips/report'
 import type { TipBasis } from '@/lib/tips/allocate'
 import { buildCsv, csvRow, centsToDecimalString, minutesToHoursDecimalString } from '@/lib/csv'
@@ -29,14 +30,22 @@ function parseIncludeOwnerManager(value: string | null): boolean | null {
   return null
 }
 
-function parsePeriod(
+/**
+ * `period_start`/`period_end` are `datetime-local` wall-clock strings with
+ * no timezone attached, interpreted in the venue's own configured
+ * timezone — never this server's or the caller's browser's. See the same
+ * fix on `/api/tips/allocation`.
+ */
+async function parsePeriod(
   startParam: string | null,
-  endParam: string | null
-): { start: Date; end: Date } | null {
+  endParam: string | null,
+  venueId: string
+): Promise<{ start: Date; end: Date } | null> {
   if (!startParam || !endParam) return null
-  const start = new Date(startParam)
-  const end = new Date(endParam)
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return null
+  const timezone = await getVenueTimezone(venueId)
+  const start = localDateTimeStringToUtc(startParam, timezone)
+  const end = localDateTimeStringToUtc(endParam, timezone)
+  if (!start || !end || end < start) return null
   return { start, end }
 }
 
@@ -67,7 +76,11 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const period = parsePeriod(params.get('period_start'), params.get('period_end'))
+  const period = await parsePeriod(
+    params.get('period_start'),
+    params.get('period_end'),
+    authz.ctx.venueId
+  )
   if (!period) {
     return NextResponse.json(
       { error: 'Valid period_start and period_end are required' },
