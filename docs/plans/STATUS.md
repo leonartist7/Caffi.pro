@@ -195,7 +195,7 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   14.24:1 before ever being committed, by keeping the accent color on the
   icon only and moving text to `aro-ink`. `BUILD-LOG-PLAN-32.md`.
 - **PLAN-33 (HQ aro refit, part 3 — settings/staff/rewards + sweep)**:
-  ✅ **built** (PR pending). Refit the final 3 pages plus a real gap the
+  ✅ **merged** (PR #71). Refit the final 3 pages plus a real gap the
   repo-wide sweep found: `app/(dashboard)/layout-client.tsx` was never
   assigned to any of PLAN-31/32/33's file lists despite being Lane C's own
   file and in this document's own refit inventory — fixed here (2 lines).
@@ -210,6 +210,27 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   `coffee-*`/`cream-*`/`dark-*` left except the one Lane B file, three
   real accessibility bugs found and fixed across the three PRs.
   `BUILD-LOG-PLAN-33.md`.
+- **PLAN-34 (Team management suite)**: ✅ **merged** (PR #72). Extends the
+  existing `app/api/staff/**`, doesn't invent a new surface — manager-
+  escalation prevention and deactivation-history preservation were already
+  fully server-enforced (confirmed live against `memberships`'s `role`
+  CHECK constraint via Supabase MCP, matching the route's own
+  `VALID_ROLES`). The one real gap: `/staff` had zero server-side role
+  gating (like every other `(dashboard)` page except `/dashboard` itself)
+  — a `staff`-role user hitting it got the full page shell then
+  silently-failing API calls, a 403 wall by another name. Fixed: split
+  into a server-gated wrapper (`page.tsx`) that wrong-door-redirects
+  staff-only users to `/counter` before any client JS ships, plus a new
+  `staff-client.tsx` (independently already on `aro` tokens) with one new
+  addition — an Edit modal for name/role, wired to the existing `PATCH`
+  route (no new API surface, no new authorization logic). The merge
+  friction this PR originally flagged against PLAN-33's parallel refit of
+  the same page was resolved at merge time: PLAN-33's monolithic
+  `page.tsx` was superseded by this PR's server/client split, which had
+  already independently converged on the same `aro` tokens. Not verified
+  live (no service-role key in this sandbox) — the escalation-prevention
+  and redirect claims are verified by reading the exact code paths and
+  cross-checking the live schema, not a live session. `BUILD-LOG-PLAN-34.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
