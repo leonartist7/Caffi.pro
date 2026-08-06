@@ -15,6 +15,7 @@ import {
   Link2,
   Edit2,
   Clock,
+  DollarSign,
 } from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useConfirm } from '@/hooks/useConfirm'
@@ -258,6 +259,13 @@ export function StaffPageClient() {
           <p className="text-aro-muted mt-1">Manage staff members for this client</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/tips-admin"
+            className="border border-aro-hairline hover:bg-aro-sand/40 text-aro-ink-soft px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <DollarSign className="w-5 h-5" />
+            <span>Tips</span>
+          </Link>
           <Link
             href="/staff/shifts"
             className="border border-aro-hairline hover:bg-aro-sand/40 text-aro-ink-soft px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"

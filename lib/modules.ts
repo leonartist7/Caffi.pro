@@ -19,6 +19,7 @@ import {
   Boxes,
   Megaphone,
   Home,
+  DollarSign,
 } from 'lucide-react'
 
 /**
@@ -54,6 +55,7 @@ export type ModuleKey =
   | 'owner_rewards'
   | 'owner_campaigns'
   | 'owner_settings'
+  | 'owner_tips'
 
 export interface ModuleDef {
   key: ModuleKey
@@ -146,6 +148,18 @@ export const MODULES: ModuleDef[] = [
     label: 'Settings',
     href: '/venue-settings',
     icon: Settings,
+    status: 'live',
+    surface: 'owner',
+  },
+  {
+    // PLAN-36. Owner-only server-side (requireVenueRole(['owner'])) even
+    // though this registers on the shared owner+manager surface — a
+    // manager who follows the link gets a clear error toast on the first
+    // action rather than a dead end.
+    key: 'owner_tips',
+    label: 'Tips',
+    href: '/tips',
+    icon: DollarSign,
     status: 'live',
     surface: 'owner',
   },

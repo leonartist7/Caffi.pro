@@ -128,11 +128,15 @@ union the prose.)
 
 ## Lane C — Team & platform polish
 
-Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
-Preflight confirmed live Supabase MCP access to `aro-platform`
-(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch (Lane A) and all of Lane B
-(PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
-`tip_allocations`, `orders.tip_cents` all live via `list_tables`.
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-37`, the
+range v2R's file-ownership header nominally extends to `PLAN-39` but only
+enumerates concrete items through `PLAN-37`). Preflight confirmed live
+Supabase MCP access to `aro-platform` (`jjgccfrwjkwknyjtbtxa`);
+`staff_shifts`/`tip_allocations` (PLAN-10) both live before any Lane C
+work began. Each item is its own branch off fresh `origin/main` (never
+stacked), so these show up as separate open PRs until they merge; resolve
+a STATUS.md conflict here by replacing this whole section, not unioning
+prose, same rule as Lane B's note above.
 
 - **PLAN-30 (Owner shell nav unification)**: ✅ **merged** (PR #68).
   `owner-shell.tsx`'s hardcoded `NAV` array now derives from
@@ -255,6 +259,48 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   instead, using that file's already-`aro`-token button styling — no
   functional change, same route (`/staff/shifts`), same icon. `tsc`/
   build/eslint green, grep gate clean.
+- **PLAN-36 (Tip allocation report)**: ✅ **merged** (PR #74). Money-
+  adjacent — an Opus-5 architect pass (Fable 5 unavailable in this
+  environment) authored the full allocation design before any code:
+  two-level apportionment (pool → membership → their own shifts),
+  largest-remainder/`BigInt` arithmetic proven exact on a deliberately
+  indivisible amount ($100.00 / 3 → `3333/3333/3334`), zero floats
+  anywhere in `lib/tips/allocate.ts` (grep-verifiable). **One genuine
+  policy question was escalated** — whether owner/manager memberships
+  share in the tip pool by default. Asked the user directly; no answer
+  came back. Resolved via the architect's own explicit fallback: **no
+  stored or pre-selected default anywhere** — the report requires an
+  explicit include/exclude choice every run. Zero new tables — populates
+  the already-live `tip_allocations` (PLAN-10) via one new
+  `SECURITY DEFINER`, `service_role`-only RPC, serialized on
+  `(venue_id, period_start, period_end)` via a transaction-scoped advisory
+  lock. Owner-only (`requireVenueRole(['owner'])`).
+
+  **Mandatory architect-tier pre-merge math review: done.** An independent
+  pass (no context from the design/build session) ran a property-based
+  harness — 20k+ randomized trials plus every named edge case — and found
+  one real bug (`findOverlappingShifts` missed containment overlaps) plus
+  a docstring correction, both fixed. A separate Codex/CodeRabbit
+  post-draft review then found the original page was **structurally
+  unreachable for a real solo owner** — it lived only under `(dashboard)`,
+  whose venue selector is aro_admin-only. Fixed by extracting the UI into
+  `components/tips/TipsReportClient.tsx` (parameterized by `venueId`) and
+  adding a real `app/(owner)/tips` registered as an `owner_tips` module in
+  `lib/modules.ts` (the admin-only path moved to `/tips-admin` to resolve
+  the resulting route collision — same class PLAN-30 hit for `/settings`
+  vs `/venue-settings`). Also fixed: venue-timezone-aware period parsing
+  (never the browser's), a 1000-row pagination cap on the orders/shifts
+  queries that could silently undercount a busy venue's pool, a raw-RPC-
+  error leak, and a stale-preview-after-save bug. Full detail:
+  `docs/plans/PLAN-36-tip-allocation.md`, `docs/plans/BUILD-LOG-PLAN-36.md`
+  (see its "Post-review pass" section for the complete finding-by-finding
+  list, including two flagged-not-fixed items with reasoning).
+
+- **PLAN-37 (Hours + tips CSV export)**: ⚪ **spec only, PR #75 open
+  (draft).** No implementation yet — deliberately parked behind PLAN-36's
+  math review and route-shape changes so it wasn't building against a
+  contract that might still move. Now that PLAN-36 is merged with its
+  final `/tips-admin` + `/tips` route shapes, PLAN-37 is unblocked.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 

@@ -138,7 +138,7 @@ started_at: now(), source: 'counter' }`. A `23505` from the partial
 - [ ] A shift left open past a configurable threshold is flagged for owner
       review and is not auto-closed.
 - [ ] Manual correction by an owner writes a new record with `source =
-    'manual'` and preserves the original **or** closes the original's
+  'manual'` and preserves the original **or** closes the original's
       `ended_at` in place without touching any other field — both actions
       exist, matching the two distinct real-world corrections (a
       never-captured shift vs. a stranded open one). See Design.

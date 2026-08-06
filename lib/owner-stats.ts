@@ -38,6 +38,17 @@ export async function resolveOwnerVenueId(userId: string): Promise<string | null
   return venue?.venue_id ?? null
 }
 
+/** Same fallback convention as `/home` and `/api/analytics` — never the caller's own timezone. */
+export async function getVenueTimezone(venueId: string): Promise<string> {
+  const admin = getSupabaseAdmin()
+  const { data: venue } = await admin
+    .from('venues')
+    .select('timezone')
+    .eq('venue_id', venueId)
+    .maybeSingle()
+  return venue?.timezone ?? 'America/Edmonton'
+}
+
 export interface VenueWeekStats {
   regularsReturned: number
   membersThisWeek: number
@@ -403,7 +414,24 @@ export function mondayStartInTz(date: Date, timeZone: string): Date {
   return new Date(naiveLocalMidnight.getTime() - offsetMs)
 }
 
-function tzOffsetMs(date: Date, timeZone: string): number {
+/**
+ * Interprets a `datetime-local`-style wall-clock string ("YYYY-MM-DDTHH:mm",
+ * no timezone) as venue-local time in `timeZone`, returning the real UTC
+ * instant it names. Never uses the caller's own (browser or server
+ * process) timezone — the whole point is that a period boundary means the
+ * same instant regardless of who's typing it in or where.
+ */
+export function localDateTimeStringToUtc(localDateTime: string, timeZone: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(localDateTime)
+  if (!match) return null
+  const [, y, mo, d, h, mi] = match.map(Number)
+  const naiveUtcGuess = new Date(Date.UTC(y, mo - 1, d, h, mi, 0))
+  if (Number.isNaN(naiveUtcGuess.getTime())) return null
+  const offsetMs = tzOffsetMs(naiveUtcGuess, timeZone)
+  return new Date(naiveUtcGuess.getTime() - offsetMs)
+}
+
+export function tzOffsetMs(date: Date, timeZone: string): number {
   const fmt = new Intl.DateTimeFormat('en-US', {
     timeZone,
     hourCycle: 'h23',

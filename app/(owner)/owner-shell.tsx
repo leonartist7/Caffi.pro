@@ -19,7 +19,15 @@ import { OWNER_ITEMS, ownerModules } from '@/lib/modules'
  * here — `OWNER_ITEMS` for the two fixed, non-toggleable entries (Home,
  * Regulars), `ownerModules()` for everything registered with
  * `surface: 'owner'`. A lane adding a new owner surface appends a row to
- * `lib/modules.ts`; this file never needs another edit for that.
+ * `lib/modules.ts`; this file never needs another edit for that — Tips
+ * (PLAN-36) is registered there rather than hand-added here.
+ *
+ * Tips is owner-only server-side (`requireVenueRole(['owner'])` — an
+ * explicit override of this codebase's usual owner+manager default, see
+ * PLAN-36) even though this shell also renders for managers; a manager
+ * who follows it gets a clear error toast on the first action rather
+ * than silently-wrong figures, same failure shape as any other
+ * owner-only action reachable from a shared owner+manager surface.
  */
 const navItems = [
   ...OWNER_ITEMS.map(item => ({ ...item, soon: false })),
