@@ -146,14 +146,32 @@ prose, same rule as Lane B's note above.
   is the first to use that path). The three previously-dead links now
   resolve to real pages: `/rewards-admin`, `/campaigns` (honest
   `ComingSoon` state), `/venue-settings`. `BUILD-LOG-PLAN-30.md`.
-- **PLAN-31 (HQ aro refit part 1 — shared components)**: ✅ **merged**
-  (PR #69).
-- **PLAN-32 (HQ aro refit part 2 — dashboard/clients/activity/analytics)**:
-  🟡 **built, PR #70 open (ready for review)**.
-- **PLAN-33 (HQ aro refit part 3 — settings/staff/rewards + sweep)**: 🟡
-  **built, PR #71 open (draft)**.
-- **PLAN-34 (Team management suite)**: 🟡 **built, PR #72 open (draft)**.
-- **PLAN-35 (Time clock)**: 🟡 **built, PR #73 open (draft)**. Clock
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **merged**
+  (PR #69). Style-only token refit of the 11 shared components v2R names.
+  **Real, confirmed design finding**: zero of the ~46 files already on
+  the aro token system anywhere in the repo use a `dark:` variant class —
+  the aro palette has no dark counterpart, it's one warm palette, so this
+  PR deletes `dark:` rather than inventing a token that doesn't exist;
+  whether to retire dark-mode support outright is a product call flagged
+  here, not decided by a style-only refit. `BUILD-LOG-PLAN-31.md`.
+- **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
+  ✅ **merged** (PR #70). Style-only refit of the 4 pages, including
+  `analytics/page.tsx`'s Recharts color props. A contrast bug was caught
+  before it shipped: the dashboard's "New leads" tile measured 4.03:1,
+  fixed to 14.24:1 before ever being committed. `BUILD-LOG-PLAN-32.md`.
+- **PLAN-33 (HQ aro refit, part 3 — settings/staff/rewards + sweep)**:
+  ✅ **merged** (PR #71). Refit the final 3 pages plus a real gap the
+  repo-wide sweep found: `app/(dashboard)/layout-client.tsx` was never
+  assigned to any of PLAN-31/32/33's file lists — fixed here. Closes out
+  the N8 HQ refit: 18 files, zero `coffee-*`/`cream-*`/`dark-*` left
+  except one Lane B file. `BUILD-LOG-PLAN-33.md`.
+- **PLAN-34 (Team management suite)**: ✅ **merged** (PR #72). The one
+  real gap: `/staff` had zero server-side role gating — fixed by
+  splitting into a server-gated wrapper (wrong-door-redirects staff-only
+  users to `/counter`) plus `staff-client.tsx`, with one addition: an
+  Edit modal for name/role wired to the existing `PATCH` route (no new
+  API surface, no new authorization logic). `BUILD-LOG-PLAN-34.md`.
+- **PLAN-35 (Time clock)**: ✅ **merged** (PR #73). Clock
   in/out on the counter PIN session, backed entirely by PLAN-10's
   `staff_shifts` — zero new migrations. Owner-facing shift list with two
   correction actions (close-a-stuck-shift vs. add-a-missed-shift), each
