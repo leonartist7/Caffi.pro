@@ -132,44 +132,59 @@ Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
 Preflight confirmed live Supabase MCP access to `aro-platform`
 (`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch (Lane A) and all of Lane B
 (PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
-`tip_allocations`, `orders.tip_cents` all live via `list_tables`. (PLAN-30
-through PLAN-32 all landed as separate PRs in the same session — none had
-merged to `main` by the time the next one branched, so this section is
-duplicated verbatim in each of their PRs' `STATUS.md` diffs; the first one
-to actually merge is the version of this section that sticks; whoever
-merges the next should keep the merged version's entries and just append
-its own, not silently drop an already-merged item's writeup.)
+`tip_allocations`, `orders.tip_cents` all live via `list_tables`.
 
-- **PLAN-30 (Owner shell nav unification)**: ✅ **built** (PR pending).
+- **PLAN-30 (Owner shell nav unification)**: ✅ **merged** (PR #68).
   `owner-shell.tsx`'s hardcoded `NAV` array now derives from
-  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper). The
-  three previously-dead links now resolve to real pages: `/rewards-admin`
-  (full CRUD), `/campaigns` (honest `ComingSoon` state — blocked on a
-  vendor decision, v2R §8), `/venue-settings` (tip/review settings, live
-  against PLAN-20/21's existing routes — not literal `/settings`, which
-  would have collided with the HQ dashboard's existing route at the same
-  URL). Pre-existing gap found and flagged, not fixed (outside this PR's
-  file ownership): `/home`, `/creative`, `/regulars` don't check
-  impersonation when resolving their venue, so an `aro_admin` impersonating
-  a venue gets a blank page today. Post-review correction: the "Soon"
-  badge's `bg-aro-sand`/`text-aro-muted` pairing measured 4.38:1 (fails AA)
-  — fixed to `text-aro-ink-soft` (6.63:1). `BUILD-LOG-PLAN-30.md`.
-- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **built** (PR
-  pending). Style-only token refit of the 11 shared components v2R names.
-  Zero `coffee-*`/`cream-*`/`dark-*` remaining, zero logic/prop/structure
-  changes. **Confirmed design finding**: zero of the ~46 files already on
-  the aro token system anywhere in the repo use a `dark:` variant — the
-  aro palette has no dark counterpart, it's one warm palette. This PR's
-  refit follows that precedent, which means `ThemeToggle.tsx` is now fully
-  decorative on every aro-token page — a pre-existing condition extended
-  to three more files, not introduced here; flagged as a product decision
-  above a style-only refit. Contrast measured for every new pairing;
-  post-review correction fixed the same Soon-badge issue as PLAN-30 (this
-  PR shipped the identical pairing independently in `Sidebar`/`MobileNav`)
-  and corrected two hand-calculation transcription errors in the PLAN
-  file's own contrast table (both pairs still passed AA, but one — white
-  on `aro-plum` — only by 4.55:1, not the originally claimed 5.51:1).
-  `BUILD-LOG-PLAN-31.md`.
+  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper) — Lanes
+  A/B never need to touch `owner-shell.tsx` again to add an owner nav entry,
+  just append a `surface: 'owner'` module row. The three previously-dead
+  links now resolve to real pages: `/rewards-admin` (full CRUD against the
+  existing `/api/rewards` routes), `/campaigns` (honest `ComingSoon` state —
+  marketing sends are blocked on a vendor decision, v2R §8, not Lane C's to
+  build), `/venue-settings` (tip delivery-prompt toggle + review-URL field,
+  both live against PLAN-20/21's existing routes).
+  **Real architectural finding, resolved rather than improvised**: the
+  owner's Settings page could not live at literal path `/settings` —
+  `app/(dashboard)/settings/page.tsx` already owns that URL, and Next.js
+  route groups don't affect the URL, so a second `page.tsx` at the same path
+  in a different route group is a build-time collision, not just a style
+  clash. Confirmed via a clean `npm run build` with both `/settings` and
+  `/venue-settings` as distinct routes. **Real pre-existing gap found, not
+  fixed** (out of this PR's file ownership): `/home`, `/creative`, and
+  `/regulars` each re-derive their venue via `resolveOwnerVenueId` directly
+  with no impersonation check, so an `aro_admin` impersonating a venue
+  (PLAN-09) gets a blank page on all three today. The three new pages this
+  PR owns use a new `resolveEffectiveOwnerVenueId` helper
+  (`lib/impersonation.ts`) so the gap doesn't grow; the existing three pages
+  are Lane A's/unowned and were left alone. **Not verified live**: this
+  sandbox has no `SUPABASE_SERVICE_ROLE_KEY` (only the anon key is
+  obtainable via the MCP connector), so no interactive click-through as a
+  real owner or impersonating admin was possible — `tsc`/`build`/`eslint`
+  are green, the two tables the new pages depend on (`rewards`,
+  `venues.brand_kit`) were confirmed live via a direct MCP query, and the
+  new routes were smoke-checked (no crash) against a local dev server.
+  `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **merged**
+  (PR #69). Style-only token refit of the 11 shared components v2R names
+  (`Sidebar`, `MobileNav`, `StatCard`, `SkeletonLoader`, `ThemeToggle`,
+  `TenantSelector`, `ConfirmDialog`, `ComingSoon`, `LiveClock`,
+  `app/error.tsx`, `app/(dashboard)/error.tsx`) — zero
+  `coffee-*`/`cream-*`/`dark-*` remaining, zero logic/prop/structure
+  changes (full diff read end-to-end before commit). **Real, confirmed
+  design finding**: zero of the ~46 files already on the aro token system
+  anywhere in the repo use a `dark:` variant class — the aro palette has no
+  dark counterpart, it's one warm palette. This PR's refit follows that
+  precedent (deletes `dark:` rather than inventing a token that doesn't
+  exist), which means `ThemeToggle.tsx`'s toggle is now fully decorative on
+  every aro-token page (a pre-existing condition this PR extends to three
+  more files, not one it introduces) — whether to retire dark-mode support
+  outright is a product call above a style-only refit PR, flagged here.
+  Contrast for every new text/background pairing measured against the
+  W3C relative-luminance formula and tabulated in the PLAN file — all pass
+  WCAG AA; one candidate (white on solid `aro-rose`, 2.61:1) was computed,
+  rejected, and replaced with `aro-ink` on the same background (6.15:1)
+  before it reached any component. `BUILD-LOG-PLAN-31.md`.
 - **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
   ✅ **built** (PR pending). Style-only refit of the 4 pages, including
   `analytics/page.tsx`'s Recharts color props (treated as in-scope style
