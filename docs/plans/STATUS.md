@@ -231,6 +231,30 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   live (no service-role key in this sandbox) — the escalation-prevention
   and redirect claims are verified by reading the exact code paths and
   cross-checking the live schema, not a live session. `BUILD-LOG-PLAN-34.md`.
+- **PLAN-35 (Time clock)**: ✅ **merged** (PR #73). Clock in/out through
+  the counter PIN session (`app/api/counter/shift`), backed entirely by
+  PLAN-10's `staff_shifts` — zero new migrations. The DB's partial unique
+  index (`uq_staff_shifts_open_per_membership`) is the actual "one open
+  shift" guarantee, proven live with a real insert that hit `23505`, not
+  reimplemented in application code. Owner-facing shift list + two
+  distinct correction actions at `app/(dashboard)/staff/shifts`: "close a
+  stuck shift" (in-place `ended_at` on the original `source='counter'`
+  row — proven live to preserve `shift_id`/`started_at`/`source`
+  untouched) vs. "add a missed shift" (a wholly separate `source='manual'`
+  row) — these are two different real-world situations, not one design
+  with two names; see `BUILD-LOG-PLAN-35.md` for why collapsing them into
+  one action would either double-count hours or leave a person unable to
+  clock in again. Duration is computed at read time everywhere, never
+  stored. `scripts/verify-live.mjs` gained the authenticated-non-owner
+  -denied check for `staff_shifts` (couldn't execute the full script
+  live in this sandbox — no populated env keys — so the underlying RLS
+  fact it asserts was verified directly via `pg_policies` instead, see
+  build log). **Merge note**: this PR's own "Shifts" nav link originally
+  targeted PLAN-34's since-superseded monolithic `staff/page.tsx`; at
+  merge time it was re-applied onto PLAN-34's `staff-client.tsx` split
+  instead, using that file's already-`aro`-token button styling — no
+  functional change, same route (`/staff/shifts`), same icon. `tsc`/
+  build/eslint green, grep gate clean.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 

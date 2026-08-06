@@ -1,9 +1,21 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTenant } from '@/contexts/TenantContext'
 import { toast } from 'sonner'
-import { Plus, Shield, Coffee, KeyRound, UserX, UserCheck, Mail, Link2, Edit2 } from 'lucide-react'
+import {
+  Plus,
+  Shield,
+  Coffee,
+  KeyRound,
+  UserX,
+  UserCheck,
+  Mail,
+  Link2,
+  Edit2,
+  Clock,
+} from 'lucide-react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useConfirm } from '@/hooks/useConfirm'
 import { SkeletonList } from '@/components/SkeletonLoader'
@@ -245,16 +257,25 @@ export function StaffPageClient() {
           <h1 className="font-display text-3xl font-bold text-aro-ink">Staff Management</h1>
           <p className="text-aro-muted mt-1">Manage staff members for this client</p>
         </div>
-        <button
-          onClick={() => {
-            resetForm()
-            setModalOpen(true)
-          }}
-          className="bg-aro-terra hover:brightness-95 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Invite Staff</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/staff/shifts"
+            className="border border-aro-hairline hover:bg-aro-sand/40 text-aro-ink-soft px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Clock className="w-5 h-5" />
+            <span>Shifts</span>
+          </Link>
+          <button
+            onClick={() => {
+              resetForm()
+              setModalOpen(true)
+            }}
+            className="bg-aro-terra hover:brightness-95 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Invite Staff</span>
+          </button>
+        </div>
       </div>
 
       {/* Info Card */}

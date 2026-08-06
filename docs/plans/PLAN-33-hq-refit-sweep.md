@@ -69,7 +69,7 @@ text-white` (4.55:1, the same pairing already measured in PLAN-31's
 - [ ] `grep -rE 'coffee-[0-9]|cream-[0-9]|\bdark-[0-9]'` across the 4 files
       (3 named + `layout-client.tsx`) → nothing.
 - [ ] **Repo-wide**: `grep -rE 'coffee-[0-9]|cream-[0-9]|\bdark-[0-9]' app
-  components --include=*.tsx`, run against the true combined state of
+components --include=*.tsx`, run against the true combined state of
       PLAN-31 + PLAN-32 + PLAN-33 (not this branch alone, which doesn't
       contain the other two PRs) → returns **only**
       `app/shop/[slug]/error.tsx` (Lane B, explicitly excluded). Lane A's
