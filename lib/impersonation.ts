@@ -3,6 +3,7 @@ import 'server-only'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { cookies } from 'next/headers'
 import { isAroAdminUser } from '@/lib/authz'
+import { resolveOwnerVenueId } from '@/lib/owner-stats'
 
 /**
  * aro_admin "Operate as this venue" impersonation.
@@ -110,4 +111,20 @@ export async function getImpersonatedVenueId(currentUserId: string): Promise<str
   if (!stillAdmin) return null
 
   return payload.venueId
+}
+
+/**
+ * The venue a page under `(owner)` should render for the current user:
+ * an active impersonation cookie wins, otherwise the user's own
+ * owner/manager membership — same order the `(owner)` layout resolves it
+ * inline. Pages that re-derive their own venue (rather than trusting a prop,
+ * so they keep working if ever rendered outside the layout's tree) should
+ * call this instead of `resolveOwnerVenueId` alone, or they render blank for
+ * an aro_admin mid-impersonation (a pre-existing gap on `/home`, `/creative`,
+ * and `/regulars`, which call `resolveOwnerVenueId` directly and don't).
+ */
+export async function resolveEffectiveOwnerVenueId(userId: string): Promise<string | null> {
+  const impersonatedVenueId = await getImpersonatedVenueId(userId)
+  if (impersonatedVenueId) return impersonatedVenueId
+  return resolveOwnerVenueId(userId)
 }

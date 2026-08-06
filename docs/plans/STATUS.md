@@ -138,12 +138,18 @@ stacked), so these show up as separate open PRs until they merge; resolve
 a STATUS.md conflict here by replacing this whole section, not unioning
 prose, same rule as Lane B's note above.
 
-- **PLAN-30 (Owner shell nav unification)**: 🟡 **built, PR #68 open
-  (draft)**.
-- **PLAN-31 (HQ aro refit part 1 — shared components)**: 🟡 **built, PR
-  #69 open (draft)**.
+- **PLAN-30 (Owner shell nav unification)**: ✅ **merged** (PR #68).
+  `owner-shell.tsx`'s hardcoded `NAV` array now derives from
+  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper) — Lanes
+  A/B never need to touch `owner-shell.tsx` again to add an owner nav entry,
+  just append a `surface: 'owner'` module row (PLAN-36's Tips entry below
+  is the first to use that path). The three previously-dead links now
+  resolve to real pages: `/rewards-admin`, `/campaigns` (honest
+  `ComingSoon` state), `/venue-settings`. `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit part 1 — shared components)**: ✅ **merged**
+  (PR #69).
 - **PLAN-32 (HQ aro refit part 2 — dashboard/clients/activity/analytics)**:
-  🟡 **built, PR #70 open (draft)**.
+  🟡 **built, PR #70 open (ready for review)**.
 - **PLAN-33 (HQ aro refit part 3 — settings/staff/rewards + sweep)**: 🟡
   **built, PR #71 open (draft)**.
 - **PLAN-34 (Team management suite)**: 🟡 **built, PR #72 open (draft)**.
@@ -152,31 +158,57 @@ prose, same rule as Lane B's note above.
   `staff_shifts` — zero new migrations. Owner-facing shift list with two
   correction actions (close-a-stuck-shift vs. add-a-missed-shift), each
   proven live to do exactly what its name says and nothing else.
-- **PLAN-36 (Tip allocation report)**: ✅ **built this session.**
-  Money-adjacent — an Opus-5 architect pass (Fable 5 unavailable in this
-  environment) authored the full allocation design before any code:
-  two-level apportionment (pool → membership → their own shifts),
-  largest-remainder/`BigInt` arithmetic proven exact on a deliberately
-  indivisible amount ($100.00 / 3 → `3333/3333/3334`), zero floats
-  anywhere in `lib/tips/allocate.ts` (grep-verifiable). **One genuine
-  policy question was escalated** — whether owner/manager memberships
-  share in the tip pool by default, which is jurisdiction-dependent and
-  moves a whole share of money, not cents. Asked the user directly; no
-  answer came back. Resolved via the architect's own explicit fallback
-  for that exact situation: **no stored or pre-selected default anywhere**
-  — the report requires an explicit include/exclude choice every run,
-  never silently applied. Zero new tables — populates the already-live
-  `tip_allocations` (PLAN-10) via one new `SECURITY DEFINER`,
-  `service_role`-only RPC proven live to replace a period's rows
-  atomically rather than accumulate duplicates across repeated saves.
-  Owner-only (`requireVenueRole(['owner'])`). Full design, the escalation,
-  and 16 passing verification scenarios (incl. the indivisible-amount
-  proof): `docs/plans/PLAN-36-tip-allocation.md`,
-  `docs/plans/BUILD-LOG-PLAN-36.md`. **Still needs the mandatory
-  architect-tier pre-merge math review** (same tier, second pass) before
-  this PR leaves draft — not yet done as of this update.
-- **Not yet started**: PLAN-37 (CSV export, depends on PLAN-36's row
-  shape).
+- **PLAN-36 (Tip allocation report)**: 🟡 **built, PR #74 open (ready for
+  review).** Money-adjacent — an Opus-5 architect pass (Fable 5
+  unavailable in this environment) authored the full allocation design
+  before any code: two-level apportionment (pool → membership → their own
+  shifts), largest-remainder/`BigInt` arithmetic proven exact on a
+  deliberately indivisible amount ($100.00 / 3 → `3333/3333/3334`), zero
+  floats anywhere in `lib/tips/allocate.ts` (grep-verifiable). **One
+  genuine policy question was escalated** — whether owner/manager
+  memberships share in the tip pool by default. Asked the user directly;
+  no answer came back. Resolved via the architect's own explicit fallback:
+  **no stored or pre-selected default anywhere** — the report requires an
+  explicit include/exclude choice every run. Zero new tables — populates
+  the already-live `tip_allocations` (PLAN-10) via one new
+  `SECURITY DEFINER`, `service_role`-only RPC, now serialized on
+  `(venue_id, period_start, period_end)` via a transaction-scoped advisory
+  lock. Owner-only (`requireVenueRole(['owner'])`).
+
+  **Mandatory architect-tier pre-merge math review: done, PR out of
+  draft.** An independent pass (no context from the design/build session)
+  ran a property-based harness — 20k+ randomized trials plus every named
+  edge case — and found one real bug (`findOverlappingShifts` missed
+  containment overlaps) plus a docstring correction, both fixed. A
+  separate Codex/CodeRabbit post-draft review then found the original
+  page was **structurally unreachable for a real solo owner** — it lived
+  only under `(dashboard)`, whose venue selector is aro_admin-only. Fixed
+  by extracting the UI into `components/tips/TipsReportClient.tsx`
+  (parameterized by `venueId`) and adding a real `app/(owner)/tips`
+  registered as an `owner_tips` module in `lib/modules.ts` (the
+  admin-only path moved to `/tips-admin` to resolve the resulting route
+  collision — same class PLAN-30 hit for `/settings` vs
+  `/venue-settings`). Also fixed: venue-timezone-aware period parsing
+  (never the browser's), a 1000-row pagination cap on the orders/shifts
+  queries that could silently undercount a busy venue's pool, a raw-RPC-
+  error leak, and a stale-preview-after-save bug. Full detail:
+  `docs/plans/PLAN-36-tip-allocation.md`, `docs/plans/BUILD-LOG-PLAN-36.md`
+  (see its "Post-review pass" section for the complete finding-by-finding
+  list, including two flagged-not-fixed items with reasoning).
+
+- **PLAN-37 (Hours + tips CSV export)**: 🟡 **built, PR #75 open
+  (draft).** Server route (`app/api/tips/export`, owner-only) calls
+  PLAN-36's `runTipReport()` directly — no re-querying or re-deriving, so
+  CSV values match the report row for row by construction. New
+  `lib/csv.ts`: RFC 4180 field escaping, UTF-8 BOM, and integer-exact
+  cents/minutes-to-decimal-string conversions (verified via an exhaustive
+  round-trip check — `10.10` never renders as `10.1` or `10.100000001`).
+  Filename carries venue slug + period. Emits `report.exported`
+  server-side as the compensation-data-leaving-the-system audit trail.
+  Reconciled with PLAN-36's post-review fixes (venue-timezone-aware
+  parsing; the Export CSV button now lives in the shared
+  `TipsReportClient`, so both the owner and admin paths get it). Full
+  detail: `docs/plans/BUILD-LOG-PLAN-37.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
