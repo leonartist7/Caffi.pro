@@ -134,7 +134,7 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
 (PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
 `tip_allocations`, `orders.tip_cents` all live via `list_tables`.
 
-- **PLAN-30 (Owner shell nav unification)**: ✅ **built** (PR pending).
+- **PLAN-30 (Owner shell nav unification)**: ✅ **merged** (PR #68).
   `owner-shell.tsx`'s hardcoded `NAV` array now derives from
   `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper) — Lanes
   A/B never need to touch `owner-shell.tsx` again to add an owner nav entry,
@@ -165,6 +165,26 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   `venues.brand_kit`) were confirmed live via a direct MCP query, and the
   new routes were smoke-checked (no crash) against a local dev server.
   `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **built** (PR
+  pending). Style-only token refit of the 11 shared components v2R names
+  (`Sidebar`, `MobileNav`, `StatCard`, `SkeletonLoader`, `ThemeToggle`,
+  `TenantSelector`, `ConfirmDialog`, `ComingSoon`, `LiveClock`,
+  `app/error.tsx`, `app/(dashboard)/error.tsx`) — zero
+  `coffee-*`/`cream-*`/`dark-*` remaining, zero logic/prop/structure
+  changes (full diff read end-to-end before commit). **Real, confirmed
+  design finding**: zero of the ~46 files already on the aro token system
+  anywhere in the repo use a `dark:` variant class — the aro palette has no
+  dark counterpart, it's one warm palette. This PR's refit follows that
+  precedent (deletes `dark:` rather than inventing a token that doesn't
+  exist), which means `ThemeToggle.tsx`'s toggle is now fully decorative on
+  every aro-token page (a pre-existing condition this PR extends to three
+  more files, not one it introduces) — whether to retire dark-mode support
+  outright is a product call above a style-only refit PR, flagged here.
+  Contrast for every new text/background pairing measured against the
+  W3C relative-luminance formula and tabulated in the PLAN file — all pass
+  WCAG AA; one candidate (white on solid `aro-rose`, 2.61:1) was computed,
+  rejected, and replaced with `aro-ink` on the same background (6.15:1)
+  before it reached any component. `BUILD-LOG-PLAN-31.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 

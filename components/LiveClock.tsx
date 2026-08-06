@@ -32,16 +32,16 @@ export default function LiveClock() {
 
   return (
     <div className="flex flex-col items-start space-y-0.5 lg:space-y-1">
-      <div className="font-mono text-lg lg:text-2xl font-bold text-coffee-700 dark:text-cream-200 tracking-wider">
+      <div className="font-mono text-lg lg:text-2xl font-bold text-aro-ink-soft tracking-wider">
         {formatTime(time)}
       </div>
-      <div className="text-[10px] lg:text-xs text-coffee-500 dark:text-cream-400 font-medium uppercase tracking-wide">
+      <div className="text-[10px] lg:text-xs text-aro-muted font-medium uppercase tracking-wide">
         {formatDate(time)}
       </div>
-      <div className="flex items-center space-x-1 text-[10px] lg:text-xs text-coffee-400 dark:text-cream-500">
-        <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-green-500 animate-pulse"></div>
+      <div className="flex items-center space-x-1 text-[10px] lg:text-xs text-aro-muted">
+        <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 rounded-full bg-aro-sage animate-pulse"></div>
         <span>Live</span>
-        <span className="text-coffee-600 dark:text-cream-300 ml-2">• Brew Excellence Daily ☕</span>
+        <span className="text-aro-ink-soft ml-2">• Brew Excellence Daily ☕</span>
       </div>
     </div>
   )
