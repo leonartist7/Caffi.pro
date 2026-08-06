@@ -186,7 +186,7 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   rejected, and replaced with `aro-ink` on the same background (6.15:1)
   before it reached any component. `BUILD-LOG-PLAN-31.md`.
 - **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
-  ✅ **built** (PR pending). Style-only refit of the 4 pages, including
+  ✅ **merged** (PR #70). Style-only refit of the 4 pages, including
   `analytics/page.tsx`'s Recharts color props (treated as in-scope style
   values, same category as PLAN-31's `iconBgColor` default — Recharts has
   no className-based way to color an SVG line/bar/pie segment). A
@@ -194,6 +194,22 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   the dashboard's "New leads" tile measured 4.03:1 and was fixed to
   14.24:1 before ever being committed, by keeping the accent color on the
   icon only and moving text to `aro-ink`. `BUILD-LOG-PLAN-32.md`.
+- **PLAN-33 (HQ aro refit, part 3 — settings/staff/rewards + sweep)**:
+  ✅ **built** (PR pending). Refit the final 3 pages plus a real gap the
+  repo-wide sweep found: `app/(dashboard)/layout-client.tsx` was never
+  assigned to any of PLAN-31/32/33's file lists despite being Lane C's own
+  file and in this document's own refit inventory — fixed here (2 lines).
+  **The sweep itself required a temporary local merge** of the still-open
+  PLAN-31/32 branches to verify the true combined repo-wide state (a sweep
+  on a branch forked from unmerged `main` alone would falsely flag every
+  file those two PRs already fixed) — merge was verification-only, never
+  pushed, reset away before the real commit. Final repo-wide result:
+  only `app/shop/[slug]/error.tsx` (Lane B) remains; Lane A's two members
+  files are already clean (PLAN-11), not merely excused. This closes out
+  the N8 HQ refit across all three PRs: 18 files, zero
+  `coffee-*`/`cream-*`/`dark-*` left except the one Lane B file, three
+  real accessibility bugs found and fixed across the three PRs.
+  `BUILD-LOG-PLAN-33.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
