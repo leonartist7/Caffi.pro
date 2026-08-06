@@ -25,12 +25,23 @@ interface Reward {
 
 type Phase = 'search' | 'panel' | 'redeem-list' | 'success'
 
+function formatClockTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+}
+
+interface ShiftStatus {
+  clocked_in: boolean
+  started_at: string | null
+}
+
 /**
  * The two-tap counter screen (Plan 3). One screen, no nav: search → member
  * panel → +Visit or Redeem → success flash → back to empty search.
  */
 export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => void }) {
   const [showOrders, setShowOrders] = useState(false)
+  const [shift, setShift] = useState<ShiftStatus | null>(null)
+  const [shiftBusy, setShiftBusy] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [selected, setSelected] = useState<SearchResult | null>(null)
@@ -51,6 +62,42 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
       .then(d => setRewards(d.rewards ?? []))
       .catch(() => setRewards([]))
   }, [])
+
+  // Clock status: only this device's own taps change it, so fetch once —
+  // no polling.
+  useEffect(() => {
+    fetch('/api/counter/shift')
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => d && setShift({ clocked_in: d.clocked_in, started_at: d.started_at }))
+      .catch(() => {})
+  }, [])
+
+  async function toggleShift() {
+    if (shiftBusy) return
+    setShiftBusy(true)
+    try {
+      const res = await fetch('/api/counter/shift', {
+        method: shift?.clocked_in ? 'PATCH' : 'POST',
+      })
+      if (res.status === 401) return onSessionExpired()
+      const data = await res.json()
+      if (res.ok) {
+        setShift({ clocked_in: data.clocked_in, started_at: data.started_at ?? null })
+      } else {
+        // State disagreed with the server (e.g. a stale "clocked in" after
+        // an owner correction) — resync from the source of truth.
+        const statusRes = await fetch('/api/counter/shift')
+        if (statusRes.ok) {
+          const statusData = await statusRes.json()
+          setShift({ clocked_in: statusData.clocked_in, started_at: statusData.started_at })
+        }
+      }
+    } catch {
+      // Network drop — leave prior state as-is; the next tap re-syncs.
+    } finally {
+      setShiftBusy(false)
+    }
+  }
 
   useEffect(() => {
     setQueueCount(peekQueue().length)
@@ -199,6 +246,26 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
 
   return (
     <div className="min-h-screen bg-aro-cream flex flex-col p-4">
+      {shift && (
+        <div className="mb-3 rounded-xl border border-aro-hairline bg-white px-4 py-2 flex items-center justify-between text-sm text-aro-ink">
+          <span>
+            {shift.clocked_in && shift.started_at
+              ? `Clocked in since ${formatClockTime(shift.started_at)}`
+              : 'Not clocked in'}
+          </span>
+          <button
+            onClick={() => void toggleShift()}
+            disabled={shiftBusy}
+            className={
+              shift.clocked_in
+                ? 'rounded-lg bg-aro-espresso px-4 py-1.5 text-xs font-bold text-aro-cream disabled:opacity-60'
+                : 'rounded-lg bg-aro-terra px-4 py-1.5 text-xs font-bold text-white disabled:opacity-60'
+            }
+          >
+            {shift.clocked_in ? 'Clock out' : 'Clock in'}
+          </button>
+        </div>
+      )}
       {queueCount > 0 && (
         <div className="mb-3 rounded-xl bg-aro-saffron/20 border border-aro-saffron/40 px-4 py-2 text-sm text-aro-ink flex items-center justify-between">
           <span>

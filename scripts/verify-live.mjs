@@ -446,6 +446,22 @@ await check('authenticated non-owner tip_allocations denied', async () =>
   })
 )
 
+// PLAN-35: staff_shifts has ZERO client grants and ZERO RLS policies (same
+// shape as tip_allocations/push_subscriptions above) — every read goes
+// through the service-role client behind requireVenueRole/counter-session
+// checks, never straight from the browser.
+await check('authenticated non-owner staff_shifts denied', async () =>
+  withEphemeralAuthedClient(async authed => {
+    const { data, error } = await authed.from('staff_shifts').select('shift_id').limit(1)
+    if (!error) {
+      throw new Error(
+        `staff_shifts readable by an authenticated non-owner (${data?.length ?? 0} row(s))`
+      )
+    }
+    return 'permission denied for anon and for an authenticated non-owner'
+  })
+)
+
 if (failures > 0) {
   console.error(`Live verification failed: ${failures} check(s) failed`)
   process.exit(1)

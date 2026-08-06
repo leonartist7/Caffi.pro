@@ -142,53 +142,153 @@ prose, same rule as Lane B's note above.
   `owner-shell.tsx`'s hardcoded `NAV` array now derives from
   `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper) — Lanes
   A/B never need to touch `owner-shell.tsx` again to add an owner nav entry,
-  just append a `surface: 'owner'` module row (PLAN-36's Tips entry below
-  is the first to use that path). The three previously-dead links now
-  resolve to real pages: `/rewards-admin`, `/campaigns` (honest
-  `ComingSoon` state), `/venue-settings`. `BUILD-LOG-PLAN-30.md`.
-- **PLAN-31 (HQ aro refit part 1 — shared components)**: ✅ **merged**
-  (PR #69).
-- **PLAN-32 (HQ aro refit part 2 — dashboard/clients/activity/analytics)**:
-  🟡 **built, PR #70 open (ready for review)**.
-- **PLAN-33 (HQ aro refit part 3 — settings/staff/rewards + sweep)**: 🟡
-  **built, PR #71 open (draft)**.
-- **PLAN-34 (Team management suite)**: 🟡 **built, PR #72 open (draft)**.
-- **PLAN-35 (Time clock)**: 🟡 **built, PR #73 open (draft)**. Clock
-  in/out on the counter PIN session, backed entirely by PLAN-10's
-  `staff_shifts` — zero new migrations. Owner-facing shift list with two
-  correction actions (close-a-stuck-shift vs. add-a-missed-shift), each
-  proven live to do exactly what its name says and nothing else.
-- **PLAN-36 (Tip allocation report)**: 🟡 **built, PR #74 open (ready for
-  review).** Money-adjacent — an Opus-5 architect pass (Fable 5
-  unavailable in this environment) authored the full allocation design
-  before any code: two-level apportionment (pool → membership → their own
-  shifts), largest-remainder/`BigInt` arithmetic proven exact on a
-  deliberately indivisible amount ($100.00 / 3 → `3333/3333/3334`), zero
-  floats anywhere in `lib/tips/allocate.ts` (grep-verifiable). **One
-  genuine policy question was escalated** — whether owner/manager
-  memberships share in the tip pool by default. Asked the user directly;
-  no answer came back. Resolved via the architect's own explicit fallback:
-  **no stored or pre-selected default anywhere** — the report requires an
+  just append a `surface: 'owner'` module row. The three previously-dead
+  links now resolve to real pages: `/rewards-admin` (full CRUD against the
+  existing `/api/rewards` routes), `/campaigns` (honest `ComingSoon` state —
+  marketing sends are blocked on a vendor decision, v2R §8, not Lane C's to
+  build), `/venue-settings` (tip delivery-prompt toggle + review-URL field,
+  both live against PLAN-20/21's existing routes).
+  **Real architectural finding, resolved rather than improvised**: the
+  owner's Settings page could not live at literal path `/settings` —
+  `app/(dashboard)/settings/page.tsx` already owns that URL, and Next.js
+  route groups don't affect the URL, so a second `page.tsx` at the same path
+  in a different route group is a build-time collision, not just a style
+  clash. Confirmed via a clean `npm run build` with both `/settings` and
+  `/venue-settings` as distinct routes. **Real pre-existing gap found, not
+  fixed** (out of this PR's file ownership): `/home`, `/creative`, and
+  `/regulars` each re-derive their venue via `resolveOwnerVenueId` directly
+  with no impersonation check, so an `aro_admin` impersonating a venue
+  (PLAN-09) gets a blank page on all three today. The three new pages this
+  PR owns use a new `resolveEffectiveOwnerVenueId` helper
+  (`lib/impersonation.ts`) so the gap doesn't grow; the existing three pages
+  are Lane A's/unowned and were left alone. **Not verified live**: this
+  sandbox has no `SUPABASE_SERVICE_ROLE_KEY` (only the anon key is
+  obtainable via the MCP connector), so no interactive click-through as a
+  real owner or impersonating admin was possible — `tsc`/`build`/`eslint`
+  are green, the two tables the new pages depend on (`rewards`,
+  `venues.brand_kit`) were confirmed live via a direct MCP query, and the
+  new routes were smoke-checked (no crash) against a local dev server.
+  `BUILD-LOG-PLAN-30.md`.
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **merged**
+  (PR #69). Style-only token refit of the 11 shared components v2R names
+  (`Sidebar`, `MobileNav`, `StatCard`, `SkeletonLoader`, `ThemeToggle`,
+  `TenantSelector`, `ConfirmDialog`, `ComingSoon`, `LiveClock`,
+  `app/error.tsx`, `app/(dashboard)/error.tsx`) — zero
+  `coffee-*`/`cream-*`/`dark-*` remaining, zero logic/prop/structure
+  changes (full diff read end-to-end before commit). **Real, confirmed
+  design finding**: zero of the ~46 files already on the aro token system
+  anywhere in the repo use a `dark:` variant class — the aro palette has no
+  dark counterpart, it's one warm palette. This PR's refit follows that
+  precedent (deletes `dark:` rather than inventing a token that doesn't
+  exist), which means `ThemeToggle.tsx`'s toggle is now fully decorative on
+  every aro-token page (a pre-existing condition this PR extends to three
+  more files, not one it introduces) — whether to retire dark-mode support
+  outright is a product call above a style-only refit PR, flagged here.
+  Contrast for every new text/background pairing measured against the
+  W3C relative-luminance formula and tabulated in the PLAN file — all pass
+  WCAG AA; one candidate (white on solid `aro-rose`, 2.61:1) was computed,
+  rejected, and replaced with `aro-ink` on the same background (6.15:1)
+  before it reached any component. `BUILD-LOG-PLAN-31.md`.
+- **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
+  ✅ **merged** (PR #70). Style-only refit of the 4 pages, including
+  `analytics/page.tsx`'s Recharts color props (treated as in-scope style
+  values, same category as PLAN-31's `iconBgColor` default — Recharts has
+  no className-based way to color an SVG line/bar/pie segment). A
+  contrast bug was caught **before** it shipped this time: a first pass at
+  the dashboard's "New leads" tile measured 4.03:1 and was fixed to
+  14.24:1 before ever being committed, by keeping the accent color on the
+  icon only and moving text to `aro-ink`. `BUILD-LOG-PLAN-32.md`.
+- **PLAN-33 (HQ aro refit, part 3 — settings/staff/rewards + sweep)**:
+  ✅ **merged** (PR #71). Refit the final 3 pages plus a real gap the
+  repo-wide sweep found: `app/(dashboard)/layout-client.tsx` was never
+  assigned to any of PLAN-31/32/33's file lists despite being Lane C's own
+  file and in this document's own refit inventory — fixed here (2 lines).
+  **The sweep itself required a temporary local merge** of the still-open
+  PLAN-31/32 branches to verify the true combined repo-wide state (a sweep
+  on a branch forked from unmerged `main` alone would falsely flag every
+  file those two PRs already fixed) — merge was verification-only, never
+  pushed, reset away before the real commit. Final repo-wide result:
+  only `app/shop/[slug]/error.tsx` (Lane B) remains; Lane A's two members
+  files are already clean (PLAN-11), not merely excused. This closes out
+  the N8 HQ refit across all three PRs: 18 files, zero
+  `coffee-*`/`cream-*`/`dark-*` left except the one Lane B file, three
+  real accessibility bugs found and fixed across the three PRs.
+  `BUILD-LOG-PLAN-33.md`.
+- **PLAN-34 (Team management suite)**: ✅ **merged** (PR #72). Extends the
+  existing `app/api/staff/**`, doesn't invent a new surface — manager-
+  escalation prevention and deactivation-history preservation were already
+  fully server-enforced (confirmed live against `memberships`'s `role`
+  CHECK constraint via Supabase MCP, matching the route's own
+  `VALID_ROLES`). The one real gap: `/staff` had zero server-side role
+  gating (like every other `(dashboard)` page except `/dashboard` itself)
+  — a `staff`-role user hitting it got the full page shell then
+  silently-failing API calls, a 403 wall by another name. Fixed: split
+  into a server-gated wrapper (`page.tsx`) that wrong-door-redirects
+  staff-only users to `/counter` before any client JS ships, plus a new
+  `staff-client.tsx` (independently already on `aro` tokens) with one new
+  addition — an Edit modal for name/role, wired to the existing `PATCH`
+  route (no new API surface, no new authorization logic). The merge
+  friction this PR originally flagged against PLAN-33's parallel refit of
+  the same page was resolved at merge time: PLAN-33's monolithic
+  `page.tsx` was superseded by this PR's server/client split, which had
+  already independently converged on the same `aro` tokens. Not verified
+  live (no service-role key in this sandbox) — the escalation-prevention
+  and redirect claims are verified by reading the exact code paths and
+  cross-checking the live schema, not a live session. `BUILD-LOG-PLAN-34.md`.
+- **PLAN-35 (Time clock)**: ✅ **merged** (PR #73). Clock in/out through
+  the counter PIN session (`app/api/counter/shift`), backed entirely by
+  PLAN-10's `staff_shifts` — zero new migrations. The DB's partial unique
+  index (`uq_staff_shifts_open_per_membership`) is the actual "one open
+  shift" guarantee, proven live with a real insert that hit `23505`, not
+  reimplemented in application code. Owner-facing shift list + two
+  distinct correction actions at `app/(dashboard)/staff/shifts`: "close a
+  stuck shift" (in-place `ended_at` on the original `source='counter'`
+  row — proven live to preserve `shift_id`/`started_at`/`source`
+  untouched) vs. "add a missed shift" (a wholly separate `source='manual'`
+  row) — these are two different real-world situations, not one design
+  with two names; see `BUILD-LOG-PLAN-35.md` for why collapsing them into
+  one action would either double-count hours or leave a person unable to
+  clock in again. Duration is computed at read time everywhere, never
+  stored. `scripts/verify-live.mjs` gained the authenticated-non-owner
+  -denied check for `staff_shifts` (couldn't execute the full script
+  live in this sandbox — no populated env keys — so the underlying RLS
+  fact it asserts was verified directly via `pg_policies` instead, see
+  build log). **Merge note**: this PR's own "Shifts" nav link originally
+  targeted PLAN-34's since-superseded monolithic `staff/page.tsx`; at
+  merge time it was re-applied onto PLAN-34's `staff-client.tsx` split
+  instead, using that file's already-`aro`-token button styling — no
+  functional change, same route (`/staff/shifts`), same icon. `tsc`/
+  build/eslint green, grep gate clean.
+- **PLAN-36 (Tip allocation report)**: ✅ **merged** (PR #74). Money-
+  adjacent — an Opus-5 architect pass (Fable 5 unavailable in this
+  environment) authored the full allocation design before any code:
+  two-level apportionment (pool → membership → their own shifts),
+  largest-remainder/`BigInt` arithmetic proven exact on a deliberately
+  indivisible amount ($100.00 / 3 → `3333/3333/3334`), zero floats
+  anywhere in `lib/tips/allocate.ts` (grep-verifiable). **One genuine
+  policy question was escalated** — whether owner/manager memberships
+  share in the tip pool by default. Asked the user directly; no answer
+  came back. Resolved via the architect's own explicit fallback: **no
+  stored or pre-selected default anywhere** — the report requires an
   explicit include/exclude choice every run. Zero new tables — populates
   the already-live `tip_allocations` (PLAN-10) via one new
-  `SECURITY DEFINER`, `service_role`-only RPC, now serialized on
+  `SECURITY DEFINER`, `service_role`-only RPC, serialized on
   `(venue_id, period_start, period_end)` via a transaction-scoped advisory
   lock. Owner-only (`requireVenueRole(['owner'])`).
 
-  **Mandatory architect-tier pre-merge math review: done, PR out of
-  draft.** An independent pass (no context from the design/build session)
-  ran a property-based harness — 20k+ randomized trials plus every named
-  edge case — and found one real bug (`findOverlappingShifts` missed
-  containment overlaps) plus a docstring correction, both fixed. A
-  separate Codex/CodeRabbit post-draft review then found the original
-  page was **structurally unreachable for a real solo owner** — it lived
-  only under `(dashboard)`, whose venue selector is aro_admin-only. Fixed
-  by extracting the UI into `components/tips/TipsReportClient.tsx`
-  (parameterized by `venueId`) and adding a real `app/(owner)/tips`
-  registered as an `owner_tips` module in `lib/modules.ts` (the
-  admin-only path moved to `/tips-admin` to resolve the resulting route
-  collision — same class PLAN-30 hit for `/settings` vs
-  `/venue-settings`). Also fixed: venue-timezone-aware period parsing
+  **Mandatory architect-tier pre-merge math review: done.** An independent
+  pass (no context from the design/build session) ran a property-based
+  harness — 20k+ randomized trials plus every named edge case — and found
+  one real bug (`findOverlappingShifts` missed containment overlaps) plus
+  a docstring correction, both fixed. A separate Codex/CodeRabbit
+  post-draft review then found the original page was **structurally
+  unreachable for a real solo owner** — it lived only under `(dashboard)`,
+  whose venue selector is aro_admin-only. Fixed by extracting the UI into
+  `components/tips/TipsReportClient.tsx` (parameterized by `venueId`) and
+  adding a real `app/(owner)/tips` registered as an `owner_tips` module in
+  `lib/modules.ts` (the admin-only path moved to `/tips-admin` to resolve
+  the resulting route collision — same class PLAN-30 hit for `/settings`
+  vs `/venue-settings`). Also fixed: venue-timezone-aware period parsing
   (never the browser's), a 1000-row pagination cap on the orders/shifts
   queries that could silently undercount a busy venue's pool, a raw-RPC-
   error leak, and a stale-preview-after-save bug. Full detail:
@@ -196,19 +296,11 @@ prose, same rule as Lane B's note above.
   (see its "Post-review pass" section for the complete finding-by-finding
   list, including two flagged-not-fixed items with reasoning).
 
-- **PLAN-37 (Hours + tips CSV export)**: 🟡 **built, PR #75 open
-  (draft).** Server route (`app/api/tips/export`, owner-only) calls
-  PLAN-36's `runTipReport()` directly — no re-querying or re-deriving, so
-  CSV values match the report row for row by construction. New
-  `lib/csv.ts`: RFC 4180 field escaping, UTF-8 BOM, and integer-exact
-  cents/minutes-to-decimal-string conversions (verified via an exhaustive
-  round-trip check — `10.10` never renders as `10.1` or `10.100000001`).
-  Filename carries venue slug + period. Emits `report.exported`
-  server-side as the compensation-data-leaving-the-system audit trail.
-  Reconciled with PLAN-36's post-review fixes (venue-timezone-aware
-  parsing; the Export CSV button now lives in the shared
-  `TipsReportClient`, so both the owner and admin paths get it). Full
-  detail: `docs/plans/BUILD-LOG-PLAN-37.md`.
+- **PLAN-37 (Hours + tips CSV export)**: ⚪ **spec only, PR #75 open
+  (draft).** No implementation yet — deliberately parked behind PLAN-36's
+  math review and route-shape changes so it wasn't building against a
+  contract that might still move. Now that PLAN-36 is merged with its
+  final `/tips-admin` + `/tips` route shapes, PLAN-37 is unblocked.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
