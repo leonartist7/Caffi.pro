@@ -62,6 +62,9 @@ export type AroEventType =
   | 'review.prompted'
   | 'review.clicked'
   // --- Lane C ---
+  | 'shift.started'
+  | 'shift.ended'
+  | 'shift.corrected'
   | 'tip_allocation.saved'
   | 'report.exported'
 
@@ -132,6 +135,9 @@ export const EVENT_LABELS: Record<string, string> = {
   'review.prompted': 'Review prompt shown',
   'review.clicked': 'Review link clicked',
   // --- Lane C ---
+  'shift.started': 'Clocked in',
+  'shift.ended': 'Clocked out',
+  'shift.corrected': 'Shift corrected',
   'tip_allocation.saved': 'Tip allocation saved',
   'report.exported': 'Report exported',
 }
