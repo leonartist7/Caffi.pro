@@ -134,20 +134,37 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
 (PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
 `tip_allocations`, `orders.tip_cents` all live via `list_tables`.
 
-- **PLAN-30 (Owner shell nav unification)**: ✅ **built** (PR pending, not
-  yet merged as of this PR — this section will need a union/clean-rewrite
-  if both land close together, same pattern documented in Lane B's section
-  above). `owner-shell.tsx`'s hardcoded `NAV` array now derives from
-  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper). The
-  three previously-dead links now resolve to real pages: `/rewards-admin`
-  (full CRUD), `/campaigns` (honest `ComingSoon` state — blocked on a
-  vendor decision, v2R §8), `/venue-settings` (tip/review settings, live
-  against PLAN-20/21's existing routes — not literal `/settings`, which
-  would have collided with the HQ dashboard's existing route at the same
-  URL). Pre-existing gap found and flagged, not fixed (outside this PR's
-  file ownership): `/home`, `/creative`, `/regulars` don't check
-  impersonation when resolving their venue, so an `aro_admin` impersonating
-  a venue gets a blank page today. `BUILD-LOG-PLAN-30.md`.
+- **PLAN-30 (Owner shell nav unification)**: ✅ **merged** (PR #68).
+  `owner-shell.tsx`'s hardcoded `NAV` array now derives from
+  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper) — Lanes
+  A/B never need to touch `owner-shell.tsx` again to add an owner nav entry,
+  just append a `surface: 'owner'` module row. The three previously-dead
+  links now resolve to real pages: `/rewards-admin` (full CRUD against the
+  existing `/api/rewards` routes), `/campaigns` (honest `ComingSoon` state —
+  marketing sends are blocked on a vendor decision, v2R §8, not Lane C's to
+  build), `/venue-settings` (tip delivery-prompt toggle + review-URL field,
+  both live against PLAN-20/21's existing routes).
+  **Real architectural finding, resolved rather than improvised**: the
+  owner's Settings page could not live at literal path `/settings` —
+  `app/(dashboard)/settings/page.tsx` already owns that URL, and Next.js
+  route groups don't affect the URL, so a second `page.tsx` at the same path
+  in a different route group is a build-time collision, not just a style
+  clash. Confirmed via a clean `npm run build` with both `/settings` and
+  `/venue-settings` as distinct routes. **Real pre-existing gap found, not
+  fixed** (out of this PR's file ownership): `/home`, `/creative`, and
+  `/regulars` each re-derive their venue via `resolveOwnerVenueId` directly
+  with no impersonation check, so an `aro_admin` impersonating a venue
+  (PLAN-09) gets a blank page on all three today. The three new pages this
+  PR owns use a new `resolveEffectiveOwnerVenueId` helper
+  (`lib/impersonation.ts`) so the gap doesn't grow; the existing three pages
+  are Lane A's/unowned and were left alone. **Not verified live**: this
+  sandbox has no `SUPABASE_SERVICE_ROLE_KEY` (only the anon key is
+  obtainable via the MCP connector), so no interactive click-through as a
+  real owner or impersonating admin was possible — `tsc`/`build`/`eslint`
+  are green, the two tables the new pages depend on (`rewards`,
+  `venues.brand_kit`) were confirmed live via a direct MCP query, and the
+  new routes were smoke-checked (no crash) against a local dev server.
+  `BUILD-LOG-PLAN-30.md`.
 - **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **built** (PR
   pending). Style-only token refit of the 11 shared components v2R names
   (`Sidebar`, `MobileNav`, `StatCard`, `SkeletonLoader`, `ThemeToggle`,
