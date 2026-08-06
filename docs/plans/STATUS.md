@@ -126,6 +126,46 @@ union the prose.)
   and the open Realtime architecture decision from PLAN-22 (needs a
   Fable-tier call before anyone attempts it).
 
+## Lane C — Team & platform polish
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane C (`PLAN-30`–`PLAN-39`).
+Preflight confirmed live Supabase MCP access to `aro-platform`
+(`jjgccfrwjkwknyjtbtxa`); PLAN-10's schema batch (Lane A) and all of Lane B
+(PLAN-20–26) confirmed merged before any Lane C work began — `staff_shifts`,
+`tip_allocations`, `orders.tip_cents` all live via `list_tables`.
+
+- **PLAN-30 (Owner shell nav unification)**: ✅ **built** (PR pending).
+  `owner-shell.tsx`'s hardcoded `NAV` array now derives from
+  `lib/modules.ts` (`OWNER_ITEMS` + a new `ownerModules()` helper) — Lanes
+  A/B never need to touch `owner-shell.tsx` again to add an owner nav entry,
+  just append a `surface: 'owner'` module row. The three previously-dead
+  links now resolve to real pages: `/rewards-admin` (full CRUD against the
+  existing `/api/rewards` routes), `/campaigns` (honest `ComingSoon` state —
+  marketing sends are blocked on a vendor decision, v2R §8, not Lane C's to
+  build), `/venue-settings` (tip delivery-prompt toggle + review-URL field,
+  both live against PLAN-20/21's existing routes).
+  **Real architectural finding, resolved rather than improvised**: the
+  owner's Settings page could not live at literal path `/settings` —
+  `app/(dashboard)/settings/page.tsx` already owns that URL, and Next.js
+  route groups don't affect the URL, so a second `page.tsx` at the same path
+  in a different route group is a build-time collision, not just a style
+  clash. Confirmed via a clean `npm run build` with both `/settings` and
+  `/venue-settings` as distinct routes. **Real pre-existing gap found, not
+  fixed** (out of this PR's file ownership): `/home`, `/creative`, and
+  `/regulars` each re-derive their venue via `resolveOwnerVenueId` directly
+  with no impersonation check, so an `aro_admin` impersonating a venue
+  (PLAN-09) gets a blank page on all three today. The three new pages this
+  PR owns use a new `resolveEffectiveOwnerVenueId` helper
+  (`lib/impersonation.ts`) so the gap doesn't grow; the existing three pages
+  are Lane A's/unowned and were left alone. **Not verified live**: this
+  sandbox has no `SUPABASE_SERVICE_ROLE_KEY` (only the anon key is
+  obtainable via the MCP connector), so no interactive click-through as a
+  real owner or impersonating admin was possible — `tsc`/`build`/`eslint`
+  are green, the two tables the new pages depend on (`rewards`,
+  `venues.brand_kit`) were confirmed live via a direct MCP query, and the
+  new routes were smoke-checked (no crash) against a local dev server.
+  `BUILD-LOG-PLAN-30.md`.
+
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
 Raised by the owner after seeing the visual/structural gap between the
