@@ -40,34 +40,31 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
         lg:block
         transition-all duration-500 ease-in-out
         ${isCollapsed ? 'w-20' : 'w-64'}
-        bg-gradient-to-b from-coffee-50 to-cream-100
-        dark:from-dark-900 dark:to-dark-800
-        border-r border-coffee-200/50 dark:border-dark-700
+        bg-aro-cream-warm
+        border-r border-aro-hairline
         backdrop-blur-xl
-        shadow-2xl shadow-coffee-900/10 dark:shadow-black/30
+        shadow-2xl shadow-aro-ink/5
       `}
     >
       {/* Header with Logo */}
-      <div className="h-20 flex items-center justify-between px-4 border-b border-coffee-200/50 dark:border-dark-700">
+      <div className="h-20 flex items-center justify-between px-4 border-b border-aro-hairline">
         <div
           className={`flex items-center space-x-3 transition-all duration-300 ${isCollapsed ? 'opacity-0' : 'opacity-100'}`}
         >
-          <div className="w-10 h-10 rounded-xl bg-gradient-coffee flex items-center justify-center shadow-lg animate-float">
-            <Coffee className="w-6 h-6 text-cream-100" />
+          <div className="w-10 h-10 rounded-xl bg-aro-terra flex items-center justify-center shadow-lg animate-float">
+            <Coffee className="w-6 h-6 text-white" />
           </div>
-          <div className="font-bold text-xl bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-            Caffi Pro
-          </div>
+          <div className="font-display font-bold text-xl text-aro-ink">Caffi Pro</div>
         </div>
 
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg hover:bg-coffee-200/50 dark:hover:bg-dark-700 transition-all duration-300 hover:scale-110"
+          className="p-2 rounded-lg hover:bg-aro-sand/60 transition-all duration-300 hover:scale-110"
         >
           {isCollapsed ? (
-            <ChevronRight className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
+            <ChevronRight className="w-5 h-5 text-aro-ink-soft" />
           ) : (
-            <ChevronLeft className="w-5 h-5 text-coffee-600 dark:text-cream-300" />
+            <ChevronLeft className="w-5 h-5 text-aro-ink-soft" />
           )}
         </button>
       </div>
@@ -87,8 +84,8 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
                 transition-all duration-300 ease-out
                 ${
                   isActive
-                    ? 'bg-gradient-coffee text-cream-100 shadow-lg shadow-coffee-700/30'
-                    : 'text-coffee-700 dark:text-cream-300 hover:bg-coffee-200/30 dark:hover:bg-dark-700/50'
+                    ? 'bg-aro-terra text-white shadow-lg shadow-aro-terra/30'
+                    : 'text-aro-ink-soft hover:bg-aro-sand/40'
                 }
                 ${isCollapsed ? 'justify-center' : ''}
               `}
@@ -96,7 +93,7 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
               <Icon
                 className={`
                   w-5 h-5 transition-all duration-300
-                  ${isActive ? 'text-cream-100' : 'text-coffee-600 dark:text-cream-400 group-hover:text-coffee-700 dark:group-hover:text-cream-200'}
+                  ${isActive ? 'text-white' : 'text-aro-muted group-hover:text-aro-ink-soft'}
                   ${isActive ? 'animate-pulse-slow' : 'group-hover:scale-110'}
                 `}
               />
@@ -113,9 +110,7 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
               {item.soon && !isCollapsed && (
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full ${
-                    isActive
-                      ? 'bg-cream-100/20 text-cream-100'
-                      : 'bg-coffee-200/60 dark:bg-dark-700 text-coffee-500 dark:text-cream-500'
+                    isActive ? 'bg-white/20 text-white' : 'bg-aro-sand text-aro-ink-soft'
                   }`}
                 >
                   Soon
@@ -124,14 +119,14 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
 
               {/* Active indicator */}
               {isActive && !item.soon && (
-                <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-cream-100 animate-pulse" />
+                <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
               )}
 
               {/* Tooltip for collapsed state */}
               {isCollapsed && (
-                <div className="absolute left-full ml-4 px-3 py-2 bg-dark-900 dark:bg-dark-800 text-cream-100 rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                <div className="absolute left-full ml-4 px-3 py-2 bg-aro-ink text-white rounded-lg shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                   {item.name}
-                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-dark-900 dark:border-r-dark-800" />
+                  <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-aro-ink" />
                 </div>
               )}
             </Link>
@@ -140,26 +135,26 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
       </nav>
 
       {/* Footer with Theme Toggle */}
-      <div className="p-4 border-t border-coffee-200/50 dark:border-dark-700">
+      <div className="p-4 border-t border-aro-hairline">
         <button
           onClick={toggleTheme}
           className={`
             w-full flex items-center space-x-3 px-3 py-3 rounded-xl
-            bg-coffee-200/30 dark:bg-dark-700/50
-            hover:bg-coffee-300/50 dark:hover:bg-dark-600
+            bg-aro-sand/40
+            hover:bg-aro-sand/70
             transition-all duration-300 group
             ${isCollapsed ? 'justify-center' : ''}
           `}
         >
           {theme === 'dark' ? (
-            <Sun className="w-5 h-5 text-amber-500 group-hover:rotate-180 transition-transform duration-500" />
+            <Sun className="w-5 h-5 text-aro-saffron group-hover:rotate-180 transition-transform duration-500" />
           ) : (
-            <Moon className="w-5 h-5 text-indigo-600 group-hover:-rotate-12 transition-transform duration-300" />
+            <Moon className="w-5 h-5 text-aro-plum group-hover:-rotate-12 transition-transform duration-300" />
           )}
 
           <span
             className={`
-              font-medium text-coffee-700 dark:text-cream-300 transition-all duration-300
+              font-medium text-aro-ink-soft transition-all duration-300
               ${isCollapsed ? 'opacity-0 w-0' : 'opacity-100'}
             `}
           >
@@ -176,17 +171,11 @@ export default function Sidebar({ isAroAdmin }: { isAroAdmin: boolean }) {
           background: transparent;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(139, 69, 19, 0.3);
+          background: rgba(42, 31, 24, 0.15);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(139, 69, 19, 0.5);
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(227, 210, 179, 0.2);
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(227, 210, 179, 0.3);
+          background: rgba(42, 31, 24, 0.25);
         }
       `}</style>
     </aside>

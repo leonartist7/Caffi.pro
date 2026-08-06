@@ -17,6 +17,8 @@ import {
   Sparkles,
   TrendingUp,
   Boxes,
+  Megaphone,
+  Home,
 } from 'lucide-react'
 
 /**
@@ -48,6 +50,10 @@ export type ModuleKey =
   // --- Lane B ---
   | 'costing'
   | 'inventory'
+  // --- Lane C ---
+  | 'owner_rewards'
+  | 'owner_campaigns'
+  | 'owner_settings'
 
 export interface ModuleDef {
   key: ModuleKey
@@ -114,6 +120,46 @@ export const MODULES: ModuleDef[] = [
     icon: Boxes,
     status: 'live',
   },
+  // --- Lane C ---
+  {
+    key: 'owner_rewards',
+    label: 'Rewards',
+    href: '/rewards-admin',
+    icon: Gift,
+    status: 'live',
+    surface: 'owner',
+  },
+  {
+    // Marketing sends (email/SMS campaigns) are Lane A's eventual item and
+    // blocked on a vendor decision (v2R §8) — 'coming_soon' here is the
+    // same honest not-yet-wired pattern already used for coupons/
+    // notifications/locations, not a dead link.
+    key: 'owner_campaigns',
+    label: 'Campaigns',
+    href: '/campaigns',
+    icon: Megaphone,
+    status: 'coming_soon',
+    surface: 'owner',
+  },
+  {
+    key: 'owner_settings',
+    label: 'Settings',
+    href: '/venue-settings',
+    icon: Settings,
+    status: 'live',
+    surface: 'owner',
+  },
+]
+
+/**
+ * Fixed owner-console nav entries that aren't toggleable modules — the
+ * owner-surface mirror of `HQ_ITEMS`. `/home` and `/regulars` predate the
+ * module registry and have no per-venue on/off switch, same reasoning as
+ * `loyalty` being excluded from `MODULES` above.
+ */
+export const OWNER_ITEMS: { label: string; href: string; icon: ElementType }[] = [
+  { label: 'Home', href: '/home', icon: Home },
+  { label: 'Regulars', href: '/regulars', icon: Users },
 ]
 
 /** HQ-level nav — visible only to aro_admin, never client-scoped. */
@@ -144,4 +190,9 @@ export function enabledModules(venue?: {
 /** Modules whose nav entry belongs to the HQ (dashboard) shell. */
 export function hqModules(): ModuleDef[] {
   return MODULES.filter(m => (m.surface ?? 'hq') === 'hq')
+}
+
+/** Modules whose nav entry belongs to the venue owner's own (owner) shell. */
+export function ownerModules(): ModuleDef[] {
+  return MODULES.filter(m => m.surface === 'owner')
 }

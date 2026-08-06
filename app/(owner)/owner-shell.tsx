@@ -3,17 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import {
-  Home,
-  Users,
-  Sparkles,
-  Gift,
-  Megaphone,
-  Settings,
-  Menu,
-  X,
-  ShieldAlert,
-} from 'lucide-react'
+import { Menu, X, ShieldAlert } from 'lucide-react'
+import { OWNER_ITEMS, ownerModules } from '@/lib/modules'
 
 /**
  * (owner) shell: warm, minimal, aro tokens.
@@ -24,17 +15,20 @@ import {
  * as a sticky top bar plus a slide-down panel, so nothing is lost on small
  * screens rather than merely shrinking.
  *
- * Rewards/Campaigns remain placeholder links (they resolve to their own
- * surfaces or fall back gracefully); Home, Regulars, Creative and Settings
- * are real.
+ * Nav is derived from `lib/modules.ts` (PLAN-30) rather than hand-maintained
+ * here — `OWNER_ITEMS` for the two fixed, non-toggleable entries (Home,
+ * Regulars), `ownerModules()` for everything registered with
+ * `surface: 'owner'`. A lane adding a new owner surface appends a row to
+ * `lib/modules.ts`; this file never needs another edit for that.
  */
-const NAV = [
-  { href: '/home', label: 'Home', icon: Home },
-  { href: '/regulars', label: 'Regulars', icon: Users },
-  { href: '/creative', label: 'Creative', icon: Sparkles },
-  { href: '/rewards-admin', label: 'Rewards', icon: Gift },
-  { href: '/campaigns', label: 'Campaigns', icon: Megaphone },
-  { href: '/settings', label: 'Settings', icon: Settings },
+const navItems = [
+  ...OWNER_ITEMS.map(item => ({ ...item, soon: false })),
+  ...ownerModules().map(m => ({
+    href: m.href,
+    label: m.label,
+    icon: m.icon,
+    soon: m.status === 'coming_soon',
+  })),
 ]
 
 const STRINGS = {
@@ -45,6 +39,7 @@ const STRINGS = {
   impersonatingPrefix: 'Operating as',
   impersonatingSuffix: '— aro_admin',
   exitImpersonation: 'Exit',
+  soon: 'Soon',
 }
 
 export function OwnerShell({
@@ -101,7 +96,7 @@ export function OwnerShell({
         <aside className="hidden w-56 shrink-0 flex-col border-r border-aro-hairline bg-aro-cream-warm p-5 md:flex">
           <p className="mb-8 font-display text-xl font-bold text-aro-ink">{STRINGS.brand}</p>
           <nav aria-label={STRINGS.primaryNav} className="space-y-1">
-            {NAV.map(item => (
+            {navItems.map(item => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -114,6 +109,11 @@ export function OwnerShell({
               >
                 <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 {item.label}
+                {item.soon && (
+                  <span className="ml-auto rounded-full bg-aro-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-aro-ink-soft">
+                    {STRINGS.soon}
+                  </span>
+                )}
               </Link>
             ))}
           </nav>
@@ -141,7 +141,7 @@ export function OwnerShell({
               aria-label={STRINGS.primaryNav}
               className="sticky top-[3.25rem] z-30 border-b border-aro-hairline bg-aro-cream-warm px-4 pb-3 pt-1 md:hidden"
             >
-              {NAV.map(item => (
+              {navItems.map(item => (
                 <Link
                   key={item.href}
                   href={item.href}
@@ -154,6 +154,11 @@ export function OwnerShell({
                 >
                   <item.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                   {item.label}
+                  {item.soon && (
+                    <span className="ml-auto rounded-full bg-aro-sand px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-aro-ink-soft">
+                      {STRINGS.soon}
+                    </span>
+                  )}
                 </Link>
               ))}
             </nav>

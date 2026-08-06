@@ -206,9 +206,9 @@ export default function RewardsPage() {
 
   const getRewardTypeColor = (type: string) => {
     const colors = {
-      coupon: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
-      free_item: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
-      discount: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+      coupon: 'bg-aro-plum text-white',
+      free_item: 'bg-aro-honey text-aro-ink',
+      discount: 'bg-aro-sage text-aro-ink',
     }
     return colors[type as keyof typeof colors] || colors.free_item
   }
@@ -227,13 +227,13 @@ export default function RewardsPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-md">
-          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-6 shadow-xl">
-            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-cream-100" />
+          <div className="w-20 h-20 lg:w-24 lg:h-24 rounded-2xl bg-aro-terra flex items-center justify-center mx-auto mb-6 shadow-xl">
+            <Building2 className="w-10 h-10 lg:w-12 lg:h-12 text-white" />
           </div>
-          <h2 className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100 mb-3">
+          <h2 className="text-2xl lg:text-3xl font-bold text-aro-ink mb-3">
             Select a Coffee Shop Client
           </h2>
-          <p className="text-coffee-600 dark:text-cream-400 mb-6">
+          <p className="text-aro-muted mb-6">
             Please select a client from the dropdown above to manage their loyalty rewards.
           </p>
         </div>
@@ -245,8 +245,8 @@ export default function RewardsPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-          <p className="text-coffee-600 dark:text-cream-400">Loading rewards...</p>
+          <div className="inline-block w-12 h-12 border-4 border-aro-terra border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-aro-muted">Loading rewards...</p>
         </div>
       </div>
     )
@@ -256,73 +256,67 @@ export default function RewardsPage() {
     <div>
       {/* Header */}
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
+        <h1 className="font-display text-2xl lg:text-4xl font-bold text-aro-ink">
           Rewards Catalog
         </h1>
-        <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
+        <p className="text-aro-muted mt-1 lg:mt-2 text-sm lg:text-lg">
           Manage loyalty rewards for {selectedTenant.business_name}
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-hairline">
           <div className="flex items-center gap-3 mb-2">
-            <Gift className="w-5 h-5 lg:w-6 lg:h-6 text-coffee-600 dark:text-cream-400" />
-            <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400">Total Rewards</p>
+            <Gift className="w-5 h-5 lg:w-6 lg:h-6 text-aro-muted" />
+            <p className="text-xs lg:text-sm text-aro-muted">Total Rewards</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100">
-            {stats.total}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.total}</p>
         </div>
 
-        <div className="bg-green-50 dark:bg-green-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-green-200 dark:border-green-800">
+        <div className="bg-aro-sage/15 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-sage/30">
           <div className="flex items-center gap-3 mb-2">
-            <Award className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400" />
-            <p className="text-xs lg:text-sm text-green-600 dark:text-green-400">Active</p>
+            <Award className="w-5 h-5 lg:w-6 lg:h-6 text-aro-sage" />
+            <p className="text-xs lg:text-sm text-aro-ink">Active</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-green-700 dark:text-green-400">
-            {stats.active}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.active}</p>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-blue-200 dark:border-blue-800">
+        <div className="bg-aro-plum/10 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-plum/30">
           <div className="flex items-center gap-3 mb-2">
-            <Star className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400" />
-            <p className="text-xs lg:text-sm text-blue-600 dark:text-blue-400">Avg. Points</p>
+            <Star className="w-5 h-5 lg:w-6 lg:h-6 text-aro-plum" />
+            <p className="text-xs lg:text-sm text-aro-ink">Avg. Points</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-blue-700 dark:text-blue-400">
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">
             {stats.total > 0 ? Math.round(stats.totalPoints / stats.total) : 0}
           </p>
         </div>
 
-        <div className="bg-red-50 dark:bg-red-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-red-200 dark:border-red-800">
+        <div className="bg-aro-rose/15 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-rose/30">
           <div className="flex items-center gap-3 mb-2">
-            <Package className="w-5 h-5 lg:w-6 lg:h-6 text-red-600 dark:text-red-400" />
-            <p className="text-xs lg:text-sm text-red-600 dark:text-red-400">Out of Stock</p>
+            <Package className="w-5 h-5 lg:w-6 lg:h-6 text-aro-rose" />
+            <p className="text-xs lg:text-sm text-aro-ink">Out of Stock</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-red-700 dark:text-red-400">
-            {stats.outOfStock}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.outOfStock}</p>
         </div>
       </div>
 
       {/* Search & Actions */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-hairline mb-6">
         <div className="flex flex-col lg:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-coffee-400 dark:text-cream-600" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aro-muted" />
             <input
               type="text"
               placeholder="Search rewards..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+              className="w-full pl-10 pr-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
             />
           </div>
           <button
             onClick={openCreateModal}
-            className="flex items-center justify-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base"
+            className="flex items-center justify-center gap-2 bg-aro-terra text-white font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base"
           >
             <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             Add Reward
@@ -331,27 +325,23 @@ export default function RewardsPage() {
       </div>
 
       {/* Rewards Grid */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-coffee-200/50 dark:border-dark-700">
-        <div className="p-4 lg:p-6 border-b border-coffee-200/50 dark:border-dark-700">
-          <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100">
-            All Rewards
-          </h2>
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-aro-hairline">
+        <div className="p-4 lg:p-6 border-b border-aro-hairline">
+          <h2 className="text-lg lg:text-xl font-bold text-aro-ink">All Rewards</h2>
         </div>
 
         <div className="p-4 lg:p-6">
           {filteredRewards.length === 0 ? (
             <div className="text-center py-12">
-              <Gift className="w-16 h-16 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
-                No rewards found
-              </h3>
-              <p className="text-coffee-600 dark:text-cream-400 mb-4">
+              <Gift className="w-16 h-16 text-aro-clay mx-auto mb-4" />
+              <h3 className="text-xl font-bold text-aro-ink mb-2">No rewards found</h3>
+              <p className="text-aro-muted mb-4">
                 {searchQuery ? 'Try a different search' : 'Create your first reward to get started'}
               </p>
               {!searchQuery && (
                 <button
                   onClick={openCreateModal}
-                  className="inline-flex items-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                  className="inline-flex items-center gap-2 bg-aro-terra text-white font-semibold py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
                 >
                   <Plus className="w-5 h-5" />
                   Add Reward
@@ -371,12 +361,12 @@ export default function RewardsPage() {
                     key={reward.reward_id}
                     className={`rounded-2xl border overflow-hidden transition-all ${
                       reward.is_active && !isOutOfStock
-                        ? 'bg-coffee-50/50 dark:bg-dark-900/50 border-coffee-200 dark:border-dark-700 hover:border-coffee-300 dark:hover:border-dark-600 hover:shadow-lg'
-                        : 'bg-gray-50 dark:bg-gray-900/20 border-gray-300 dark:border-gray-700 opacity-60'
+                        ? 'bg-aro-sand/25 border-aro-hairline hover:border-aro-clay hover:shadow-lg'
+                        : 'bg-aro-sand/40 border-aro-hairline opacity-60'
                     }`}
                   >
                     {/* Image */}
-                    <div className="h-48 bg-gradient-to-br from-coffee-100 to-coffee-200 dark:from-dark-800 dark:to-dark-700 flex items-center justify-center relative">
+                    <div className="h-48 bg-aro-sand flex items-center justify-center relative">
                       {reward.image_url ? (
                         <img
                           src={reward.image_url}
@@ -384,11 +374,11 @@ export default function RewardsPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <ImageIcon className="w-16 h-16 text-coffee-300 dark:text-dark-600" />
+                        <ImageIcon className="w-16 h-16 text-aro-clay" />
                       )}
                       {isOutOfStock && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <span className="px-4 py-2 bg-red-600 text-white font-bold rounded-lg">
+                        <div className="absolute inset-0 bg-aro-ink/50 flex items-center justify-center">
+                          <span className="px-4 py-2 bg-aro-rose text-aro-ink font-bold rounded-lg">
                             OUT OF STOCK
                           </span>
                         </div>
@@ -399,19 +389,15 @@ export default function RewardsPage() {
                     <div className="p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
-                          <h3 className="font-bold text-lg text-coffee-900 dark:text-cream-100 mb-1">
-                            {reward.name}
-                          </h3>
+                          <h3 className="font-bold text-lg text-aro-ink mb-1">{reward.name}</h3>
                           {reward.description && (
-                            <p className="text-sm text-coffee-600 dark:text-cream-400 mb-2">
-                              {reward.description}
-                            </p>
+                            <p className="text-sm text-aro-muted mb-2">{reward.description}</p>
                           )}
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2 mb-3">
-                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gradient-coffee text-cream-100">
+                        <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-aro-terra text-white">
                           <Star className="w-4 h-4 fill-current" />
                           <span className="font-bold text-sm">{reward.points_required}</span>
                         </div>
@@ -423,16 +409,16 @@ export default function RewardsPage() {
                       </div>
 
                       {reward.stock_limit !== null && (
-                        <div className="mb-3 text-sm text-coffee-600 dark:text-cream-400">
+                        <div className="mb-3 text-sm text-aro-muted">
                           <div className="flex items-center justify-between mb-1">
                             <span>Stock:</span>
                             <span className="font-medium">
                               {reward.stock_remaining} / {reward.stock_limit}
                             </span>
                           </div>
-                          <div className="w-full bg-coffee-200 dark:bg-dark-700 rounded-full h-2">
+                          <div className="w-full bg-aro-sand rounded-full h-2">
                             <div
-                              className="bg-gradient-coffee h-2 rounded-full transition-all"
+                              className="bg-aro-terra h-2 rounded-full transition-all"
                               style={{
                                 width: `${reward.stock_limit > 0 ? ((reward.stock_remaining || 0) / reward.stock_limit) * 100 : 0}%`,
                               }}
@@ -441,17 +427,17 @@ export default function RewardsPage() {
                         </div>
                       )}
 
-                      <div className="flex items-center gap-2 pt-3 border-t border-coffee-200/50 dark:border-dark-700">
+                      <div className="flex items-center gap-2 pt-3 border-t border-aro-hairline">
                         <button
                           onClick={() => openEditModal(reward)}
-                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-coffee-100 dark:bg-dark-800 text-coffee-700 dark:text-cream-300 hover:bg-coffee-200 dark:hover:bg-dark-700 transition-all"
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-aro-sand text-aro-ink-soft hover:bg-aro-clay/50 transition-all"
                         >
                           <Edit className="w-4 h-4" />
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteReward(reward.reward_id)}
-                          className="px-4 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                          className="px-4 py-2 rounded-lg bg-aro-rose/15 text-aro-rose hover:bg-aro-rose/25 transition-all"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -470,18 +456,18 @@ export default function RewardsPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
             <div
-              className="fixed inset-0 transition-opacity bg-gray-900/75 backdrop-blur-sm"
+              className="fixed inset-0 transition-opacity bg-aro-ink/60 backdrop-blur-sm"
               onClick={closeModal}
             />
 
-            <div className="relative bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 lg:p-8">
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 lg:p-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl lg:text-2xl font-bold text-coffee-900 dark:text-cream-100">
+                <h3 className="text-xl lg:text-2xl font-bold text-aro-ink">
                   {editingReward ? 'Edit Reward' : 'Add Reward'}
                 </h3>
                 <button
                   onClick={closeModal}
-                  className="p-2 hover:bg-coffee-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-aro-sand/50 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -491,14 +477,14 @@ export default function RewardsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Name */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Reward Name *
                     </label>
                     <input
                       type="text"
                       value={formData.name}
                       onChange={e => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="Free Coffee"
                       required
                     />
@@ -506,21 +492,21 @@ export default function RewardsPage() {
 
                   {/* Description */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Description
                     </label>
                     <textarea
                       value={formData.description}
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
                       rows={3}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="Redeem for any regular coffee drink"
                     />
                   </div>
 
                   {/* Points Required */}
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Points Required *
                     </label>
                     <input
@@ -529,7 +515,7 @@ export default function RewardsPage() {
                       onChange={e =>
                         setFormData({ ...formData, points_required: parseInt(e.target.value) })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       min="1"
                       required
                     />
@@ -537,7 +523,7 @@ export default function RewardsPage() {
 
                   {/* Reward Type */}
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Reward Type *
                     </label>
                     <select
@@ -548,7 +534,7 @@ export default function RewardsPage() {
                           reward_type: e.target.value as typeof formData.reward_type,
                         })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                     >
                       <option value="free_item">Free Item</option>
                       <option value="discount">Discount</option>
@@ -558,21 +544,21 @@ export default function RewardsPage() {
 
                   {/* Image URL */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Image URL
                     </label>
                     <input
                       type="url"
                       value={formData.image_url}
                       onChange={e => setFormData({ ...formData, image_url: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="https://example.com/image.jpg"
                     />
                   </div>
 
                   {/* Stock Limit */}
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Stock Limit
                     </label>
                     <input
@@ -588,7 +574,7 @@ export default function RewardsPage() {
                               : formData.stock_remaining,
                         })
                       }
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="Unlimited"
                     />
                   </div>
@@ -596,7 +582,7 @@ export default function RewardsPage() {
                   {/* Stock Remaining */}
                   {formData.stock_limit !== null && (
                     <div>
-                      <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                         Stock Remaining
                       </label>
                       <input
@@ -608,7 +594,7 @@ export default function RewardsPage() {
                             stock_remaining: e.target.value ? parseInt(e.target.value) : null,
                           })
                         }
-                        className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                        className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       />
                     </div>
                   )}
@@ -620,9 +606,9 @@ export default function RewardsPage() {
                         type="checkbox"
                         checked={formData.is_active}
                         onChange={e => setFormData({ ...formData, is_active: e.target.checked })}
-                        className="w-5 h-5 rounded border-coffee-300 dark:border-dark-600 text-coffee-600 focus:ring-coffee-500"
+                        className="w-5 h-5 rounded border-aro-clay text-aro-terra focus:ring-aro-terra"
                       />
-                      <span className="text-sm font-medium text-coffee-700 dark:text-cream-300">
+                      <span className="text-sm font-medium text-aro-ink-soft">
                         Active (available for redemption)
                       </span>
                     </label>
@@ -630,17 +616,17 @@ export default function RewardsPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-3 pt-6 border-t border-coffee-200/50 dark:border-dark-700">
+                <div className="flex justify-end gap-3 pt-6 border-t border-aro-hairline">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-6 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-700 dark:text-cream-300 hover:bg-coffee-100 dark:hover:bg-dark-600 transition-all"
+                    className="px-6 py-2.5 rounded-xl border border-aro-hairline bg-aro-sand/40 text-aro-ink-soft hover:bg-aro-sand/70 transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-gradient-coffee text-cream-100 font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                    className="px-6 py-2.5 rounded-xl bg-aro-terra text-white font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
                   >
                     {editingReward ? 'Update Reward' : 'Add Reward'}
                   </button>
