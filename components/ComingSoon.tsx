@@ -9,11 +9,11 @@ import { Sparkles } from 'lucide-react'
 export function ComingSoon({ title, description }: { title: string; description?: string }) {
   return (
     <div className="text-center py-16 px-6">
-      <div className="w-16 h-16 rounded-2xl bg-gradient-coffee flex items-center justify-center mx-auto mb-4 opacity-80">
-        <Sparkles className="w-8 h-8 text-cream-100" />
+      <div className="w-16 h-16 rounded-2xl bg-aro-terra flex items-center justify-center mx-auto mb-4 opacity-80">
+        <Sparkles className="w-8 h-8 text-white" />
       </div>
-      <h3 className="text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">{title}</h3>
-      <p className="text-coffee-600 dark:text-cream-400 max-w-md mx-auto">
+      <h3 className="text-xl font-bold text-aro-ink mb-2">{title}</h3>
+      <p className="text-aro-muted max-w-md mx-auto">
         {description ?? 'This is part of an upcoming module — your data model is ready for it.'}
       </p>
     </div>

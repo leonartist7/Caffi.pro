@@ -144,17 +144,15 @@ export default function SettingsPage() {
     <div>
       {/* Header */}
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
-          Settings
-        </h1>
-        <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
+        <h1 className="font-display text-2xl lg:text-4xl font-bold text-aro-ink">Settings</h1>
+        <p className="text-aro-muted mt-1 lg:mt-2 text-sm lg:text-lg">
           Manage platform configuration and preferences
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6">
-        <div className="flex overflow-x-auto border-b border-coffee-200/50 dark:border-dark-700 scrollbar-hide">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-aro-hairline mb-6">
+        <div className="flex overflow-x-auto border-b border-aro-hairline scrollbar-hide">
           {tabs.map(tab => {
             const Icon = tab.icon
             return (
@@ -163,8 +161,8 @@ export default function SettingsPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 lg:px-6 py-3 lg:py-4 font-medium transition-all whitespace-nowrap text-sm lg:text-base ${
                   activeTab === tab.id
-                    ? 'text-coffee-700 dark:text-cream-200 border-b-2 border-coffee-600 dark:border-coffee-500'
-                    : 'text-coffee-600 dark:text-cream-400 hover:text-coffee-900 dark:hover:text-cream-100'
+                    ? 'text-aro-ink border-b-2 border-aro-terra'
+                    : 'text-aro-muted hover:text-aro-ink'
                 }`}
               >
                 <Icon className="w-4 h-4 lg:w-5 lg:h-5" />
@@ -176,50 +174,48 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab Content */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-hairline">
         {/* General Settings — the selected client's venue profile */}
         {activeTab === 'general' && (
           <>
             {!selectedTenant ? (
               <div className="text-center py-12">
-                <Building2 className="w-16 h-16 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
-                  Select a client
-                </h3>
-                <p className="text-coffee-600 dark:text-cream-400">
+                <Building2 className="w-16 h-16 text-aro-clay mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-aro-ink mb-2">Select a client</h3>
+                <p className="text-aro-muted">
                   Choose a client from the dropdown above to manage their settings.
                 </p>
               </div>
             ) : loading ? (
               <div className="text-center py-12">
-                <div className="inline-block w-8 h-8 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin" />
+                <div className="inline-block w-8 h-8 border-4 border-aro-terra border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <form onSubmit={handleSaveGeneral} className="space-y-6">
                 <div>
-                  <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
+                  <h2 className="text-lg lg:text-xl font-bold text-aro-ink mb-2">
                     {venue?.business_name ?? selectedTenant.business_name}
                   </h2>
-                  <p className="text-sm lg:text-base text-coffee-600 dark:text-cream-400 mb-6">
+                  <p className="text-sm lg:text-base text-aro-muted mb-6">
                     Brand profile for this client
                   </p>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Business Name
                     </label>
                     <input
                       type="text"
                       value={formData.business_name}
                       onChange={e => setFormData({ ...formData, business_name: e.target.value })}
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Logo URL
                     </label>
                     <input
@@ -227,33 +223,33 @@ export default function SettingsPage() {
                       value={formData.logo_url}
                       onChange={e => setFormData({ ...formData, logo_url: e.target.value })}
                       placeholder="https://example.com/logo.png"
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Primary Color
                     </label>
                     <input
                       type="color"
                       value={formData.primary_color}
                       onChange={e => setFormData({ ...formData, primary_color: e.target.value })}
-                      className="w-full h-12 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 cursor-pointer"
+                      className="w-full h-12 rounded-xl border border-aro-hairline bg-white cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Timezone
                     </label>
                     <input
                       type="text"
                       value={venue?.timezone ?? ''}
                       readOnly
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-600 dark:text-cream-400 cursor-not-allowed text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-aro-sand/40 text-aro-ink-soft cursor-not-allowed text-sm lg:text-base"
                     />
-                    <p className="mt-1 text-xs text-coffee-500 dark:text-cream-500">
+                    <p className="mt-1 text-xs text-aro-muted">
                       Set at client creation — used for weekly stats boundaries.
                     </p>
                   </div>
@@ -262,7 +258,7 @@ export default function SettingsPage() {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex items-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base disabled:opacity-50"
+                  className="flex items-center gap-2 bg-aro-terra text-white font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base disabled:opacity-50"
                 >
                   <Save className="w-4 h-4 lg:w-5 lg:h-5" />
                   {saving ? 'Saving…' : 'Save Changes'}
@@ -276,35 +272,31 @@ export default function SettingsPage() {
           <>
             {!selectedTenant ? (
               <div className="text-center py-12">
-                <Globe className="w-16 h-16 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
-                  Select a client
-                </h3>
-                <p className="text-coffee-600 dark:text-cream-400">
+                <Globe className="w-16 h-16 text-aro-clay mx-auto mb-4" />
+                <h3 className="text-xl font-bold text-aro-ink mb-2">Select a client</h3>
+                <p className="text-aro-muted">
                   Choose a client from the dropdown above to manage their public site.
                 </p>
               </div>
             ) : loading ? (
               <div className="text-center py-12">
-                <div className="inline-block w-8 h-8 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin" />
+                <div className="inline-block w-8 h-8 border-4 border-aro-terra border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <form onSubmit={handleSaveWebsite} className="space-y-6">
                 <div>
-                  <h2 className="text-lg lg:text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
-                    Public website
-                  </h2>
-                  <p className="text-sm lg:text-base text-coffee-600 dark:text-cream-400 mb-6">
+                  <h2 className="text-lg lg:text-xl font-bold text-aro-ink mb-2">Public website</h2>
+                  <p className="text-sm lg:text-base text-aro-muted mb-6">
                     Home, menu, hours and contact — a real public site generated from this profile.
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-900 px-4 py-3.5">
+                <div className="flex items-center justify-between rounded-xl border border-aro-hairline bg-aro-sand/30 px-4 py-3.5">
                   <div>
-                    <p className="font-medium text-coffee-900 dark:text-cream-100">
+                    <p className="font-medium text-aro-ink">
                       {websiteForm.site_enabled ? 'Site is live' : 'Site is off'}
                     </p>
-                    <p className="text-xs text-coffee-500 dark:text-cream-500">
+                    <p className="text-xs text-aro-muted">
                       {websiteForm.site_enabled
                         ? `Live at ${typeof window !== 'undefined' ? window.location.origin : ''}/site/${venue?.slug ?? selectedTenant.slug}`
                         : 'Turning this on publishes the site at the URL below.'}
@@ -316,7 +308,7 @@ export default function SettingsPage() {
                     role="switch"
                     aria-checked={websiteForm.site_enabled}
                     className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                      websiteForm.site_enabled ? 'bg-coffee-600' : 'bg-coffee-200 dark:bg-dark-600'
+                      websiteForm.site_enabled ? 'bg-aro-terra' : 'bg-aro-sand'
                     }`}
                   >
                     <span
@@ -329,7 +321,7 @@ export default function SettingsPage() {
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Tagline
                     </label>
                     <input
@@ -339,12 +331,12 @@ export default function SettingsPage() {
                         setWebsiteForm(f => ({ ...f, tagline: e.target.value || null }))
                       }
                       placeholder="Third-wave coffee, no pretense."
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       About
                     </label>
                     <textarea
@@ -352,12 +344,12 @@ export default function SettingsPage() {
                       onChange={e => setWebsiteForm(f => ({ ...f, about: e.target.value || null }))}
                       rows={4}
                       placeholder="1–3 short paragraphs about the café."
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Address
                     </label>
                     <input
@@ -366,12 +358,12 @@ export default function SettingsPage() {
                       onChange={e =>
                         setWebsiteForm(f => ({ ...f, address: e.target.value || null }))
                       }
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Phone
                     </label>
                     <input
@@ -380,13 +372,13 @@ export default function SettingsPage() {
                       onChange={e =>
                         setWebsiteForm(f => ({ ...f, phone_display: e.target.value || null }))
                       }
-                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                      className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                     />
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                         Instagram URL
                       </label>
                       <input
@@ -396,11 +388,11 @@ export default function SettingsPage() {
                           setWebsiteForm(f => ({ ...f, instagram_url: e.target.value || null }))
                         }
                         placeholder="https://instagram.com/..."
-                        className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                        className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                      <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                         Facebook URL
                       </label>
                       <input
@@ -410,17 +402,17 @@ export default function SettingsPage() {
                           setWebsiteForm(f => ({ ...f, facebook_url: e.target.value || null }))
                         }
                         placeholder="https://facebook.com/..."
-                        className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+                        className="w-full px-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
                       />
                     </div>
                   </div>
 
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300">
+                      <label className="block text-sm font-medium text-aro-ink-soft">
                         Gallery images
                       </label>
-                      <span className="text-xs text-coffee-500 dark:text-cream-500">
+                      <span className="text-xs text-aro-muted">
                         {websiteForm.gallery.length}/{SITE_GALLERY_MAX}
                       </span>
                     </div>
@@ -437,7 +429,7 @@ export default function SettingsPage() {
                               }))
                             }
                             placeholder="https://example.com/photo.jpg"
-                            className="flex-1 px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm"
+                            className="flex-1 px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm"
                           />
                           <button
                             type="button"
@@ -448,7 +440,7 @@ export default function SettingsPage() {
                               }))
                             }
                             aria-label="Remove image"
-                            className="shrink-0 rounded-xl border border-coffee-200 dark:border-dark-600 px-3 text-coffee-500 hover:bg-coffee-50 dark:hover:bg-dark-700"
+                            className="shrink-0 rounded-xl border border-aro-hairline px-3 text-aro-muted hover:bg-aro-sand/40"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -460,7 +452,7 @@ export default function SettingsPage() {
                           onClick={() =>
                             setWebsiteForm(f => ({ ...f, gallery: [...f.gallery, ''] }))
                           }
-                          className="flex items-center gap-1.5 text-sm font-medium text-coffee-600 dark:text-cream-400 hover:text-coffee-800"
+                          className="flex items-center gap-1.5 text-sm font-medium text-aro-ink-soft hover:text-aro-ink"
                         >
                           <Plus className="h-4 w-4" /> Add image URL
                         </button>
@@ -473,7 +465,7 @@ export default function SettingsPage() {
                   <button
                     type="submit"
                     disabled={savingWebsite}
-                    className="flex items-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base disabled:opacity-50"
+                    className="flex items-center gap-2 bg-aro-terra text-white font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base disabled:opacity-50"
                   >
                     <Save className="w-4 h-4 lg:w-5 lg:h-5" />
                     {savingWebsite ? 'Saving…' : 'Save Changes'}
@@ -483,12 +475,12 @@ export default function SettingsPage() {
                       href={`/site/${venue?.slug ?? selectedTenant.slug}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-1.5 text-sm font-semibold text-coffee-600 dark:text-cream-400 hover:text-coffee-800"
+                      className="flex items-center gap-1.5 text-sm font-semibold text-aro-ink-soft hover:text-aro-ink"
                     >
                       Preview site <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   ) : (
-                    <span className="flex items-center gap-1.5 text-sm text-coffee-400 dark:text-cream-600 cursor-not-allowed">
+                    <span className="flex items-center gap-1.5 text-sm text-aro-muted cursor-not-allowed">
                       Preview site <ExternalLink className="h-3.5 w-3.5" />
                     </span>
                   )}
