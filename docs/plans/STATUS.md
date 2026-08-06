@@ -165,8 +165,8 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   `venues.brand_kit`) were confirmed live via a direct MCP query, and the
   new routes were smoke-checked (no crash) against a local dev server.
   `BUILD-LOG-PLAN-30.md`.
-- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **built** (PR
-  pending). Style-only token refit of the 11 shared components v2R names
+- **PLAN-31 (HQ aro refit, part 1 — shared components)**: ✅ **merged**
+  (PR #69). Style-only token refit of the 11 shared components v2R names
   (`Sidebar`, `MobileNav`, `StatCard`, `SkeletonLoader`, `ThemeToggle`,
   `TenantSelector`, `ConfirmDialog`, `ComingSoon`, `LiveClock`,
   `app/error.tsx`, `app/(dashboard)/error.tsx`) — zero
@@ -185,6 +185,15 @@ Preflight confirmed live Supabase MCP access to `aro-platform`
   WCAG AA; one candidate (white on solid `aro-rose`, 2.61:1) was computed,
   rejected, and replaced with `aro-ink` on the same background (6.15:1)
   before it reached any component. `BUILD-LOG-PLAN-31.md`.
+- **PLAN-32 (HQ aro refit, part 2 — dashboard/clients/activity/analytics)**:
+  ✅ **built** (PR pending). Style-only refit of the 4 pages, including
+  `analytics/page.tsx`'s Recharts color props (treated as in-scope style
+  values, same category as PLAN-31's `iconBgColor` default — Recharts has
+  no className-based way to color an SVG line/bar/pie segment). A
+  contrast bug was caught **before** it shipped this time: a first pass at
+  the dashboard's "New leads" tile measured 4.03:1 and was fixed to
+  14.24:1 before ever being committed, by keeping the accent color on the
+  icon only and moving text to `aro-ink`. `BUILD-LOG-PLAN-32.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 
