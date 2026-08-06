@@ -223,15 +223,15 @@ export default function ClientsPage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
-        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+        return 'bg-aro-sage text-aro-ink'
       case 'trial':
-        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+        return 'bg-aro-honey text-aro-ink'
       case 'cancelled':
-        return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
+        return 'bg-aro-sand text-aro-ink-soft'
       case 'suspended':
-        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+        return 'bg-aro-rose text-aro-ink'
       default:
-        return 'bg-gray-100 dark:bg-gray-700/30 text-gray-700 dark:text-gray-400'
+        return 'bg-aro-sand text-aro-ink-soft'
     }
   }
 
@@ -239,73 +239,65 @@ export default function ClientsPage() {
     <div>
       {/* Header */}
       <div className="mb-6 lg:mb-8">
-        <h1 className="text-2xl lg:text-4xl font-bold bg-gradient-to-r from-coffee-700 to-mocha bg-clip-text text-transparent">
+        <h1 className="font-display text-2xl lg:text-4xl font-bold text-aro-ink">
           My Coffee Shop Clients
         </h1>
-        <p className="text-coffee-600 dark:text-cream-400 mt-1 lg:mt-2 text-sm lg:text-lg">
+        <p className="text-aro-muted mt-1 lg:mt-2 text-sm lg:text-lg">
           Manage all your coffee shop businesses from one control center
         </p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6">
-        <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-hairline">
           <div className="flex items-center gap-3 mb-2">
-            <Building2 className="w-5 h-5 lg:w-6 lg:h-6 text-coffee-600 dark:text-cream-400" />
-            <p className="text-xs lg:text-sm text-coffee-600 dark:text-cream-400">Total Clients</p>
+            <Building2 className="w-5 h-5 lg:w-6 lg:h-6 text-aro-muted" />
+            <p className="text-xs lg:text-sm text-aro-muted">Total Clients</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-coffee-900 dark:text-cream-100">
-            {stats.total}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.total}</p>
         </div>
 
-        <div className="bg-green-50 dark:bg-green-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-green-200 dark:border-green-800">
+        <div className="bg-aro-sage/15 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-sage/30">
           <div className="flex items-center gap-3 mb-2">
-            <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-green-600 dark:text-green-400" />
-            <p className="text-xs lg:text-sm text-green-600 dark:text-green-400">Active</p>
+            <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-aro-sage" />
+            <p className="text-xs lg:text-sm text-aro-ink">Active</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-green-700 dark:text-green-400">
-            {stats.active}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.active}</p>
         </div>
 
-        <div className="bg-blue-50 dark:bg-blue-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-blue-200 dark:border-blue-800">
+        <div className="bg-aro-honey/15 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-honey/30">
           <div className="flex items-center gap-3 mb-2">
-            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-blue-600 dark:text-blue-400" />
-            <p className="text-xs lg:text-sm text-blue-600 dark:text-blue-400">Trial</p>
+            <Users className="w-5 h-5 lg:w-6 lg:h-6 text-aro-honey" />
+            <p className="text-xs lg:text-sm text-aro-ink">Trial</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-blue-700 dark:text-blue-400">
-            {stats.trial}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.trial}</p>
         </div>
 
-        <div className="bg-red-50 dark:bg-red-900/20 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-red-200 dark:border-red-800">
+        <div className="bg-aro-rose/15 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-rose/30">
           <div className="flex items-center gap-3 mb-2">
-            <ShoppingBag className="w-5 h-5 lg:w-6 lg:h-6 text-red-600 dark:text-red-400" />
-            <p className="text-xs lg:text-sm text-red-600 dark:text-red-400">Suspended</p>
+            <ShoppingBag className="w-5 h-5 lg:w-6 lg:h-6 text-aro-rose" />
+            <p className="text-xs lg:text-sm text-aro-ink">Suspended</p>
           </div>
-          <p className="text-2xl lg:text-3xl font-bold text-red-700 dark:text-red-400">
-            {stats.suspended}
-          </p>
+          <p className="text-2xl lg:text-3xl font-bold text-aro-ink">{stats.suspended}</p>
         </div>
       </div>
 
       {/* Search & Add */}
-      <div className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 mb-6">
+      <div className="bg-white/80 backdrop-blur-xl rounded-2xl p-4 lg:p-6 shadow-lg border border-aro-hairline mb-6">
         <div className="flex flex-col lg:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-coffee-400 dark:text-cream-600" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aro-muted" />
             <input
               type="text"
               placeholder="Search clients..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 lg:py-3 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all text-sm lg:text-base"
+              className="w-full pl-10 pr-4 py-2.5 lg:py-3 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all text-sm lg:text-base"
             />
           </div>
           <button
             onClick={openCreateModal}
-            className="flex items-center justify-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base"
+            className="flex items-center justify-center gap-2 bg-aro-terra text-white font-semibold py-2.5 lg:py-3 px-4 lg:px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all text-sm lg:text-base"
           >
             <Plus className="w-4 h-4 lg:w-5 lg:h-5" />
             Add New Client
@@ -317,16 +309,14 @@ export default function ClientsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
           <div className="col-span-full p-12 text-center">
-            <div className="inline-block w-12 h-12 border-4 border-coffee-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-coffee-600 dark:text-cream-400">Loading clients...</p>
+            <div className="inline-block w-12 h-12 border-4 border-aro-terra border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-aro-muted">Loading clients...</p>
           </div>
         ) : filteredTenants.length === 0 ? (
           <div className="col-span-full p-12 text-center">
-            <Building2 className="w-16 h-16 text-coffee-300 dark:text-dark-600 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-coffee-900 dark:text-cream-100 mb-2">
-              No clients yet
-            </h3>
-            <p className="text-coffee-600 dark:text-cream-400 mb-4">
+            <Building2 className="w-16 h-16 text-aro-clay mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-aro-ink mb-2">No clients yet</h3>
+            <p className="text-aro-muted mb-4">
               {searchQuery
                 ? 'Try a different search'
                 : 'Add your first coffee shop client to get started'}
@@ -334,7 +324,7 @@ export default function ClientsPage() {
             {!searchQuery && (
               <button
                 onClick={openCreateModal}
-                className="inline-flex items-center gap-2 bg-gradient-coffee text-cream-100 font-semibold py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                className="inline-flex items-center gap-2 bg-aro-terra text-white font-semibold py-2.5 px-6 rounded-xl shadow-md hover:shadow-lg hover:scale-105 transition-all"
               >
                 <Plus className="w-5 h-5" />
                 Add First Client
@@ -345,7 +335,7 @@ export default function ClientsPage() {
           filteredTenants.map(tenant => (
             <div
               key={tenant.tenant_id}
-              className="bg-white/80 dark:bg-dark-800/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-coffee-200/50 dark:border-dark-700 hover:border-coffee-300 dark:hover:border-dark-600 hover:shadow-xl transition-all group"
+              className="bg-white/80 backdrop-blur-xl rounded-2xl p-6 shadow-lg border border-aro-hairline hover:border-aro-clay hover:shadow-xl transition-all group"
             >
               {/* Logo & Status */}
               <div className="flex items-start justify-between mb-4">
@@ -357,15 +347,13 @@ export default function ClientsPage() {
                       className="w-14 h-14 rounded-xl object-cover"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-xl bg-gradient-coffee flex items-center justify-center">
-                      <Building2 className="w-7 h-7 text-cream-100" />
+                    <div className="w-14 h-14 rounded-xl bg-aro-terra flex items-center justify-center">
+                      <Building2 className="w-7 h-7 text-white" />
                     </div>
                   )}
                   <div>
-                    <h3 className="font-bold text-lg text-coffee-900 dark:text-cream-100">
-                      {tenant.business_name}
-                    </h3>
-                    <p className="text-sm text-coffee-500 dark:text-cream-500">{tenant.slug}</p>
+                    <h3 className="font-bold text-lg text-aro-ink">{tenant.business_name}</h3>
+                    <p className="text-sm text-aro-muted">{tenant.slug}</p>
                   </div>
                 </div>
                 <span
@@ -378,41 +366,41 @@ export default function ClientsPage() {
               {/* Contact Info */}
               <div className="space-y-2 mb-4 text-sm">
                 {tenant.owner_email && (
-                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                  <div className="flex items-center gap-2 text-aro-ink-soft">
                     <Mail className="w-4 h-4" />
                     <span className="truncate">{tenant.owner_email}</span>
                   </div>
                 )}
                 {tenant.owner_phone && (
-                  <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                  <div className="flex items-center gap-2 text-aro-ink-soft">
                     <Phone className="w-4 h-4" />
                     {tenant.owner_phone}
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-coffee-600 dark:text-cream-400">
+                <div className="flex items-center gap-2 text-aro-ink-soft">
                   <Globe className="w-4 h-4" />
                   <span className="text-xs font-mono">{tenant.bundle_id}</span>
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-2 pt-4 border-t border-coffee-200/50 dark:border-dark-700">
+              <div className="flex items-center gap-2 pt-4 border-t border-aro-hairline">
                 <button
                   onClick={() => handleSelectTenant(tenant)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-gradient-coffee text-cream-100 hover:shadow-lg transition-all text-sm font-medium"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-aro-terra text-white hover:shadow-lg transition-all text-sm font-medium"
                 >
                   <Eye className="w-4 h-4" />
                   Manage
                 </button>
                 <button
                   onClick={() => openEditModal(tenant)}
-                  className="px-3 py-2 rounded-lg bg-coffee-100 dark:bg-dark-700 text-coffee-700 dark:text-cream-300 hover:bg-coffee-200 dark:hover:bg-dark-600 transition-all"
+                  className="px-3 py-2 rounded-lg bg-aro-sand text-aro-ink-soft hover:bg-aro-clay/50 transition-all"
                 >
                   <Edit className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleDeleteTenant(tenant.tenant_id)}
-                  className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all"
+                  className="px-3 py-2 rounded-lg bg-aro-rose/15 text-aro-rose hover:bg-aro-rose/25 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -423,7 +411,7 @@ export default function ClientsPage() {
               <button
                 onClick={() => handleOperateAsVenue(tenant)}
                 disabled={operatingId === tenant.tenant_id}
-                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-coffee-200 dark:border-dark-600 px-4 py-2 text-sm font-medium text-coffee-700 dark:text-cream-300 hover:bg-coffee-50 dark:hover:bg-dark-700 transition-all disabled:opacity-60"
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg border border-aro-hairline px-4 py-2 text-sm font-medium text-aro-ink-soft hover:bg-aro-sand/40 transition-all disabled:opacity-60"
               >
                 <LogIn className="w-4 h-4" />
                 {operatingId === tenant.tenant_id ? 'Entering…' : 'Operate as this venue'}
@@ -438,18 +426,18 @@ export default function ClientsPage() {
         <div className="fixed inset-0 z-50 overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
             <div
-              className="fixed inset-0 transition-opacity bg-gray-900/75 backdrop-blur-sm"
+              className="fixed inset-0 transition-opacity bg-aro-ink/60 backdrop-blur-sm"
               onClick={closeModal}
             />
 
-            <div className="relative bg-white dark:bg-dark-800 rounded-2xl shadow-2xl max-w-2xl w-full p-6 lg:p-8">
+            <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 lg:p-8">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl lg:text-2xl font-bold text-coffee-900 dark:text-cream-100">
+                <h3 className="text-xl lg:text-2xl font-bold text-aro-ink">
                   {editingTenant ? 'Edit Client' : 'Add New Client'}
                 </h3>
                 <button
                   onClick={closeModal}
-                  className="p-2 hover:bg-coffee-100 dark:hover:bg-dark-700 rounded-lg transition-colors"
+                  className="p-2 hover:bg-aro-sand/50 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -459,7 +447,7 @@ export default function ClientsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Business Name */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Business Name *
                     </label>
                     <input
@@ -474,7 +462,7 @@ export default function ClientsPage() {
                           slug: autoSlug,
                         })
                       }}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="Joe's Coffee Shop"
                       required
                     />
@@ -482,89 +470,89 @@ export default function ClientsPage() {
 
                   {/* Slug - Auto-generated, Read-only */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       App Slug (auto-generated from business name)
                     </label>
                     <input
                       type="text"
                       value={formData.slug}
                       readOnly
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-600 dark:text-cream-400 font-mono cursor-not-allowed"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-aro-sand/40 text-aro-ink-soft font-mono cursor-not-allowed"
                       placeholder="will-auto-generate"
                     />
-                    <p className="mt-1 text-xs text-coffee-500 dark:text-cream-500">
+                    <p className="mt-1 text-xs text-aro-muted">
                       URL: /shop/{formData.slug || 'your-slug'}
                     </p>
                   </div>
 
                   {/* Logo URL */}
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Logo URL
                     </label>
                     <input
                       type="url"
                       value={formData.logo_url}
                       onChange={e => setFormData({ ...formData, logo_url: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="https://example.com/logo.png"
                     />
                   </div>
 
                   {/* Contact Email */}
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Contact Email
                     </label>
                     <input
                       type="email"
                       value={formData.contact_email}
                       onChange={e => setFormData({ ...formData, contact_email: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="owner@joescoffee.com"
                     />
                   </div>
 
                   {/* Contact Phone */}
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Contact Phone
                     </label>
                     <input
                       type="tel"
                       value={formData.contact_phone}
                       onChange={e => setFormData({ ...formData, contact_phone: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 text-coffee-900 dark:text-cream-100 focus:outline-none focus:ring-2 focus:ring-coffee-500 dark:focus:ring-coffee-600 transition-all"
+                      className="w-full px-4 py-2.5 rounded-xl border border-aro-hairline bg-white text-aro-ink focus:outline-none focus:ring-2 focus:ring-aro-terra transition-all"
                       placeholder="+1 234 567 8900"
                     />
                   </div>
 
                   {/* Primary Color */}
                   <div>
-                    <label className="block text-sm font-medium text-coffee-700 dark:text-cream-300 mb-2">
+                    <label className="block text-sm font-medium text-aro-ink-soft mb-2">
                       Primary Color
                     </label>
                     <input
                       type="color"
                       value={formData.primary_color}
                       onChange={e => setFormData({ ...formData, primary_color: e.target.value })}
-                      className="w-full h-12 rounded-xl border border-coffee-200 dark:border-dark-600 bg-white dark:bg-dark-900 cursor-pointer"
+                      className="w-full h-12 rounded-xl border border-aro-hairline bg-white cursor-pointer"
                     />
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end gap-3 pt-6 border-t border-coffee-200/50 dark:border-dark-700">
+                <div className="flex justify-end gap-3 pt-6 border-t border-aro-hairline">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="px-6 py-2.5 rounded-xl border border-coffee-200 dark:border-dark-600 bg-coffee-50 dark:bg-dark-700 text-coffee-700 dark:text-cream-300 hover:bg-coffee-100 dark:hover:bg-dark-600 transition-all"
+                    className="px-6 py-2.5 rounded-xl border border-aro-hairline bg-aro-sand/40 text-aro-ink-soft hover:bg-aro-sand/70 transition-all"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 rounded-xl bg-gradient-coffee text-cream-100 font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
+                    className="px-6 py-2.5 rounded-xl bg-aro-terra text-white font-semibold shadow-md hover:shadow-lg hover:scale-105 transition-all"
                   >
                     {editingTenant ? 'Update Client' : 'Add Client'}
                   </button>
