@@ -296,11 +296,20 @@ prose, same rule as Lane B's note above.
   (see its "Post-review pass" section for the complete finding-by-finding
   list, including two flagged-not-fixed items with reasoning).
 
-- **PLAN-37 (Hours + tips CSV export)**: ⚪ **spec only, PR #75 open
-  (draft).** No implementation yet — deliberately parked behind PLAN-36's
-  math review and route-shape changes so it wasn't building against a
-  contract that might still move. Now that PLAN-36 is merged with its
-  final `/tips-admin` + `/tips` route shapes, PLAN-37 is unblocked.
+- **PLAN-37 (Hours + tips CSV export)**: 🟡 **built, PR #75 open
+  (draft).** Server route (`app/api/tips/export`, owner-only) calls
+  PLAN-36's `runTipReport()` directly — no re-querying or re-deriving, so
+  CSV values match the report row for row by construction. New
+  `lib/csv.ts`: RFC 4180 field escaping, UTF-8 BOM, and integer-exact
+  cents/minutes-to-decimal-string conversions (verified via an exhaustive
+  round-trip check — `10.10` never renders as `10.1` or `10.100000001`).
+  Filename carries venue slug + period. Emits `report.exported`
+  server-side as the compensation-data-leaving-the-system audit trail.
+  The Export CSV link lives in the shared `TipsReportClient`, so both the
+  owner (`/tips`) and admin (`/tips-admin`) paths get it. Period parsing
+  matches PLAN-36's venue-timezone-aware approach exactly (never the
+  browser's or this server's). Full detail:
+  `docs/plans/BUILD-LOG-PLAN-37.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
 

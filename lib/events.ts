@@ -66,6 +66,7 @@ export type AroEventType =
   | 'shift.ended'
   | 'shift.corrected'
   | 'tip_allocation.saved'
+  | 'report.exported'
 
 export interface AroEvent {
   type: AroEventType
@@ -138,6 +139,7 @@ export const EVENT_LABELS: Record<string, string> = {
   'shift.ended': 'Clocked out',
   'shift.corrected': 'Shift corrected',
   'tip_allocation.saved': 'Tip allocation saved',
+  'report.exported': 'Report exported',
 }
 
 export function eventLabel(type: string): string {

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { AlertTriangle, Info, Loader2 } from 'lucide-react'
+import { AlertTriangle, Download, Info, Loader2 } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 
 type Basis = 'hours' | 'equal' | 'manual'
@@ -113,6 +113,12 @@ export function TipsReportClient({ venueId }: { venueId: string }) {
       params.set('manual_weights', JSON.stringify(manualWeights))
     }
     return params
+  }
+
+  function exportHref(): string | null {
+    const params = buildParams(true)
+    if (!params) return null
+    return `/api/tips/export?${params.toString()}`
   }
 
   async function runReport(includeManualWeights: boolean) {
@@ -402,13 +408,22 @@ export function TipsReportClient({ venueId }: { venueId: string }) {
               <span className="font-display font-bold text-aro-ink">
                 Pool: {formatCents(result.poolCents)}
               </span>
-              <button
-                onClick={() => void saveReport()}
-                disabled={saving || saveBlocked}
-                className="rounded-lg bg-aro-terra text-white px-4 py-2 text-sm font-medium disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : 'Save this allocation'}
-              </button>
+              <div className="flex items-center gap-2">
+                <a
+                  href={exportHref() ?? '#'}
+                  className="rounded-lg border border-aro-hairline text-aro-ink px-4 py-2 text-sm font-medium flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </a>
+                <button
+                  onClick={() => void saveReport()}
+                  disabled={saving || saveBlocked}
+                  className="rounded-lg bg-aro-terra text-white px-4 py-2 text-sm font-medium disabled:opacity-50"
+                >
+                  {saving ? 'Saving…' : 'Save this allocation'}
+                </button>
+              </div>
             </div>
             {result.rows.length === 0 ? (
               <p className="px-4 py-6 text-center text-aro-ink-soft text-sm">
