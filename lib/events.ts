@@ -77,6 +77,7 @@ export type AroEventType =
   | 'referral.recorded'
   | 'referral.rewarded'
   | 'survey.completed'
+  | 'mystery.revealed'
 
 export interface AroEvent {
   type: AroEventType
@@ -160,6 +161,7 @@ export const EVENT_LABELS: Record<string, string> = {
   'referral.recorded': 'Referral recorded',
   'referral.rewarded': 'Referral rewarded',
   'survey.completed': 'Survey completed',
+  'mystery.revealed': 'Mystery reward revealed',
 }
 
 export function eventLabel(type: string): string {

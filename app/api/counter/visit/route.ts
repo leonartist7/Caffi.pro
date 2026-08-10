@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
 import { emitEvent } from '@/lib/events'
 import { creditReferralOnFirstVisit } from '@/lib/loyalty/referral-credit'
+import { issueMysteryPrizeOnVisit } from '@/lib/loyalty/mystery-issue'
 
 /**
  * POST /api/counter/visit — record a visit. Body: { member_id, visit_uuid, ts? }
@@ -93,6 +94,13 @@ export async function POST(request: NextRequest) {
   // the response.
   if (wasNew && count === 1) {
     void creditReferralOnFirstVisit(admin, session.venueId, body.member_id, session.membershipId)
+  }
+
+  // PLAN-17 — recurring, not first-visit-only: every genuinely new visit
+  // is checked against the mystery program's threshold, so "every 5th
+  // visit" keeps firing for as long as the program stays active.
+  if (wasNew && count) {
+    void issueMysteryPrizeOnVisit(admin, session.venueId, body.member_id, count)
   }
 
   return NextResponse.json({ ok: true, visit_count: count ?? 0 })

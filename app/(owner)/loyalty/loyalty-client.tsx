@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Plus, Ticket, Search, Check, Users, ClipboardList, X } from 'lucide-react'
+import { expectedCostCentsPerReveal, expectedPointsPerReveal } from '@/lib/loyalty/mystery'
 
 interface SurveyQuestionDraft {
   id: string
@@ -11,12 +12,29 @@ interface SurveyQuestionDraft {
   options: string
 }
 
+interface MysteryPrizeDraft {
+  id: string
+  label: string
+  weight: string
+  reward: 'points' | 'dollars'
+  pointsValue: string
+  dollars: string
+}
+
 interface ProgramConfig {
   default_points_value?: number
   default_value_cents?: number
   delay_days?: number
   window_days?: number
   questions?: { id: string; text: string; type: 'text' | 'choice'; options?: string[] }[]
+  prizes?: {
+    id: string
+    label: string
+    weight: number
+    pointsValue?: number
+    valueCents?: number
+  }[]
+  visit_threshold?: number
 }
 
 interface Program {
@@ -123,6 +141,14 @@ const STRINGS = {
   resultsTitle: 'Responses',
   resultsEmpty: 'No responses yet.',
   resultsFailed: "Couldn't load responses.",
+  visitThresholdLabel: 'Reveal every N visits',
+  prizesLabel: 'Prizes',
+  addPrize: 'Add prize',
+  prizeLabelPlaceholder: 'Prize name',
+  weightPlaceholder: 'Weight',
+  rewardPoints: 'Points',
+  rewardDollars: 'Dollars',
+  expectedCostPrefix: 'Expected cost per reveal:',
 } as const
 
 export function LoyaltyClient({ venueId }: { venueId: string }) {
@@ -138,6 +164,8 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   const [delayDays, setDelayDays] = useState('')
   const [windowDays, setWindowDays] = useState('')
   const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestionDraft[]>([])
+  const [mysteryPrizes, setMysteryPrizes] = useState<MysteryPrizeDraft[]>([])
+  const [visitThreshold, setVisitThreshold] = useState('5')
 
   const [resultsFor, setResultsFor] = useState<Program | null>(null)
   const [results, setResults] = useState<{ answers: Record<string, string> }[] | null>(null)
@@ -247,6 +275,25 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
           throw new Error('Every question needs text; choice questions need 2+ options')
         }
       }
+      if (type === 'mystery') {
+        if (mysteryPrizes.length < 1) {
+          throw new Error('Add at least one prize')
+        }
+        config.visit_threshold = Number(visitThreshold) || 5
+        config.prizes = mysteryPrizes.map(p => ({
+          id: p.id,
+          label: p.label.trim(),
+          weight: Number(p.weight) || 0,
+          ...(p.reward === 'points'
+            ? { pointsValue: Number(p.pointsValue) || 0 }
+            : { valueCents: Math.round((Number(p.dollars) || 0) * 100) }),
+        }))
+        if (
+          config.prizes.some(p => !p.label || p.weight <= 0 || (!p.pointsValue && !p.valueCents))
+        ) {
+          throw new Error('Every prize needs a name, a positive weight, and a reward value')
+        }
+      }
 
       const res = await fetch('/api/loyalty/programs', {
         method: 'POST',
@@ -263,6 +310,8 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
       setDelayDays('')
       setWindowDays('')
       setSurveyQuestions([])
+      setMysteryPrizes([])
+      setVisitThreshold('5')
       setShowForm(false)
       await fetchPrograms()
       toast.success('Program created.')
@@ -380,6 +429,41 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   function removeSurveyQuestion(id: string) {
     setSurveyQuestions(prev => prev.filter(q => q.id !== id))
   }
+
+  function addMysteryPrize() {
+    if (mysteryPrizes.length >= 12) return
+    setMysteryPrizes(prev => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        label: '',
+        weight: '1',
+        reward: 'points',
+        pointsValue: '',
+        dollars: '',
+      },
+    ])
+  }
+
+  function updateMysteryPrize(id: string, patch: Partial<MysteryPrizeDraft>) {
+    setMysteryPrizes(prev => prev.map(p => (p.id === id ? { ...p, ...patch } : p)))
+  }
+
+  function removeMysteryPrize(id: string) {
+    setMysteryPrizes(prev => prev.filter(p => p.id !== id))
+  }
+
+  const mysteryPreviewPrizes = mysteryPrizes
+    .filter(p => p.label.trim() && Number(p.weight) > 0)
+    .map(p => ({
+      id: p.id,
+      label: p.label,
+      weight: Number(p.weight) || 0,
+      pointsValue: p.reward === 'points' ? Number(p.pointsValue) || 0 : undefined,
+      valueCents: p.reward === 'dollars' ? Math.round((Number(p.dollars) || 0) * 100) : undefined,
+    }))
+  const expectedCents = expectedCostCentsPerReveal(mysteryPreviewPrizes)
+  const expectedPoints = expectedPointsPerReveal(mysteryPreviewPrizes)
 
   async function openResults(program: Program) {
     setResultsFor(program)
@@ -606,6 +690,98 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
                 >
                   {STRINGS.addQuestion} ({surveyQuestions.length}/5)
                 </button>
+              )}
+            </div>
+          )}
+          {type === 'mystery' && (
+            <div className="space-y-2">
+              <input
+                value={visitThreshold}
+                onChange={e => setVisitThreshold(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder={STRINGS.visitThresholdLabel}
+                inputMode="numeric"
+                className="w-full rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+              />
+              {mysteryPrizes.map(p => (
+                <div key={p.id} className="rounded-lg border border-aro-hairline p-2.5 space-y-1.5">
+                  <div className="flex gap-2 items-start">
+                    <input
+                      value={p.label}
+                      onChange={e => updateMysteryPrize(p.id, { label: e.target.value })}
+                      placeholder={STRINGS.prizeLabelPlaceholder}
+                      className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                    />
+                    <input
+                      value={p.weight}
+                      onChange={e =>
+                        updateMysteryPrize(p.id, { weight: e.target.value.replace(/[^0-9]/g, '') })
+                      }
+                      placeholder={STRINGS.weightPlaceholder}
+                      inputMode="numeric"
+                      className="w-20 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeMysteryPrize(p.id)}
+                      aria-label="Remove prize"
+                      className="rounded-lg p-2 text-aro-muted hover:bg-aro-sand/40"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <select
+                      value={p.reward}
+                      onChange={e =>
+                        updateMysteryPrize(p.id, { reward: e.target.value as 'points' | 'dollars' })
+                      }
+                      className="rounded-lg border border-aro-hairline px-2 py-2 text-sm bg-white"
+                    >
+                      <option value="points">{STRINGS.rewardPoints}</option>
+                      <option value="dollars">{STRINGS.rewardDollars}</option>
+                    </select>
+                    {p.reward === 'points' ? (
+                      <input
+                        value={p.pointsValue}
+                        onChange={e =>
+                          updateMysteryPrize(p.id, {
+                            pointsValue: e.target.value.replace(/[^0-9]/g, ''),
+                          })
+                        }
+                        placeholder={STRINGS.pointsLabel}
+                        inputMode="numeric"
+                        className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                      />
+                    ) : (
+                      <input
+                        value={p.dollars}
+                        onChange={e =>
+                          updateMysteryPrize(p.id, {
+                            dollars: e.target.value.replace(/[^0-9.]/g, ''),
+                          })
+                        }
+                        placeholder={STRINGS.dollarLabel}
+                        inputMode="decimal"
+                        className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                      />
+                    )}
+                  </div>
+                </div>
+              ))}
+              {mysteryPrizes.length < 12 && (
+                <button
+                  type="button"
+                  onClick={addMysteryPrize}
+                  className="rounded-lg border border-aro-hairline px-3 py-1.5 text-xs font-medium text-aro-ink-soft hover:bg-aro-sand/40"
+                >
+                  {STRINGS.addPrize} ({mysteryPrizes.length}/12)
+                </button>
+              )}
+              {mysteryPreviewPrizes.length > 0 && (
+                <p className="text-xs text-aro-terra font-medium">
+                  {STRINGS.expectedCostPrefix} ${(expectedCents / 100).toFixed(2)}
+                  {expectedPoints > 0 ? ` + ${expectedPoints} points` : ''}
+                </p>
               )}
             </div>
           )}

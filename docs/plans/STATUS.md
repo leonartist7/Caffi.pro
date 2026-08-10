@@ -139,7 +139,21 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   choice-question count breakdown, flagged rather than rushed. **Not
   verified live** — same gap as every Lane A PR this session.
   `BUILD-LOG-PLAN-16.md`.
-- **PLAN-17, PLAN-18**: ❌ **not started** — mystery rewards, web push.
+- **PLAN-17 (Mystery reward gamification)**: 🟡 **built, PR open**. The
+  client never draws — one real `Math.random()` call, server-side, at
+  issue time, feeding a pure cumulative-weight selector
+  (`lib/loyalty/mystery.ts`), verified over 100,000 simulated draws
+  within 0.1pp of theoretical share. Prize decided and persisted
+  (`member_offers.prize_label`) before any reveal UI exists; the pass
+  page's own data-fetching code is the actual disclosure boundary — an
+  unrevealed mystery offer's `offer_id` is the only thing that reaches
+  the client, never its prize. Recurring on every Nth visit (owner-
+  configured threshold), reusing PLAN-13's `period_key` mechanism.
+  Reveal animation respects `prefers-reduced-motion`; owner config screen
+  shows expected cost per reveal live as prizes are edited. **Not
+  verified live** — same gap as every Lane A PR this session; the reveal
+  animation was never seen render. `BUILD-LOG-PLAN-17.md`.
+- **PLAN-18**: ❌ **not started** — web push channel.
 
 ## Lane B — Commerce & kitchen ops
 
