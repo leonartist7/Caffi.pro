@@ -149,6 +149,17 @@ const STRINGS = {
   rewardPoints: 'Points',
   rewardDollars: 'Dollars',
   expectedCostPrefix: 'Expected cost per reveal:',
+  pushTitleLabel: 'Push notification',
+  pushTitlePlaceholder: 'Title',
+  pushMessagePlaceholder: 'Message',
+  pushPreviewButton: 'Preview',
+  pushSendButton: 'Send',
+  pushSending: 'Sending…',
+  pushFailed: "Couldn't send.",
+  pushResultText: (sent: number, failed: number) =>
+    `Sent to ${sent} subscriber${sent === 1 ? '' : 's'}${failed > 0 ? `, ${failed} failed` : ''}.`,
+  pushStubbedHint:
+    'Set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, and VAPID_SUBJECT to enable push sends.',
 } as const
 
 export function LoyaltyClient({ venueId }: { venueId: string }) {
@@ -172,6 +183,18 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   const [resultsLoading, setResultsLoading] = useState(false)
 
   const [runningDaily, setRunningDaily] = useState(false)
+
+  const [pushTitle, setPushTitle] = useState('')
+  const [pushMessage, setPushMessage] = useState('')
+  const [pushPreview, setPushPreview] = useState<{
+    recipientCount: number
+    requiresConfirmation: boolean
+  } | null>(null)
+  const [pushConfirmText, setPushConfirmText] = useState('')
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushResult, setPushResult] = useState<{ sentCount: number; failedCount: number } | null>(
+    null
+  )
 
   const [batchFor, setBatchFor] = useState<Program | null>(null)
   const [cohortStatus, setCohortStatus] = useState<'regular' | 'fading'>('regular')
@@ -410,6 +433,66 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
     }
   }
 
+  async function previewPush() {
+    if (!pushTitle.trim() || !pushMessage.trim() || pushBusy) return
+    setPushBusy(true)
+    setPushPreview(null)
+    try {
+      const res = await fetch('/api/loyalty/push-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          title: pushTitle.trim(),
+          message: pushMessage.trim(),
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'preview failed')
+      setPushPreview({
+        recipientCount: body.recipientCount,
+        requiresConfirmation: body.requiresConfirmation,
+      })
+    } catch (error) {
+      console.error('[loyalty] push preview failed:', error)
+      toast.error(error instanceof Error ? error.message : STRINGS.pushFailed)
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
+  async function sendPush() {
+    if (!pushPreview || pushBusy) return
+    if (
+      pushPreview.requiresConfirmation &&
+      pushConfirmText.trim() !== String(pushPreview.recipientCount)
+    ) {
+      return
+    }
+    setPushBusy(true)
+    try {
+      const res = await fetch('/api/loyalty/push-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          title: pushTitle.trim(),
+          message: pushMessage.trim(),
+          confirm: true,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'send failed')
+      setPushResult({ sentCount: body.sentCount, failedCount: body.failedCount })
+      toast.success(STRINGS.pushResultText(body.sentCount, body.failedCount))
+    } catch (error) {
+      console.error('[loyalty] push send failed:', error)
+      toast.error(error instanceof Error ? error.message : STRINGS.pushFailed)
+    } finally {
+      setPushBusy(false)
+    }
+  }
+
   const hasActiveDateProgram = programs.some(
     p => p.status === 'active' && (p.type === 'birthday' || p.type === 'anniversary')
   )
@@ -581,6 +664,104 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
           </button>
         </div>
       )}
+
+      <div className="rounded-xl bg-white border border-aro-hairline p-4 mb-4 space-y-2">
+        <p className="text-sm font-semibold text-aro-ink">{STRINGS.pushTitleLabel}</p>
+        {pushResult ? (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-aro-sage font-medium">
+              {STRINGS.pushResultText(pushResult.sentCount, pushResult.failedCount)}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setPushResult(null)
+                setPushPreview(null)
+                setPushTitle('')
+                setPushMessage('')
+                setPushConfirmText('')
+              }}
+              className="text-xs text-aro-muted underline"
+            >
+              {STRINGS.close}
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              value={pushTitle}
+              onChange={e => {
+                setPushTitle(e.target.value)
+                setPushPreview(null)
+              }}
+              placeholder={STRINGS.pushTitlePlaceholder}
+              className="w-full rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+            />
+            <textarea
+              value={pushMessage}
+              onChange={e => {
+                setPushMessage(e.target.value)
+                setPushPreview(null)
+              }}
+              placeholder={STRINGS.pushMessagePlaceholder}
+              rows={2}
+              className="w-full rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+            />
+            {!pushPreview ? (
+              <button
+                type="button"
+                onClick={previewPush}
+                disabled={pushBusy || !pushTitle.trim() || !pushMessage.trim()}
+                className="rounded-lg border border-aro-hairline px-3 py-2 text-xs font-medium text-aro-ink-soft disabled:opacity-60"
+              >
+                {STRINGS.pushPreviewButton}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-sm text-aro-ink">
+                  {pushPreview.recipientCount} subscriber
+                  {pushPreview.recipientCount === 1 ? '' : 's'} will receive this.
+                </p>
+                {pushPreview.requiresConfirmation && (
+                  <div>
+                    <label className="block text-xs text-aro-muted mb-1">
+                      {STRINGS.confirmPrompt(pushPreview.recipientCount)}
+                    </label>
+                    <input
+                      value={pushConfirmText}
+                      onChange={e => setPushConfirmText(e.target.value)}
+                      placeholder={STRINGS.confirmPlaceholder}
+                      className="rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                    />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={sendPush}
+                    disabled={
+                      pushBusy ||
+                      pushPreview.recipientCount === 0 ||
+                      (pushPreview.requiresConfirmation &&
+                        pushConfirmText.trim() !== String(pushPreview.recipientCount))
+                    }
+                    className="rounded-lg bg-aro-terra px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                  >
+                    {pushBusy ? STRINGS.pushSending : STRINGS.pushSendButton}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPushPreview(null)}
+                    className="rounded-lg border border-aro-hairline px-4 py-2 text-sm font-medium text-aro-ink-soft"
+                  >
+                    {STRINGS.cancel}
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {showForm && (
         <div className="rounded-xl bg-white border border-aro-hairline p-4 mb-4 space-y-3">
