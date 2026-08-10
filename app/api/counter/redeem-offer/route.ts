@@ -52,6 +52,11 @@ export async function POST(request: NextRequest) {
       })
       return NextResponse.json({ error: 'offer_expired' }, { status: 409 })
     }
+    if (error.code === 'P0005') {
+      // Not an error state to log as "expired" — the offer is fine, just
+      // early. PLAN-13's bounce-back window is the whole mechanism.
+      return NextResponse.json({ error: 'offer_not_yet_valid' }, { status: 409 })
+    }
     console.error('[counter/redeem-offer] rpc failed:', error.message)
     return NextResponse.json({ error: 'Redemption failed' }, { status: 500 })
   }

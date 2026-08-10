@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Ticket, Search, Check } from 'lucide-react'
+import { Plus, Ticket, Search, Check, Users } from 'lucide-react'
 
 interface ProgramConfig {
   default_points_value?: number
   default_value_cents?: number
+  delay_days?: number
+  window_days?: number
 }
 
 interface Program {
@@ -77,6 +79,23 @@ const STRINGS = {
   issuing: 'Issuing…',
   issueFailed: 'Failed to issue offer.',
   codeIssuedPrefix: 'Code issued for',
+  delayDaysLabel: 'Days until valid',
+  windowDaysLabel: 'Days the window stays open',
+  bounceBackHint: '"$5 back when you return between day 3 and day 14" = 3 and 11.',
+  batchIssue: 'Issue to cohort',
+  cohortLabel: 'Send to',
+  cohortRegular: 'Regulars',
+  cohortFading: 'Fading regulars',
+  previewCount: 'Preview',
+  previewing: 'Checking…',
+  confirmPrompt: (count: number) => `Type ${count} to confirm sending to ${count} members`,
+  confirmPlaceholder: 'Type the number to confirm',
+  send: 'Send',
+  sending: 'Sending…',
+  batchFailed: 'Failed to issue the batch.',
+  batchSuccess: (count: number) => `Issued ${count} offer${count === 1 ? '' : 's'}.`,
+  skippedNote: (count: number) =>
+    count > 0 ? ` (${count} already hold an unredeemed offer from this program, skipped)` : '',
 } as const
 
 export function LoyaltyClient({ venueId }: { venueId: string }) {
@@ -89,6 +108,22 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   const [type, setType] = useState<string>(PROGRAM_TYPES[0].value)
   const [defaultPoints, setDefaultPoints] = useState('')
   const [defaultDollars, setDefaultDollars] = useState('')
+  const [delayDays, setDelayDays] = useState('')
+  const [windowDays, setWindowDays] = useState('')
+
+  const [batchFor, setBatchFor] = useState<Program | null>(null)
+  const [cohortStatus, setCohortStatus] = useState<'regular' | 'fading'>('regular')
+  const [batchPreview, setBatchPreview] = useState<{
+    recipientCount: number
+    skippedCount: number
+    requiresConfirmation: boolean
+  } | null>(null)
+  const [confirmText, setConfirmText] = useState('')
+  const [batchBusy, setBatchBusy] = useState(false)
+  const [batchResult, setBatchResult] = useState<{
+    issuedCount: number
+    skippedCount: number
+  } | null>(null)
 
   const [issuingFor, setIssuingFor] = useState<Program | null>(null)
   const [memberQuery, setMemberQuery] = useState('')
@@ -149,6 +184,10 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
       const config: ProgramConfig = {}
       if (defaultPoints) config.default_points_value = Number(defaultPoints)
       if (defaultDollars) config.default_value_cents = Math.round(Number(defaultDollars) * 100)
+      if (type === 'bounce_back') {
+        if (delayDays) config.delay_days = Number(delayDays)
+        if (windowDays) config.window_days = Number(windowDays)
+      }
 
       const res = await fetch('/api/loyalty/programs', {
         method: 'POST',
@@ -162,6 +201,8 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
       setName('')
       setDefaultPoints('')
       setDefaultDollars('')
+      setDelayDays('')
+      setWindowDays('')
       setShowForm(false)
       await fetchPrograms()
       toast.success('Program created.')
@@ -240,6 +281,75 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
     }
   }
 
+  function openBatchPanel(program: Program) {
+    setBatchFor(program)
+    setCohortStatus('regular')
+    setBatchPreview(null)
+    setConfirmText('')
+    setBatchResult(null)
+  }
+
+  async function previewBatch() {
+    if (!batchFor || batchBusy) return
+    setBatchBusy(true)
+    setBatchPreview(null)
+    try {
+      const res = await fetch('/api/loyalty/appreciation-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          program_id: batchFor.program_id,
+          status: cohortStatus,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'preview failed')
+      setBatchPreview({
+        recipientCount: body.recipientCount,
+        skippedCount: body.skippedCount,
+        requiresConfirmation: body.requiresConfirmation,
+      })
+    } catch (error) {
+      console.error('[loyalty] batch preview failed:', error)
+      toast.error(STRINGS.batchFailed)
+    } finally {
+      setBatchBusy(false)
+    }
+  }
+
+  async function submitBatch() {
+    if (!batchFor || !batchPreview || batchBusy) return
+    if (
+      batchPreview.requiresConfirmation &&
+      confirmText.trim() !== String(batchPreview.recipientCount)
+    ) {
+      return
+    }
+    setBatchBusy(true)
+    try {
+      const res = await fetch('/api/loyalty/appreciation-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_id: venueId,
+          program_id: batchFor.program_id,
+          status: cohortStatus,
+          confirm: true,
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'batch failed')
+      setBatchResult({ issuedCount: body.issuedCount, skippedCount: body.skippedCount })
+      toast.success(STRINGS.batchSuccess(body.issuedCount))
+    } catch (error) {
+      console.error('[loyalty] batch issue failed:', error)
+      toast.error(error instanceof Error ? error.message : STRINGS.batchFailed)
+    } finally {
+      setBatchBusy(false)
+    }
+  }
+
   return (
     <div className="p-6 md:p-8 max-w-2xl">
       <div className="flex items-center justify-between mb-1">
@@ -293,6 +403,27 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
             />
           </div>
           {defaultDollars && <p className="text-xs text-aro-muted">{STRINGS.dollarWarning}</p>}
+          {type === 'bounce_back' && (
+            <div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  value={delayDays}
+                  onChange={e => setDelayDays(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder={STRINGS.delayDaysLabel}
+                  inputMode="numeric"
+                  className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                />
+                <input
+                  value={windowDays}
+                  onChange={e => setWindowDays(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder={STRINGS.windowDaysLabel}
+                  inputMode="numeric"
+                  className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                />
+              </div>
+              <p className="text-xs text-aro-muted mt-1">{STRINGS.bounceBackHint}</p>
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
@@ -378,8 +509,112 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
                       <Ticket className="h-4 w-4" aria-hidden="true" />
                     </button>
                   )}
+                  {program.status === 'active' && program.type === 'appreciation' && (
+                    <button
+                      type="button"
+                      onClick={() => openBatchPanel(program)}
+                      aria-label={`${STRINGS.batchIssue}: ${program.name}`}
+                      className="rounded-lg bg-aro-sand/60 p-2 text-aro-terra hover:bg-aro-sand"
+                    >
+                      <Users className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {batchFor?.program_id === program.program_id && (
+                <div className="border-t border-aro-hairline px-4 py-3 space-y-3">
+                  {batchResult ? (
+                    <div className="rounded-lg bg-aro-sage/20 border border-aro-sage/40 px-3 py-3 text-sm text-aro-ink flex items-center gap-2">
+                      <Check className="h-4 w-4 text-aro-sage shrink-0" aria-hidden="true" />
+                      <span>
+                        {STRINGS.batchSuccess(batchResult.issuedCount)}
+                        {STRINGS.skippedNote(batchResult.skippedCount)}
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                        <span className="text-xs text-aro-muted">{STRINGS.cohortLabel}</span>
+                        <select
+                          value={cohortStatus}
+                          onChange={e => {
+                            setCohortStatus(e.target.value as 'regular' | 'fading')
+                            setBatchPreview(null)
+                            setConfirmText('')
+                          }}
+                          className="rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                        >
+                          <option value="regular">{STRINGS.cohortRegular}</option>
+                          <option value="fading">{STRINGS.cohortFading}</option>
+                        </select>
+                        <button
+                          type="button"
+                          onClick={previewBatch}
+                          disabled={batchBusy}
+                          className="rounded-lg border border-aro-hairline px-3 py-2 text-xs font-medium text-aro-ink-soft disabled:opacity-60"
+                        >
+                          {batchBusy ? STRINGS.previewing : STRINGS.previewCount}
+                        </button>
+                      </div>
+
+                      {batchPreview && (
+                        <div className="space-y-2">
+                          <p className="text-sm text-aro-ink">
+                            {batchPreview.recipientCount} member
+                            {batchPreview.recipientCount === 1 ? '' : 's'} will receive an offer.
+                            {STRINGS.skippedNote(batchPreview.skippedCount)}
+                          </p>
+                          {batchPreview.requiresConfirmation && (
+                            <div>
+                              <label className="block text-xs text-aro-muted mb-1">
+                                {STRINGS.confirmPrompt(batchPreview.recipientCount)}
+                              </label>
+                              <input
+                                value={confirmText}
+                                onChange={e => setConfirmText(e.target.value)}
+                                placeholder={STRINGS.confirmPlaceholder}
+                                className="rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                              />
+                            </div>
+                          )}
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={submitBatch}
+                              disabled={
+                                batchBusy ||
+                                batchPreview.recipientCount === 0 ||
+                                (batchPreview.requiresConfirmation &&
+                                  confirmText.trim() !== String(batchPreview.recipientCount))
+                              }
+                              className="rounded-lg bg-aro-terra px-4 py-2 text-sm font-medium text-white disabled:opacity-60"
+                            >
+                              {batchBusy ? STRINGS.sending : STRINGS.send}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setBatchFor(null)}
+                              className="rounded-lg border border-aro-hairline px-4 py-2 text-sm font-medium text-aro-ink-soft"
+                            >
+                              {STRINGS.cancel}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  {batchResult && (
+                    <button
+                      type="button"
+                      onClick={() => setBatchFor(null)}
+                      className="rounded-lg border border-aro-hairline px-4 py-2 text-sm font-medium text-aro-ink-soft"
+                    >
+                      {STRINGS.close}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {issuingFor?.program_id === program.program_id && (
                 <div className="border-t border-aro-hairline px-4 py-3 space-y-3">

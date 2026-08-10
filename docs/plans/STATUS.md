@@ -56,17 +56,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
 - **PLAN-11 (Members directory rebuild)**: ✅ **merged**. Real
   server-side pagination + search, replacing the silent 100-row cap that
   was quietly losing a venue's own customer graph past that count.
-- **PLAN-12 through PLAN-18**: ❌ **not started** — no branches, no PRs,
-  no spec docs existed anywhere in this repo as of this session
-  (confirmed via `git ls-remote`, a full PR-history search, and a
-  file/content grep across `app/`, `lib/`, `components/` on `main` for
-  every Lane A table PLAN-10 already created — `push_subscriptions`,
-  `member_offers`, `survey_responses` all have zero application code
-  reading or writing them). This is offer engine core, bounce-back +
-  appreciation, birthday + anniversary, referrals, surveys, mystery
-  rewards, and the web push channel. **PLAN-12 (this PR)** is the first
-  of the seven — see below.
-- **PLAN-12 (Offer engine core)**: 🟡 **built, PR open**. The library's
+- **PLAN-12 (Offer engine core)**: ✅ **merged** (PR #76). The library's
   foundation every later program type configures rather than
   reimplements. `redeem_member_offer()` RPC mirrors the existing
   `redeem_reward()` exactly (row-lock + typed `ERRCODE`s +
@@ -76,18 +66,37 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   (`/api/counter/redeem-offer`, new "Have a code?" UI phase), member
   pass shows active offers. **Deliberate scope cut, stated with teeth
   same as PLAN-12's own master-plan framing**: only `points_value`
-  credits anything in this PR (via `points_ledger`, the same mechanism
-  the existing rewards system uses) — `value_cents`-type programs are
+  credits anything in this PR — `value_cents`-type programs are
   schema-supported and redemption marks them used, but nothing wires a
   dollar value into checkout as an automatic discount, since no
   store-credit/discount mechanism exists anywhere in this codebase yet.
-  The owner UI says so explicitly wherever a dollar value is entered.
-  **Not verified live** — the Supabase MCP connector for `aro-platform`
-  disconnected mid-session; every design claim was checked by reading
-  the actual migration SQL and the existing `redeem_reward()` function
-  directly, not assumed, but the three-concurrent-redemption race, the
-  cross-venue rejection, and the three new `scripts/verify-live.mjs`
-  checks are all unrun against a real database. `BUILD-LOG-PLAN-12.md`.
+  **Real money bug found and fixed in a pre-merge architect-tier audit**
+  (the mandatory review PLAN-12's own idempotency work requires):
+  `redeem_member_offer()`'s expiry branch only guarded on
+  `v_status = 'issued'`, so a second call against an already-`'expired'`
+  offer fell through every guard and re-ran the `points_ledger` INSERT
+  unconditionally — crediting points twice on a replay. Fixed two ways:
+  any non-`'issued'` status now raises directly instead of falling
+  through, and `points_ledger` gained an `offer_id` column + a partial
+  unique index (mirroring `uq_points_ledger_order_award`) as a structural
+  backstop, matching the PLAN-24/36 bar. **Not verified live** — no
+  Supabase service-role key / MCP connection in this container; every
+  claim is argued from the SQL, not fired against a real database.
+  `BUILD-LOG-PLAN-12.md`.
+- **PLAN-13 (Bounce-back + appreciation)**: 🟡 **built, PR open**. Adds
+  `member_offers.valid_from`/`period_key` (the shared "not redeemable yet"
+  boundary and "don't double-issue per period" guarantee every later
+  automatic-issuance item reuses) and a new `P0005` boundary on
+  `redeem_member_offer()`. Bounce-back issues from the Stripe webhook at
+  the same `applied: true` boundary PLAN-20/24 already proved live for
+  points/depletion; appreciation issues from an owner-only, two-phase
+  batch route (preview → server-enforced typed confirmation above 50
+  recipients → issue), excluding members who already hold an unredeemed
+  offer from the program. **Not verified live** — same gap as PLAN-12; no
+  webhook fire, no batch-panel click-through, no database access in this
+  session. `BUILD-LOG-PLAN-13.md`.
+- **PLAN-14 through PLAN-18**: ❌ **not started** — birthday + anniversary,
+  referrals, surveys, mystery rewards, web push.
 
 ## Lane B — Commerce & kitchen ops
 

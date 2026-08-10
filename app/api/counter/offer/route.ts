@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
-import { isOfferExpired } from '@/lib/loyalty/offers'
+import { isOfferExpired, isOfferNotYetValid } from '@/lib/loyalty/offers'
 
 /**
  * GET /api/counter/offer?code=XXXX — read-only lookup, used by the
@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
   const admin = getSupabaseAdmin()
   const { data: offer } = await admin
     .from('member_offers')
-    .select('offer_id, member_id, program_id, value_cents, points_value, status, expires_at')
+    .select(
+      'offer_id, member_id, program_id, value_cents, points_value, status, expires_at, valid_from'
+    )
     .eq('venue_id', session.venueId)
     .eq('code', code)
     .maybeSingle()
@@ -38,6 +40,7 @@ export async function GET(request: NextRequest) {
   ])
 
   const expired = isOfferExpired(offer)
+  const notYetValid = isOfferNotYetValid(offer)
 
   return NextResponse.json({
     offer_id: offer.offer_id,
@@ -49,5 +52,7 @@ export async function GET(request: NextRequest) {
     already_redeemed: offer.status === 'redeemed',
     expired,
     void: offer.status === 'void',
+    not_yet_valid: notYetValid,
+    valid_from: offer.valid_from,
   })
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { qrSvg } from '@/lib/qr'
-import { isOfferExpired } from '@/lib/loyalty/offers'
+import { isOfferExpired, isOfferNotYetValid } from '@/lib/loyalty/offers'
 
 /**
  * Web pass (Plan 2) — PUBLIC by bearer serial (unguessable uuid).
@@ -19,6 +19,8 @@ interface PassOffer {
   pointsValue: number | null
   valueCents: number | null
   expiresAt: string | null
+  validFrom: string | null
+  notYetValid: boolean
 }
 
 interface PassData {
@@ -59,7 +61,9 @@ async function getPass(serial: string): Promise<PassData | null> {
         .order('points_required', { ascending: true }),
       admin
         .from('member_offers')
-        .select('code, points_value, value_cents, status, expires_at, loyalty_programs(name)')
+        .select(
+          'code, points_value, value_cents, status, expires_at, valid_from, loyalty_programs(name)'
+        )
         .eq('member_id', member.member_id)
         .eq('status', 'issued')
         .order('issued_at', { ascending: false }),
@@ -82,6 +86,8 @@ async function getPass(serial: string): Promise<PassData | null> {
         pointsValue: o.points_value,
         valueCents: o.value_cents,
         expiresAt: o.expires_at,
+        validFrom: o.valid_from,
+        notYetValid: isOfferNotYetValid(o),
       }
     })
 
@@ -172,7 +178,9 @@ export default async function PassPage({ params }: { params: { serial: string } 
                   <p className="text-sm font-semibold text-aro-ink">
                     {offer.programName ?? 'Offer'}
                   </p>
-                  <p className="font-mono text-lg font-bold tracking-widest text-aro-terra">
+                  <p
+                    className={`font-mono text-lg font-bold tracking-widest ${offer.notYetValid ? 'text-aro-muted' : 'text-aro-terra'}`}
+                  >
                     {offer.code}
                   </p>
                 </div>
@@ -183,6 +191,16 @@ export default async function PassPage({ params }: { params: { serial: string } 
                   {offer.expiresAt &&
                     ` · expires ${new Date(offer.expiresAt).toLocaleDateString()}`}
                 </p>
+                {offer.notYetValid && offer.validFrom && (
+                  <p className="text-xs text-aro-terra mt-1 font-medium">
+                    Good starting{' '}
+                    {new Date(offer.validFrom).toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                )}
               </div>
             ))}
             <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-aro-muted text-center pt-1">
