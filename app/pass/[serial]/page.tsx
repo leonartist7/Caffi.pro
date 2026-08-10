@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { qrSvg } from '@/lib/qr'
 import { isOfferExpired, isOfferNotYetValid } from '@/lib/loyalty/offers'
+import { ShareReferral } from './share-referral'
 
 /**
  * Web pass (Plan 2) — PUBLIC by bearer serial (unguessable uuid).
@@ -26,6 +28,7 @@ interface PassOffer {
 interface PassData {
   firstName: string | null
   venueName: string
+  venueSlug: string | null
   balance: number
   nextReward: { name: string; points_required: number } | null
   offers: PassOffer[]
@@ -63,7 +66,7 @@ async function getPass(serial: string): Promise<PassData | null> {
 
   const [{ data: venue }, { data: bal }, { data: rewards }, { data: offerRows }] =
     await Promise.all([
-      admin.from('venues').select('business_name').eq('venue_id', member.tenant_id).single(),
+      admin.from('venues').select('business_name, slug').eq('venue_id', member.tenant_id).single(),
       admin
         .from('member_balances')
         .select('balance')
@@ -110,6 +113,7 @@ async function getPass(serial: string): Promise<PassData | null> {
   return {
     firstName: member.full_name?.split(' ')[0] ?? null,
     venueName: venue?.business_name ?? 'Your café',
+    venueSlug: venue?.slug ?? null,
     balance,
     nextReward,
     offers,
@@ -145,6 +149,12 @@ export default async function PassPage({
     process.env.APPLE_PASS_CERT_P12_BASE64 || process.env.GOOGLE_WALLET_ISSUER_ID
   )
   const svg = qrSvg(pass.serial, '#1F1612')
+
+  // PLAN-15 referral share link — same NEXT_PUBLIC_SITE_URL-first,
+  // request-origin-fallback convention /api/staff and /api/invites use.
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL || `https://${headers().get('host') ?? 'localhost:3000'}`
+  const referralUrl = pass.venueSlug ? `${origin}/join/${pass.venueSlug}?ref=${pass.serial}` : null
 
   return (
     <main className="min-h-screen bg-aro-cream flex items-center justify-center p-6">
@@ -290,6 +300,8 @@ export default async function PassPage({
             Birthday saved — see you then.
           </p>
         )}
+
+        {referralUrl && <ShareReferral url={referralUrl} venueName={pass.venueName} />}
 
         <div className="mt-6 pt-5 border-t border-aro-hairline">
           {walletReady ? (

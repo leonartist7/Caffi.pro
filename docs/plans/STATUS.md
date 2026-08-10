@@ -110,8 +110,24 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   verified live** — same gap as PLAN-12/13; the capture form was never
   submitted, the cron route's branches were read not curled.
   `BUILD-LOG-PLAN-14.md`.
-- **PLAN-15 through PLAN-18**: ❌ **not started** — referrals, surveys,
-  mystery rewards, web push.
+- **PLAN-15 (Referral engine)**: 🟡 **built, PR open**. Member loop
+  end-to-end: share block on `/pass` (Web Share + clipboard fallback),
+  `ref` capture on join (silently ignored if unknown/cross-venue, never
+  fails the join), credit on the referred member's first visit — never
+  their join — via a **dedicated architect-tier review pass** (mandatory
+  per v2 §7): once-only proven at the DB level two ways (a new
+  `points_ledger.referred_member_id` partial unique index for the points
+  path, PLAN-13's existing `member_offers.period_key` for the value path),
+  one dead-code redundancy removed, one low-severity edge case flagged
+  (two simultaneous active referral programs on a venue silently
+  withholds the credit rather than double-crediting — fails toward "no
+  reward," the correct direction, but not fixed here). **Owner loop is
+  explicitly out of scope**: it needs a one-line change in the AURA repo,
+  not accessible from this session, and its prerequisite (R1) is itself
+  still not done. **Not verified live** — same gap as every Lane A PR
+  this session. `BUILD-LOG-PLAN-15.md`.
+- **PLAN-16 through PLAN-18**: ❌ **not started** — surveys, mystery
+  rewards, web push.
 
 ## Lane B — Commerce & kitchen ops
 

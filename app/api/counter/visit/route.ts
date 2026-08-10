@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
 import { emitEvent } from '@/lib/events'
+import { creditReferralOnFirstVisit } from '@/lib/loyalty/referral-credit'
 
 /**
  * POST /api/counter/visit — record a visit. Body: { member_id, visit_uuid, ts? }
@@ -84,6 +85,15 @@ export async function POST(request: NextRequest) {
     .from('visits')
     .select('visit_id', { count: 'exact', head: true })
     .eq('member_id', body.member_id)
+
+  // PLAN-15 — "first visit" is defined here and only here: a genuinely
+  // new row (not a replay) that is also this member's first ever visit.
+  // Fire-and-forget: a referral-credit failure must never fail the visit
+  // itself, which is why creditReferralOnFirstVisit isn't awaited into
+  // the response.
+  if (wasNew && count === 1) {
+    void creditReferralOnFirstVisit(admin, session.venueId, body.member_id, session.membershipId)
+  }
 
   return NextResponse.json({ ok: true, visit_count: count ?? 0 })
 }

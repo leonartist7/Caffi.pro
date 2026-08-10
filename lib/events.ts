@@ -74,6 +74,8 @@ export type AroEventType =
   | 'offer.redeemed'
   | 'offer.expired'
   | 'member.birthday_set'
+  | 'referral.recorded'
+  | 'referral.rewarded'
 
 export interface AroEvent {
   type: AroEventType
@@ -154,6 +156,8 @@ export const EVENT_LABELS: Record<string, string> = {
   'offer.redeemed': 'Offer redeemed',
   'offer.expired': 'Offer expired',
   'member.birthday_set': 'Birthday set',
+  'referral.recorded': 'Referral recorded',
+  'referral.rewarded': 'Referral rewarded',
 }
 
 export function eventLabel(type: string): string {
