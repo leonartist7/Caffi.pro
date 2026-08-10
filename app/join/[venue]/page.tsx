@@ -44,7 +44,13 @@ export async function generateMetadata({
   }
 }
 
-export default async function JoinPage({ params }: { params: { venue: string } }) {
+export default async function JoinPage({
+  params,
+  searchParams,
+}: {
+  params: { venue: string }
+  searchParams: { ref?: string }
+}) {
   const venue = await getVenue(params.venue)
 
   if (!venue) {
@@ -76,7 +82,7 @@ export default async function JoinPage({ params }: { params: { venue: string } }
         <p className="font-serif italic text-aro-ink-soft mb-6">
           your usual, remembered — rewards every visit
         </p>
-        <JoinForm venueSlug={venue.slug} />
+        <JoinForm venueSlug={venue.slug} referrerSerial={searchParams.ref} />
       </div>
     </main>
   )

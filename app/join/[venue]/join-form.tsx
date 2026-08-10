@@ -12,7 +12,13 @@ import { CONSENT_TEXT } from '@/lib/consent'
  * with zero JS (the route 303-redirects form posts to the pass page).
  * When hydrated, onSubmit upgrades to fetch for inline error handling.
  */
-export function JoinForm({ venueSlug }: { venueSlug: string }) {
+export function JoinForm({
+  venueSlug,
+  referrerSerial,
+}: {
+  venueSlug: string
+  referrerSerial?: string
+}) {
   const router = useRouter()
   const search = useSearchParams()
   const [error, setError] = useState<string | null>(
@@ -35,6 +41,7 @@ export function JoinForm({ venueSlug }: { venueSlug: string }) {
           contact: form.get('contact')?.toString() ?? '',
           name: form.get('name')?.toString() || undefined,
           consent: form.get('consent') === 'on',
+          ref: form.get('ref')?.toString() || undefined,
         }),
       })
       const data = await res.json()
@@ -53,6 +60,7 @@ export function JoinForm({ venueSlug }: { venueSlug: string }) {
   return (
     <form method="POST" action="/api/join" onSubmit={onSubmit} className="space-y-4">
       <input type="hidden" name="venue_slug" value={venueSlug} />
+      {referrerSerial && <input type="hidden" name="ref" value={referrerSerial} />}
 
       <div>
         <label htmlFor="contact" className="sr-only">

@@ -21,6 +21,15 @@ import { CONSENT_TEXT } from '@/lib/consent'
  *   box unchecked NEVER nulls out previously granted consent.
  * - Rate limit: >20 join attempts per IP hash per 10 min → 429
  *   (counted via the events table — serverless memory is useless).
+ * - PLAN-15: optional `ref` (a referrer's pass_serial). Resolved scoped to
+ *   THIS venue — a cross-venue or unknown ref simply doesn't resolve and
+ *   is silently ignored, same as v2 §N5 requires: a bad ref must never
+ *   fail the join. Only recorded on a genuinely NEW member — an existing
+ *   member re-joining via a referral link keeps whatever
+ *   `referred_by_member_id` they already had (or lack). Self-referral is
+ *   structurally impossible here: `ref` is resolved to a member row
+ *   BEFORE the new member is created, so it can never equal the new
+ *   member's own (not-yet-existing) id.
  */
 
 const EMAIL_RE = /^\S+@\S+\.\S+$/
@@ -51,6 +60,7 @@ export async function POST(req: NextRequest) {
     contact?: string
     name?: string
     consent?: boolean
+    ref?: string
   }
 
   // Support both JSON (hydrated client) and form POST (no-JS fallback)
@@ -65,6 +75,7 @@ export async function POST(req: NextRequest) {
         contact: form.get('contact')?.toString(),
         name: form.get('name')?.toString() || undefined,
         consent: form.get('consent') === 'on' || form.get('consent') === 'true',
+        ref: form.get('ref')?.toString() || undefined,
       }
     }
   } catch {
@@ -112,6 +123,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Venue not found' }, { status: 404 })
   }
 
+  // PLAN-15 — resolve `ref` scoped to this venue; unresolved (unknown or
+  // cross-venue) just stays null, never blocks the join.
+  let referrerId: string | null = null
+  if (body.ref) {
+    const { data: referrer } = await admin
+      .from('members')
+      .select('member_id')
+      .eq('pass_serial', body.ref)
+      .eq('tenant_id', venue.venue_id)
+      .maybeSingle()
+    referrerId = referrer?.member_id ?? null
+  }
+
   // Idempotent upsert on (venue, normalized contact)
   const matchCol = contact.email ? 'email' : 'phone'
   const matchVal = contact.email ?? contact.phone!
@@ -146,6 +170,7 @@ export async function POST(req: NextRequest) {
       full_name: body.name?.trim() || null,
       [matchCol]: matchVal,
     }
+    if (referrerId) insert.referred_by_member_id = referrerId
     if (body.consent === true) {
       insert.consent_ts = new Date().toISOString()
       insert.consent_text = CONSENT_TEXT
@@ -194,6 +219,15 @@ export async function POST(req: NextRequest) {
     venueId: venue.venue_id,
     payload: { source: 'join_page', new_member: isNew, ip_hash: hash },
   })
+
+  if (isNew && referrerId) {
+    void emitEvent({
+      type: 'referral.recorded',
+      actor: `member:${memberId}`,
+      venueId: venue.venue_id,
+      payload: { referrer_member_id: referrerId, referred_member_id: memberId },
+    })
+  }
 
   if (isFormPost) {
     return NextResponse.redirect(new URL(`/pass/${serial}`, req.url), 303)
