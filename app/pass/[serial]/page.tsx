@@ -30,7 +30,23 @@ interface PassData {
   nextReward: { name: string; points_required: number } | null
   offers: PassOffer[]
   serial: string
+  hasBirthday: boolean
 }
+
+const MONTH_NAMES = [
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
+]
 
 async function getPass(serial: string): Promise<PassData | null> {
   // Serial must look like a uuid — anything else is not worth a query
@@ -40,7 +56,7 @@ async function getPass(serial: string): Promise<PassData | null> {
   const admin = getSupabaseAdmin()
   const { data: member } = await admin
     .from('members')
-    .select('member_id, tenant_id, full_name, pass_serial')
+    .select('member_id, tenant_id, full_name, pass_serial, birthday_month, birthday_day')
     .eq('pass_serial', serial)
     .maybeSingle()
   if (!member) return null
@@ -98,10 +114,17 @@ async function getPass(serial: string): Promise<PassData | null> {
     nextReward,
     offers,
     serial,
+    hasBirthday: member.birthday_month != null && member.birthday_day != null,
   }
 }
 
-export default async function PassPage({ params }: { params: { serial: string } }) {
+export default async function PassPage({
+  params,
+  searchParams,
+}: {
+  params: { serial: string }
+  searchParams: { birthday_set?: string; birthday_error?: string }
+}) {
   const pass = await getPass(params.serial)
 
   if (!pass) {
@@ -207,6 +230,65 @@ export default async function PassPage({ params }: { params: { serial: string } 
               show a code at the counter
             </p>
           </div>
+        )}
+
+        {!pass.hasBirthday && !searchParams.birthday_set && (
+          <div className="mt-6 pt-5 border-t border-aro-hairline text-left">
+            <p className="text-sm font-semibold text-aro-ink mb-1">Add your birthday?</p>
+            <p className="text-xs text-aro-muted mb-3">
+              Just the month and day — never asked twice, never shared.
+            </p>
+            {searchParams.birthday_error && (
+              <p className="text-xs text-aro-rose mb-2">{searchParams.birthday_error}</p>
+            )}
+            <form
+              method="post"
+              action={`/api/pass/${pass.serial}/birthday`}
+              className="flex flex-col sm:flex-row gap-2"
+            >
+              <select
+                name="month"
+                required
+                defaultValue=""
+                className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+              >
+                <option value="" disabled>
+                  Month
+                </option>
+                {MONTH_NAMES.map((name, i) => (
+                  <option key={name} value={i + 1}>
+                    {name}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="day"
+                required
+                defaultValue=""
+                className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+              >
+                <option value="" disabled>
+                  Day
+                </option>
+                {Array.from({ length: 31 }, (_, i) => i + 1).map(d => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-lg bg-aro-terra px-4 py-2 text-sm font-medium text-white shrink-0"
+              >
+                Save
+              </button>
+            </form>
+          </div>
+        )}
+        {pass.hasBirthday && searchParams.birthday_set && (
+          <p className="mt-6 pt-5 border-t border-aro-hairline text-sm text-aro-sage font-medium">
+            Birthday saved — see you then.
+          </p>
         )}
 
         <div className="mt-6 pt-5 border-t border-aro-hairline">

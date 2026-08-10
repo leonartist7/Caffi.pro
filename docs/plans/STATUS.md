@@ -95,8 +95,23 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   offer from the program. **Not verified live** — same gap as PLAN-12; no
   webhook fire, no batch-panel click-through, no database access in this
   session. `BUILD-LOG-PLAN-13.md`.
-- **PLAN-14 through PLAN-18**: ❌ **not started** — birthday + anniversary,
-  referrals, surveys, mystery rewards, web push.
+- **PLAN-14 (Birthday + anniversary)**: 🟡 **built, PR open**. One-shot
+  month/day capture on the pass (no client JS needed — plain form POST,
+  409 on a second write enforced in the `UPDATE`'s own `WHERE`, not just a
+  pre-read check), venue-local issuance via a new
+  `lib/loyalty/calendar.ts` (`occursOn` handles the Feb-29-in-a-non-leap-
+  year → Feb 28 fallback for both birthday and anniversary). **First
+  scheduler in this repo** — new `vercel.json` + `/api/cron/loyalty-daily`
+  (`CRON_SECRET`-gated, visible-stub 503 when unset — and it genuinely is
+  unset everywhere in this environment) — plus an owner "run now" button
+  hitting the identical underlying function, since the cron route itself
+  is unreachable until a human configures the secret. Reuses PLAN-13's
+  `period_key` dedup entirely — no new idempotency mechanism. **Not
+  verified live** — same gap as PLAN-12/13; the capture form was never
+  submitted, the cron route's branches were read not curled.
+  `BUILD-LOG-PLAN-14.md`.
+- **PLAN-15 through PLAN-18**: ❌ **not started** — referrals, surveys,
+  mystery rewards, web push.
 
 ## Lane B — Commerce & kitchen ops
 
