@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { qrSvg } from '@/lib/qr'
+import { isOfferExpired } from '@/lib/loyalty/offers'
 
 /**
  * Web pass (Plan 2) — PUBLIC by bearer serial (unguessable uuid).
@@ -12,11 +13,20 @@ export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = { title: 'Your pass' }
 
+interface PassOffer {
+  code: string
+  programName: string | null
+  pointsValue: number | null
+  valueCents: number | null
+  expiresAt: string | null
+}
+
 interface PassData {
   firstName: string | null
   venueName: string
   balance: number
   nextReward: { name: string; points_required: number } | null
+  offers: PassOffer[]
   serial: string
 }
 
@@ -33,26 +43,54 @@ async function getPass(serial: string): Promise<PassData | null> {
     .maybeSingle()
   if (!member) return null
 
-  const [{ data: venue }, { data: bal }, { data: rewards }] = await Promise.all([
-    admin.from('venues').select('business_name').eq('venue_id', member.tenant_id).single(),
-    admin.from('member_balances').select('balance').eq('member_id', member.member_id).maybeSingle(),
-    admin
-      .from('rewards')
-      .select('name, points_required')
-      .eq('tenant_id', member.tenant_id)
-      .eq('is_active', true)
-      .order('points_required', { ascending: true }),
-  ])
+  const [{ data: venue }, { data: bal }, { data: rewards }, { data: offerRows }] =
+    await Promise.all([
+      admin.from('venues').select('business_name').eq('venue_id', member.tenant_id).single(),
+      admin
+        .from('member_balances')
+        .select('balance')
+        .eq('member_id', member.member_id)
+        .maybeSingle(),
+      admin
+        .from('rewards')
+        .select('name, points_required')
+        .eq('tenant_id', member.tenant_id)
+        .eq('is_active', true)
+        .order('points_required', { ascending: true }),
+      admin
+        .from('member_offers')
+        .select('code, points_value, value_cents, status, expires_at, loyalty_programs(name)')
+        .eq('member_id', member.member_id)
+        .eq('status', 'issued')
+        .order('issued_at', { ascending: false }),
+    ])
 
   const balance = bal?.balance ?? 0
   const nextReward =
     rewards?.find(r => r.points_required > balance) ?? rewards?.[rewards.length - 1] ?? null
+
+  // PLAN-12 — only unexpired, unredeemed offers belong on the pass; expiry
+  // is checked lazily here rather than relying on a background sweep
+  // having already flipped status to 'expired'.
+  const offers: PassOffer[] = (offerRows ?? [])
+    .filter(o => !isOfferExpired(o))
+    .map(o => {
+      const program = o.loyalty_programs as unknown as { name: string | null } | null
+      return {
+        code: o.code,
+        programName: program?.name ?? null,
+        pointsValue: o.points_value,
+        valueCents: o.value_cents,
+        expiresAt: o.expires_at,
+      }
+    })
 
   return {
     firstName: member.full_name?.split(' ')[0] ?? null,
     venueName: venue?.business_name ?? 'Your café',
     balance,
     nextReward,
+    offers,
     serial,
   }
 }
@@ -118,6 +156,39 @@ export default async function PassPage({ params }: { params: { serial: string } 
               </>
             )}
           </p>
+        )}
+
+        {pass.offers.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-aro-hairline text-left space-y-2">
+            <p className="font-mono text-[11px] tracking-[0.14em] uppercase text-aro-muted mb-1 text-center">
+              your offers
+            </p>
+            {pass.offers.map(offer => (
+              <div
+                key={offer.code}
+                className="rounded-xl bg-aro-sand/60 border border-aro-hairline px-4 py-3"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-aro-ink">
+                    {offer.programName ?? 'Offer'}
+                  </p>
+                  <p className="font-mono text-lg font-bold tracking-widest text-aro-terra">
+                    {offer.code}
+                  </p>
+                </div>
+                <p className="text-xs text-aro-muted mt-0.5">
+                  {offer.pointsValue != null && `+${offer.pointsValue} points`}
+                  {offer.pointsValue != null && offer.valueCents != null && ' · '}
+                  {offer.valueCents != null && `$${(offer.valueCents / 100).toFixed(2)} value`}
+                  {offer.expiresAt &&
+                    ` · expires ${new Date(offer.expiresAt).toLocaleDateString()}`}
+                </p>
+              </div>
+            ))}
+            <p className="font-mono text-[10px] tracking-[0.14em] uppercase text-aro-muted text-center pt-1">
+              show a code at the counter
+            </p>
+          </div>
         )}
 
         <div className="mt-6 pt-5 border-t border-aro-hairline">

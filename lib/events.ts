@@ -66,6 +66,12 @@ export type AroEventType =
   | 'shift.ended'
   | 'shift.corrected'
   | 'tip_allocation.saved'
+  // --- Lane A ---
+  | 'program.created'
+  | 'program.status_changed'
+  | 'offer.issued'
+  | 'offer.redeemed'
+  | 'offer.expired'
 
 export interface AroEvent {
   type: AroEventType
@@ -138,6 +144,12 @@ export const EVENT_LABELS: Record<string, string> = {
   'shift.ended': 'Clocked out',
   'shift.corrected': 'Shift corrected',
   'tip_allocation.saved': 'Tip allocation saved',
+  // --- Lane A ---
+  'program.created': 'Loyalty program created',
+  'program.status_changed': 'Loyalty program status changed',
+  'offer.issued': 'Offer issued',
+  'offer.redeemed': 'Offer redeemed',
+  'offer.expired': 'Offer expired',
 }
 
 export function eventLabel(type: string): string {

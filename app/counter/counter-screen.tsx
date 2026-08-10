@@ -23,7 +23,17 @@ interface Reward {
   points_required: number
 }
 
-type Phase = 'search' | 'panel' | 'redeem-list' | 'success'
+interface OfferLookup {
+  member_first_name: string | null
+  program_name: string | null
+  value_cents: number | null
+  points_value: number | null
+  already_redeemed: boolean
+  expired: boolean
+  void: boolean
+}
+
+type Phase = 'search' | 'panel' | 'redeem-list' | 'code' | 'success'
 
 function formatClockTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
@@ -54,6 +64,11 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
   const [online, setOnline] = useState(true)
   const [storageWarning, setStorageWarning] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const [offerCode, setOfferCode] = useState('')
+  const [offerLookup, setOfferLookup] = useState<OfferLookup | null>(null)
+  const [offerCodeUsed, setOfferCodeUsed] = useState('')
+  const [offerNotFound, setOfferNotFound] = useState(false)
+  const [codeBusy, setCodeBusy] = useState(false)
 
   // Rewards: fetch once per session, small + rarely changes.
   useEffect(() => {
@@ -135,8 +150,63 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
     setQuery('')
     setResults([])
     setInsufficientMsg(null)
+    setOfferCode('')
+    setOfferLookup(null)
+    setOfferNotFound(false)
     setTimeout(() => searchInputRef.current?.focus(), 50)
   }, [])
+
+  async function lookupOffer() {
+    const code = offerCode.trim()
+    if (!code || codeBusy) return
+    setCodeBusy(true)
+    setOfferLookup(null)
+    setOfferNotFound(false)
+    try {
+      const res = await fetch(`/api/counter/offer?code=${encodeURIComponent(code)}`)
+      if (res.status === 401) return onSessionExpired()
+      if (res.status === 404) {
+        setOfferNotFound(true)
+        return
+      }
+      if (!res.ok) throw new Error('lookup failed')
+      const data: OfferLookup = await res.json()
+      setOfferCodeUsed(code)
+      setOfferLookup(data)
+    } catch {
+      setOfferNotFound(true)
+    } finally {
+      setCodeBusy(false)
+    }
+  }
+
+  async function redeemOffer() {
+    if (!offerLookup || codeBusy) return
+    setCodeBusy(true)
+    try {
+      const res = await fetch('/api/counter/redeem-offer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: offerCodeUsed }),
+      })
+      if (res.status === 401) return onSessionExpired()
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'redeem failed')
+      const who = offerLookup.member_first_name ?? 'this member'
+      setSuccessMsg(
+        data.already_redeemed
+          ? `That code was already redeemed for ${who}`
+          : `Offer redeemed for ${who}`
+      )
+      setPhase('success')
+      setTimeout(focusSearch, 1500)
+    } catch {
+      setOfferNotFound(true)
+      setOfferLookup(null)
+    } finally {
+      setCodeBusy(false)
+    }
+  }
 
   async function runSearch(q: string) {
     setQuery(q)
@@ -298,6 +368,15 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
           >
             Open order queue
           </button>
+          <button
+            type="button"
+            onClick={() => setPhase('code')}
+            disabled={!online}
+            className="mb-3 w-full rounded-2xl border border-aro-hairline bg-white py-3 font-display text-base font-bold text-aro-ink disabled:opacity-60"
+            title={!online ? 'Redeeming a code needs a connection' : undefined}
+          >
+            Have a code?
+          </button>
           <input
             ref={searchInputRef}
             autoFocus
@@ -392,6 +471,94 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
             className="mt-6 text-sm text-aro-muted underline"
           >
             back
+          </button>
+        </div>
+      )}
+
+      {phase === 'code' && (
+        <div className="flex-1 flex flex-col">
+          <h2 className="font-display text-2xl font-bold text-aro-ink mb-4">Redeem a code</h2>
+          <input
+            autoFocus
+            enterKeyHint="search"
+            value={offerCode}
+            onChange={e => {
+              setOfferCode(e.target.value.toUpperCase())
+              setOfferLookup(null)
+              setOfferNotFound(false)
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') void lookupOffer()
+            }}
+            placeholder="Offer code"
+            className="w-full rounded-2xl border border-aro-hairline bg-white px-6 py-5 text-2xl tracking-widest text-aro-ink placeholder:text-aro-muted focus:outline-none focus:ring-2 focus:ring-aro-terra"
+          />
+
+          {!offerLookup && !offerNotFound && (
+            <button
+              onClick={() => void lookupOffer()}
+              disabled={!offerCode.trim() || codeBusy}
+              className="mt-3 w-full rounded-2xl bg-aro-saffron text-aro-ink font-display font-bold text-lg py-4 disabled:opacity-60"
+            >
+              {codeBusy ? 'Looking up…' : 'Look up'}
+            </button>
+          )}
+
+          {offerNotFound && (
+            <div className="mt-4 rounded-xl bg-aro-rose/20 border border-aro-rose/40 px-4 py-4 text-sm text-aro-ink">
+              That code doesn&apos;t match anything here — check it and try again.
+            </div>
+          )}
+
+          {offerLookup?.void && (
+            <div className="mt-4 rounded-xl bg-aro-rose/20 border border-aro-rose/40 px-4 py-4 text-sm text-aro-ink">
+              This offer was voided and can&apos;t be redeemed.
+            </div>
+          )}
+
+          {offerLookup?.expired && !offerLookup.void && (
+            <div className="mt-4 rounded-xl bg-aro-rose/20 border border-aro-rose/40 px-4 py-4 text-sm text-aro-ink">
+              This offer expired — it can&apos;t be redeemed anymore.
+            </div>
+          )}
+
+          {offerLookup?.already_redeemed && !offerLookup.void && !offerLookup.expired && (
+            <div className="mt-4 rounded-xl bg-aro-sand/60 border border-aro-hairline px-4 py-4 text-sm text-aro-ink">
+              This code was already redeemed.
+            </div>
+          )}
+
+          {offerLookup &&
+            !offerLookup.void &&
+            !offerLookup.expired &&
+            !offerLookup.already_redeemed && (
+              <div className="mt-4 rounded-xl bg-white border border-aro-hairline px-5 py-4">
+                <p className="font-display text-xl font-bold text-aro-ink">
+                  {offerLookup.member_first_name ?? 'Member'}
+                </p>
+                <p className="text-sm text-aro-muted mb-3">{offerLookup.program_name}</p>
+                {offerLookup.points_value != null && (
+                  <p className="font-mono text-sm text-aro-terra">
+                    +{offerLookup.points_value} pts
+                  </p>
+                )}
+                {offerLookup.value_cents != null && (
+                  <p className="font-mono text-sm text-aro-terra">
+                    ${(offerLookup.value_cents / 100).toFixed(2)} value
+                  </p>
+                )}
+                <button
+                  onClick={() => void redeemOffer()}
+                  disabled={codeBusy}
+                  className="mt-3 w-full rounded-2xl bg-aro-terra text-white font-display font-bold text-lg py-4 disabled:opacity-60"
+                >
+                  {codeBusy ? 'Redeeming…' : 'Redeem'}
+                </button>
+              </div>
+            )}
+
+          <button onClick={focusSearch} className="mt-6 text-sm text-aro-muted underline">
+            back to search
           </button>
         </div>
       )}
