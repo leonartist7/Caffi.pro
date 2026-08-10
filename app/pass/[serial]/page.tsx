@@ -4,6 +4,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { qrSvg } from '@/lib/qr'
 import { isOfferExpired, isOfferNotYetValid } from '@/lib/loyalty/offers'
 import { ShareReferral } from './share-referral'
+import { PushSubscribe } from './push-subscribe'
+import { getVapidPublicKey } from '@/lib/push/provider'
 
 /**
  * Web pass (Plan 2) — PUBLIC by bearer serial (unguessable uuid).
@@ -373,6 +375,8 @@ export default async function PassPage({
         )}
 
         {referralUrl && <ShareReferral url={referralUrl} venueName={pass.venueName} />}
+
+        <PushSubscribe serial={pass.serial} vapidPublicKey={getVapidPublicKey()} />
 
         <div className="mt-6 pt-5 border-t border-aro-hairline">
           {walletReady ? (

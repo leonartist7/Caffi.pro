@@ -153,7 +153,32 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   shows expected cost per reveal live as prizes are edited. **Not
   verified live** — same gap as every Lane A PR this session; the reveal
   animation was never seen render. `BUILD-LOG-PLAN-17.md`.
-- **PLAN-18**: ❌ **not started** — web push channel.
+- **PLAN-18 (Web push channel)**: 🟡 **built, PR open**. Zero migrations
+  — `push_subscriptions`/`messages.channel = 'push'` (both PLAN-10)
+  already had everything needed. New `web-push` dependency;
+  `lib/push/provider.ts` mirrors the existing
+  `PaymentProviderConfigurationError` visible-stub pattern exactly.
+  `lib/push/eligibility.ts`'s single `WHERE venue_id = ? AND revoked_at
+IS NULL` query is the compliance boundary — no second filtering path.
+  `404`/`410` auto-revokes; a member's own unsubscribe revokes
+  immediately via the same column. iOS Safari's real limit (push only
+  works from an installed PWA) is surfaced honestly on the pass rather
+  than offering a button that would silently never deliver. **The
+  largest honest gap of any Lane A item this session**: `VAPID_PUBLIC_
+KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT` are genuinely unset in this
+  environment, so no real push was ever sent to a real device — this
+  needs the full subscribe → send → receive → revoke loop run against a
+  real Android Chrome / installed iOS PWA before being trusted in
+  production. `BUILD-LOG-PLAN-18.md`.
+
+**Lane A (PLAN-10 through PLAN-18) is now fully built.** All nine items
+have code, migrations (where needed), and build logs; every one carries
+the same honest "not verified live" caveat — no Supabase service-role
+key or MCP connection was available anywhere in this session, so every
+claim in every Lane A PR is argued from the SQL/code, never fired
+against a real database. A follow-up pass with live database access is
+the correct next step before any of PLAN-12 through PLAN-18 is trusted
+in production, in addition to PLAN-18's own vendor-key gap above.
 
 ## Lane B — Commerce & kitchen ops
 

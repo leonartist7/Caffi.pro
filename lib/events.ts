@@ -78,6 +78,10 @@ export type AroEventType =
   | 'referral.rewarded'
   | 'survey.completed'
   | 'mystery.revealed'
+  | 'push.subscribed'
+  | 'push.unsubscribed'
+  | 'push.sent'
+  | 'push.revoked'
 
 export interface AroEvent {
   type: AroEventType
@@ -162,6 +166,10 @@ export const EVENT_LABELS: Record<string, string> = {
   'referral.rewarded': 'Referral rewarded',
   'survey.completed': 'Survey completed',
   'mystery.revealed': 'Mystery reward revealed',
+  'push.subscribed': 'Push subscribed',
+  'push.unsubscribed': 'Push unsubscribed',
+  'push.sent': 'Push sent',
+  'push.revoked': 'Push subscription revoked',
 }
 
 export function eventLabel(type: string): string {

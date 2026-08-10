@@ -30,12 +30,14 @@
     "recharts": "^2.15.4",
     "server-only": "^0.0.1",
     "sonner": "^2.0.7",
-    "stripe": "22.3.1"
+    "stripe": "22.3.1",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
+    "@types/web-push": "^3.6.4",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.4",
