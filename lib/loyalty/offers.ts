@@ -34,3 +34,16 @@ export function isOfferExpired(offer: OfferExpiryInput): boolean {
   if (!offer.expires_at) return false
   return new Date(offer.expires_at).getTime() < Date.now()
 }
+
+export interface OfferValidityInput {
+  valid_from: string | null
+}
+
+/** PLAN-13: a bounce-back offer isn't redeemable during its own dead
+ * period — the window is the mechanism, not a discount. Lazy, same shape
+ * as isOfferExpired: no cron flips anything, the pass page and the
+ * counter both just check the timestamp they already have in hand. */
+export function isOfferNotYetValid(offer: OfferValidityInput): boolean {
+  if (!offer.valid_from) return false
+  return new Date(offer.valid_from).getTime() > Date.now()
+}

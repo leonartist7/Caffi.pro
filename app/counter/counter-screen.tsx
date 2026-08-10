@@ -31,6 +31,16 @@ interface OfferLookup {
   already_redeemed: boolean
   expired: boolean
   void: boolean
+  not_yet_valid: boolean
+  valid_from: string | null
+}
+
+function formatValidFromDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  })
 }
 
 type Phase = 'search' | 'panel' | 'redeem-list' | 'code' | 'success'
@@ -522,15 +532,26 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
             </div>
           )}
 
-          {offerLookup?.already_redeemed && !offerLookup.void && !offerLookup.expired && (
+          {offerLookup?.not_yet_valid && !offerLookup.void && !offerLookup.expired && (
             <div className="mt-4 rounded-xl bg-aro-sand/60 border border-aro-hairline px-4 py-4 text-sm text-aro-ink">
-              This code was already redeemed.
+              Not quite yet — this one&apos;s good starting{' '}
+              {offerLookup.valid_from ? formatValidFromDate(offerLookup.valid_from) : 'soon'}.
             </div>
           )}
+
+          {offerLookup?.already_redeemed &&
+            !offerLookup.void &&
+            !offerLookup.expired &&
+            !offerLookup.not_yet_valid && (
+              <div className="mt-4 rounded-xl bg-aro-sand/60 border border-aro-hairline px-4 py-4 text-sm text-aro-ink">
+                This code was already redeemed.
+              </div>
+            )}
 
           {offerLookup &&
             !offerLookup.void &&
             !offerLookup.expired &&
+            !offerLookup.not_yet_valid &&
             !offerLookup.already_redeemed && (
               <div className="mt-4 rounded-xl bg-white border border-aro-hairline px-5 py-4">
                 <p className="font-display text-xl font-bold text-aro-ink">

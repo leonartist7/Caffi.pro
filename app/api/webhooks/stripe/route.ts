@@ -6,6 +6,7 @@ import {
   PaymentProviderInvalidEventError,
 } from '@/lib/payments/provider'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
+import { issueBounceBackOffersForOrder } from '@/lib/loyalty/bounce-back-issue'
 
 export const runtime = 'nodejs'
 
@@ -73,6 +74,20 @@ export async function POST(request: NextRequest) {
       // Retrying a permanent mismatch cannot repair it. Keep the failed row
       // for an operator to investigate rather than returning a retrying 5xx.
       return NextResponse.json({ received: true, mismatch: true })
+    }
+
+    // Bounce-back issuance rides the same "newly applied" boundary
+    // record_order_payment_success already uses to guard points/depletion
+    // — a replayed webhook (applied: false) must not re-issue, so this
+    // only runs on a genuine first application. A failure here logs and
+    // moves on rather than turning a real payment into a 5xx Stripe would
+    // retry forever.
+    if (result.applied) {
+      try {
+        await issueBounceBackOffersForOrder(admin, result.venue_id, result.order_id)
+      } catch (err) {
+        console.error('[stripe-webhook] bounce-back issuance failed:', err)
+      }
     }
 
     return NextResponse.json({ received: true, applied: result.applied })
