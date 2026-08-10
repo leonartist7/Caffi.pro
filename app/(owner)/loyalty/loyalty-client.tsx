@@ -2,13 +2,21 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Plus, Ticket, Search, Check, Users } from 'lucide-react'
+import { Plus, Ticket, Search, Check, Users, ClipboardList, X } from 'lucide-react'
+
+interface SurveyQuestionDraft {
+  id: string
+  text: string
+  type: 'text' | 'choice'
+  options: string
+}
 
 interface ProgramConfig {
   default_points_value?: number
   default_value_cents?: number
   delay_days?: number
   window_days?: number
+  questions?: { id: string; text: string; type: 'text' | 'choice'; options?: string[] }[]
 }
 
 interface Program {
@@ -103,6 +111,18 @@ const STRINGS = {
   runDailyFailed: "Couldn't run today's issues — try again.",
   runDailyHint:
     'Runs automatically every day once CRON_SECRET is set — use this to test or catch up in the meantime.',
+  questionsLabel: 'Questions (3–5)',
+  addQuestion: 'Add question',
+  questionPlaceholder: 'Question text',
+  questionTypeText: 'Free text',
+  questionTypeChoice: 'Multiple choice',
+  optionsPlaceholder: 'Options, comma separated',
+  questionsHint:
+    'Every question needs an answer — this is for completing, never for a particular answer.',
+  viewResults: 'View responses',
+  resultsTitle: 'Responses',
+  resultsEmpty: 'No responses yet.',
+  resultsFailed: "Couldn't load responses.",
 } as const
 
 export function LoyaltyClient({ venueId }: { venueId: string }) {
@@ -117,6 +137,11 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   const [defaultDollars, setDefaultDollars] = useState('')
   const [delayDays, setDelayDays] = useState('')
   const [windowDays, setWindowDays] = useState('')
+  const [surveyQuestions, setSurveyQuestions] = useState<SurveyQuestionDraft[]>([])
+
+  const [resultsFor, setResultsFor] = useState<Program | null>(null)
+  const [results, setResults] = useState<{ answers: Record<string, string> }[] | null>(null)
+  const [resultsLoading, setResultsLoading] = useState(false)
 
   const [runningDaily, setRunningDaily] = useState(false)
 
@@ -197,6 +222,31 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
         if (delayDays) config.delay_days = Number(delayDays)
         if (windowDays) config.window_days = Number(windowDays)
       }
+      if (type === 'survey') {
+        if (surveyQuestions.length < 3 || surveyQuestions.length > 5) {
+          throw new Error('Add 3–5 questions')
+        }
+        config.questions = surveyQuestions.map(q => ({
+          id: q.id,
+          text: q.text.trim(),
+          type: q.type,
+          ...(q.type === 'choice'
+            ? {
+                options: q.options
+                  .split(',')
+                  .map(o => o.trim())
+                  .filter(Boolean),
+              }
+            : {}),
+        }))
+        if (
+          config.questions.some(
+            q => !q.text || (q.type === 'choice' && (!q.options || q.options.length < 2))
+          )
+        ) {
+          throw new Error('Every question needs text; choice questions need 2+ options')
+        }
+      }
 
       const res = await fetch('/api/loyalty/programs', {
         method: 'POST',
@@ -212,6 +262,7 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
       setDefaultDollars('')
       setDelayDays('')
       setWindowDays('')
+      setSurveyQuestions([])
       setShowForm(false)
       await fetchPrograms()
       toast.success('Program created.')
@@ -313,6 +364,41 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   const hasActiveDateProgram = programs.some(
     p => p.status === 'active' && (p.type === 'birthday' || p.type === 'anniversary')
   )
+
+  function addSurveyQuestion() {
+    if (surveyQuestions.length >= 5) return
+    setSurveyQuestions(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), text: '', type: 'text', options: '' },
+    ])
+  }
+
+  function updateSurveyQuestion(id: string, patch: Partial<SurveyQuestionDraft>) {
+    setSurveyQuestions(prev => prev.map(q => (q.id === id ? { ...q, ...patch } : q)))
+  }
+
+  function removeSurveyQuestion(id: string) {
+    setSurveyQuestions(prev => prev.filter(q => q.id !== id))
+  }
+
+  async function openResults(program: Program) {
+    setResultsFor(program)
+    setResults(null)
+    setResultsLoading(true)
+    try {
+      const res = await fetch(
+        `/api/loyalty/survey-responses?venue_id=${venueId}&program_id=${program.program_id}`
+      )
+      if (!res.ok) throw new Error('load failed')
+      const { responses } = await res.json()
+      setResults(responses ?? [])
+    } catch (error) {
+      console.error('[loyalty] results load failed:', error)
+      toast.error(STRINGS.resultsFailed)
+    } finally {
+      setResultsLoading(false)
+    }
+  }
 
   function openBatchPanel(program: Program) {
     setBatchFor(program)
@@ -471,6 +557,58 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
               <p className="text-xs text-aro-muted mt-1">{STRINGS.bounceBackHint}</p>
             </div>
           )}
+          {type === 'survey' && (
+            <div className="space-y-2">
+              <p className="text-xs text-aro-muted">{STRINGS.questionsHint}</p>
+              {surveyQuestions.map((q, i) => (
+                <div key={q.id} className="rounded-lg border border-aro-hairline p-2.5 space-y-1.5">
+                  <div className="flex gap-2 items-start">
+                    <input
+                      value={q.text}
+                      onChange={e => updateSurveyQuestion(q.id, { text: e.target.value })}
+                      placeholder={`${STRINGS.questionPlaceholder} ${i + 1}`}
+                      className="flex-1 rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                    />
+                    <select
+                      value={q.type}
+                      onChange={e =>
+                        updateSurveyQuestion(q.id, { type: e.target.value as 'text' | 'choice' })
+                      }
+                      className="rounded-lg border border-aro-hairline px-2 py-2 text-sm bg-white"
+                    >
+                      <option value="text">{STRINGS.questionTypeText}</option>
+                      <option value="choice">{STRINGS.questionTypeChoice}</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => removeSurveyQuestion(q.id)}
+                      aria-label="Remove question"
+                      className="rounded-lg p-2 text-aro-muted hover:bg-aro-sand/40"
+                    >
+                      <X className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  </div>
+                  {q.type === 'choice' && (
+                    <input
+                      value={q.options}
+                      onChange={e => updateSurveyQuestion(q.id, { options: e.target.value })}
+                      placeholder={STRINGS.optionsPlaceholder}
+                      className="w-full rounded-lg border border-aro-hairline px-3 py-2 text-sm bg-white"
+                    />
+                  )}
+                </div>
+              ))}
+              {surveyQuestions.length < 5 && (
+                <button
+                  type="button"
+                  onClick={addSurveyQuestion}
+                  className="rounded-lg border border-aro-hairline px-3 py-1.5 text-xs font-medium text-aro-ink-soft hover:bg-aro-sand/40"
+                >
+                  {STRINGS.addQuestion} ({surveyQuestions.length}/5)
+                </button>
+              )}
+            </div>
+          )}
           <div className="flex gap-2">
             <button
               type="button"
@@ -566,8 +704,53 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
                       <Users className="h-4 w-4" aria-hidden="true" />
                     </button>
                   )}
+                  {program.type === 'survey' && (
+                    <button
+                      type="button"
+                      onClick={() => openResults(program)}
+                      aria-label={`${STRINGS.viewResults}: ${program.name}`}
+                      className="rounded-lg bg-aro-sand/60 p-2 text-aro-terra hover:bg-aro-sand"
+                    >
+                      <ClipboardList className="h-4 w-4" aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {resultsFor?.program_id === program.program_id && (
+                <div className="border-t border-aro-hairline px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-aro-ink">{STRINGS.resultsTitle}</p>
+                    <button
+                      type="button"
+                      onClick={() => setResultsFor(null)}
+                      className="text-xs text-aro-muted underline"
+                    >
+                      {STRINGS.close}
+                    </button>
+                  </div>
+                  {resultsLoading ? (
+                    <p className="text-sm text-aro-muted">Loading…</p>
+                  ) : !results || results.length === 0 ? (
+                    <p className="text-sm text-aro-muted">{STRINGS.resultsEmpty}</p>
+                  ) : (
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {results.map((r, i) => (
+                        <div
+                          key={i}
+                          className="rounded-lg bg-aro-sand/40 border border-aro-hairline px-3 py-2 text-xs text-aro-ink space-y-0.5"
+                        >
+                          {Object.entries(r.answers).map(([qid, answer]) => (
+                            <p key={qid}>
+                              <span className="text-aro-muted">{qid}:</span> {answer}
+                            </p>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {batchFor?.program_id === program.program_id && (
                 <div className="border-t border-aro-hairline px-4 py-3 space-y-3">
