@@ -7,12 +7,22 @@
 
 const BOM = '﻿'
 
-/** Quote-wraps and escapes a single CSV field per RFC 4180. */
+// A field starting with one of these is interpreted as a formula by
+// Excel/Sheets/LibreOffice when the file is opened, not just displayed as
+// text — OWASP's CSV-injection neutralization. `staff_name` is owner/
+// manager-editable (app/api/staff/[id]/route.ts), so a manager account is
+// enough to reach this; prefixing a bare `'` forces spreadsheet software
+// to render the value literally without changing what a CSV parser reads.
+const FORMULA_PREFIX = /^[=+\-@\t\r]/
+
+/** Quote-wraps and escapes a single CSV field per RFC 4180, and neutralizes
+ * leading formula-trigger characters so a spreadsheet never executes a cell. */
 export function escapeCsvField(value: string): string {
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`
+  const safe = FORMULA_PREFIX.test(value) ? `'${value}` : value
+  if (/[",\n\r]/.test(safe)) {
+    return `"${safe.replace(/"/g, '""')}"`
   }
-  return value
+  return safe
 }
 
 /** One CSV row from already-stringified cell values. */

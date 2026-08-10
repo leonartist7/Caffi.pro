@@ -130,6 +130,27 @@ consumes — re-merged those fixes in and adjusted this item to match:
   PostgREST's 1000-row cap (PLAN-36's fix) — the export inherits this for
   free since it calls the same function.
 
+## Post-draft audit (Lane A/B/C completion pass, 2026-08-10)
+
+Independent re-read before merge, no context from the build session, per
+the master-plan doctrine that compensation data leaving the system gets
+the same rigor as money-adjacent code, not light-tier review:
+
+- **Real gap found and fixed**: `escapeCsvField` (`lib/csv.ts`) quoted
+  commas/quotes/newlines but did not neutralize a leading `=`/`+`/`-`/`@`
+  — a classic CSV-formula-injection vector. `staff_name` in this export
+  comes from `memberships.full_name`, which an **owner or manager** can
+  set via `PATCH /api/staff/[id]` (`requireRowVenueRole(..., ['owner',
+'manager'])`) — a manager account is sufficient to plant a formula that
+  executes when the owner opens the exported CSV in Excel/Sheets/
+  LibreOffice. Fixed by prefixing a bare `'` on any field starting with
+  one of those characters (or tab/CR), the standard OWASP neutralization,
+  applied before the existing quote-wrap so RFC 4180 escaping still runs
+  on the now-safe value.
+- Reconfirmed pagination, timezone handling, and the report-value-parity
+  claim above by reading `lib/tips/report.ts` directly rather than
+  trusting this document's own prose — all three hold as described.
+
 ## Honest gaps
 
 - No live browser click-through of the "Export CSV" link or a real
