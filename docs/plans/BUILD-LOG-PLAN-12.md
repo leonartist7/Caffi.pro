@@ -84,6 +84,43 @@ p_staff_membership_id)` — a `SECURITY DEFINER` RPC modelled directly on
   the engine works when something calls it.
 - No expiry cron — checked lazily at redemption and at read time.
 
+## Post-draft audit (before merge, 2026-08-10)
+
+Independent re-read of the migration SQL with no context from the build
+session, per the master-plan mandate that PLAN-12's redemption idempotency
+gets architect-tier review (`MASTER-PLAN-v2R-remastered.md` owner note:
+Opus 5 fills the "Fable 5" seat for this batch):
+
+- **Real money bug found and fixed.** `redeem_member_offer()`'s expiry
+  branch only ever guarded on `v_status = 'issued'`. A **second** call
+  against an offer whose status was already `'expired'` (set by an
+  _earlier_ call's own expiry branch, or reachable by any future terminal
+  status) skipped every guard, fell through to
+  `UPDATE ... WHERE status = 'issued'` — which matched **zero rows** — and
+  then still ran the unconditional `points_ledger` INSERT below it,
+  because that INSERT was gated only on `v_points_value IS NOT NULL AND
+v_points_value > 0`, never on the UPDATE having actually matched.
+  Concretely: an already-expired offer, redeemed twice, credited points
+  twice, and both calls returned `already_redeemed = false` as if each
+  were a fresh, legitimate redemption. The three-concurrent-redemption
+  scenario in the original PR body was fine (the `FOR UPDATE` lock and the
+  write-once trigger genuinely serialize that case) — this was a
+  different path the acceptance checklist's phrasing didn't cover.
+  **Fixed two ways**, not one:
+  1. Any status other than `'issued'` at the point past the
+     already-redeemed and expiry checks now raises `P0001` directly,
+     closing the control-flow hole itself.
+  2. `points_ledger` gained an `offer_id` column and a partial unique
+     index (`uq_points_ledger_offer_award`, mirroring the existing
+     `uq_points_ledger_order_award` pattern exactly) plus an
+     `ON CONFLICT ... DO NOTHING` on the credit INSERT — a structural,
+     catalogue-level backstop so this class of bug can't recur through a
+     different control-flow path later, matching the PLAN-24/36 bar for
+     money-adjacent work ("idempotency proven by a database-level
+     guarantee, not an application `if`").
+- Re-confirmed cross-venue rejection and the once-only redemption trigger
+  by reading the schema directly — both hold as originally claimed.
+
 ## Verification
 
 - `npx tsc --noEmit` — clean.
