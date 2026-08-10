@@ -34,6 +34,7 @@ interface PassData {
   offers: PassOffer[]
   serial: string
   hasBirthday: boolean
+  openSurveys: { programId: string; name: string }[]
 }
 
 const MONTH_NAMES = [
@@ -88,6 +89,33 @@ async function getPass(serial: string): Promise<PassData | null> {
         .order('issued_at', { ascending: false }),
     ])
 
+  // PLAN-16 — active surveys this member hasn't answered yet. Two bounded
+  // queries (active survey programs for the venue, then this member's own
+  // response rows against just those ids) rather than one page-owning
+  // both concerns — the response check has to be scoped to the member
+  // regardless, so there's no cheaper single-query shape here.
+  const { data: surveyPrograms } = await admin
+    .from('loyalty_programs')
+    .select('program_id, name')
+    .eq('venue_id', member.tenant_id)
+    .eq('type', 'survey')
+    .eq('status', 'active')
+  let openSurveys: { programId: string; name: string }[] = []
+  if (surveyPrograms && surveyPrograms.length > 0) {
+    const { data: answered } = await admin
+      .from('survey_responses')
+      .select('program_id')
+      .eq('member_id', member.member_id)
+      .in(
+        'program_id',
+        surveyPrograms.map(p => p.program_id)
+      )
+    const answeredIds = new Set((answered ?? []).map(a => a.program_id))
+    openSurveys = surveyPrograms
+      .filter(p => !answeredIds.has(p.program_id))
+      .map(p => ({ programId: p.program_id, name: p.name }))
+  }
+
   const balance = bal?.balance ?? 0
   const nextReward =
     rewards?.find(r => r.points_required > balance) ?? rewards?.[rewards.length - 1] ?? null
@@ -119,6 +147,7 @@ async function getPass(serial: string): Promise<PassData | null> {
     offers,
     serial,
     hasBirthday: member.birthday_month != null && member.birthday_day != null,
+    openSurveys,
   }
 }
 
@@ -299,6 +328,20 @@ export default async function PassPage({
           <p className="mt-6 pt-5 border-t border-aro-hairline text-sm text-aro-sage font-medium">
             Birthday saved — see you then.
           </p>
+        )}
+
+        {pass.openSurveys.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-aro-hairline text-left space-y-2">
+            {pass.openSurveys.map(s => (
+              <a
+                key={s.programId}
+                href={`/pass/${pass.serial}/survey/${s.programId}`}
+                className="block rounded-lg border border-aro-hairline px-4 py-2.5 text-sm font-medium text-aro-terra hover:bg-aro-sand/40"
+              >
+                {s.name} — quick survey
+              </a>
+            ))}
+          </div>
         )}
 
         {referralUrl && <ShareReferral url={referralUrl} venueName={pass.venueName} />}

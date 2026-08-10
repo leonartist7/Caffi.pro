@@ -126,8 +126,20 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   not accessible from this session, and its prerequisite (R1) is itself
   still not done. **Not verified live** — same gap as every Lane A PR
   this session. `BUILD-LOG-PLAN-15.md`.
-- **PLAN-16 through PLAN-18**: ❌ **not started** — surveys, mystery
-  rewards, web push.
+- **PLAN-16 (Survey promotions)**: 🟡 **built, PR open**. Zero
+  migrations — `survey_responses` (PLAN-10) already had the exact shape
+  needed, including the DB-level one-response-per-member unique index.
+  Owner-authored 3–5 questions (`loyalty_programs.config.questions`,
+  validated by a pure function both at creation and submission time),
+  reachable from the pass, completion issues one offer via PLAN-12's
+  engine gated on the response insert itself succeeding. **Honest scope
+  gap**: the acceptance line's "per-question aggregates" did not ship —
+  the results view shows every response verbatim (the safety-critical
+  half: free-text never summarized or AI-routed) but not a
+  choice-question count breakdown, flagged rather than rushed. **Not
+  verified live** — same gap as every Lane A PR this session.
+  `BUILD-LOG-PLAN-16.md`.
+- **PLAN-17, PLAN-18**: ❌ **not started** — mystery rewards, web push.
 
 ## Lane B — Commerce & kitchen ops
 
