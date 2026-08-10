@@ -32,6 +32,10 @@ interface PassData {
   balance: number
   nextReward: { name: string; points_required: number } | null
   offers: PassOffer[]
+  /** PLAN-17 — issued, not-yet-revealed mystery offers. Deliberately
+   * carries no prize information — only the offer id to link to the
+   * reveal page, which is the one place the prize is allowed to appear. */
+  unrevealedMysteryOfferIds: string[]
   serial: string
   hasBirthday: boolean
   openSurveys: { programId: string; name: string }[]
@@ -82,7 +86,7 @@ async function getPass(serial: string): Promise<PassData | null> {
       admin
         .from('member_offers')
         .select(
-          'code, points_value, value_cents, status, expires_at, valid_from, loyalty_programs(name)'
+          'offer_id, code, points_value, value_cents, status, expires_at, valid_from, revealed_at, loyalty_programs(name, type)'
         )
         .eq('member_id', member.member_id)
         .eq('status', 'issued')
@@ -122,21 +126,30 @@ async function getPass(serial: string): Promise<PassData | null> {
 
   // PLAN-12 — only unexpired, unredeemed offers belong on the pass; expiry
   // is checked lazily here rather than relying on a background sweep
-  // having already flipped status to 'expired'.
-  const offers: PassOffer[] = (offerRows ?? [])
-    .filter(o => !isOfferExpired(o))
-    .map(o => {
-      const program = o.loyalty_programs as unknown as { name: string | null } | null
-      return {
-        code: o.code,
-        programName: program?.name ?? null,
-        pointsValue: o.points_value,
-        valueCents: o.value_cents,
-        expiresAt: o.expires_at,
-        validFrom: o.valid_from,
-        notYetValid: isOfferNotYetValid(o),
-      }
+  // having already flipped status to 'expired'. PLAN-17 splits off
+  // unrevealed mystery offers before they ever reach `offers` — this is
+  // the one place in the whole pass-data pipeline that decides what's
+  // safe to disclose, so a prize leaking pre-reveal would be a bug here,
+  // not in the reveal page itself.
+  const unrevealedMysteryOfferIds: string[] = []
+  const offers: PassOffer[] = []
+  for (const o of offerRows ?? []) {
+    if (isOfferExpired(o)) continue
+    const program = o.loyalty_programs as unknown as { name: string | null; type: string } | null
+    if (program?.type === 'mystery' && !o.revealed_at) {
+      unrevealedMysteryOfferIds.push(o.offer_id)
+      continue
+    }
+    offers.push({
+      code: o.code,
+      programName: program?.name ?? null,
+      pointsValue: o.points_value,
+      valueCents: o.value_cents,
+      expiresAt: o.expires_at,
+      validFrom: o.valid_from,
+      notYetValid: isOfferNotYetValid(o),
     })
+  }
 
   return {
     firstName: member.full_name?.split(' ')[0] ?? null,
@@ -145,6 +158,7 @@ async function getPass(serial: string): Promise<PassData | null> {
     balance,
     nextReward,
     offers,
+    unrevealedMysteryOfferIds,
     serial,
     hasBirthday: member.birthday_month != null && member.birthday_day != null,
     openSurveys,
@@ -328,6 +342,20 @@ export default async function PassPage({
           <p className="mt-6 pt-5 border-t border-aro-hairline text-sm text-aro-sage font-medium">
             Birthday saved — see you then.
           </p>
+        )}
+
+        {pass.unrevealedMysteryOfferIds.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-aro-hairline text-left space-y-2">
+            {pass.unrevealedMysteryOfferIds.map(offerId => (
+              <a
+                key={offerId}
+                href={`/pass/${pass.serial}/mystery/${offerId}`}
+                className="block rounded-lg bg-aro-saffron/20 border border-aro-saffron/40 px-4 py-2.5 text-sm font-semibold text-aro-ink hover:bg-aro-saffron/30"
+              >
+                🎁 You have a mystery reward — tap to reveal
+              </a>
+            ))}
+          </div>
         )}
 
         {pass.openSurveys.length > 0 && (

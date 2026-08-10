@@ -29,6 +29,9 @@ export interface IssueMemberOfferInput {
    * guarantee (`uq_member_offers_program_member_period`). Omit for a
    * one-off issuance with no periodic identity. */
   periodKey?: string | null
+  /** PLAN-17 — the human-readable prize name for a mystery-draw offer
+   * ("Free Pastry"); unused by every other program type. */
+  prizeLabel?: string | null
 }
 
 export interface IssuedMemberOffer {
@@ -70,6 +73,7 @@ export async function issueMemberOffer(
         expires_at: input.expiresAt ? input.expiresAt.toISOString() : null,
         valid_from: input.validFrom ? input.validFrom.toISOString() : null,
         period_key: input.periodKey ?? null,
+        prize_label: input.prizeLabel ?? null,
       })
       .select('offer_id, code, member_id, program_id')
       .single()
