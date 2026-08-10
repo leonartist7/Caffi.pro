@@ -20,6 +20,7 @@ import {
   Megaphone,
   Home,
   DollarSign,
+  Ticket,
 } from 'lucide-react'
 
 /**
@@ -56,6 +57,8 @@ export type ModuleKey =
   | 'owner_campaigns'
   | 'owner_settings'
   | 'owner_tips'
+  // --- Lane A ---
+  | 'owner_loyalty'
 
 export interface ModuleDef {
   key: ModuleKey
@@ -160,6 +163,15 @@ export const MODULES: ModuleDef[] = [
     label: 'Tips',
     href: '/tips',
     icon: DollarSign,
+    status: 'live',
+    surface: 'owner',
+  },
+  // --- Lane A ---
+  {
+    key: 'owner_loyalty',
+    label: 'Loyalty',
+    href: '/loyalty',
+    icon: Ticket,
     status: 'live',
     surface: 'owner',
   },

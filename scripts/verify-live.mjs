@@ -462,6 +462,58 @@ await check('authenticated non-owner staff_shifts denied', async () =>
   })
 )
 
+// PLAN-12: loyalty_programs/member_offers DO grant SELECT/INSERT to
+// authenticated (unlike the zero-grant tables above) — RLS filters by
+// aro_my_managed_venue_ids() instead. A read with no membership anywhere
+// just returns zero rows (not an error), so the meaningful proof is that
+// an INSERT against a real venue this probe user has no membership on is
+// rejected by the WITH CHECK clause.
+await check('authenticated non-owner loyalty_programs insert denied', async () =>
+  withEphemeralAuthedClient(async authed => {
+    const { error } = await authed
+      .from('loyalty_programs')
+      .insert({ venue_id: SEED_VENUE_ID, type: 'accrual', name: 'verify-live probe' })
+    if (!error) {
+      throw new Error('loyalty_programs insert unexpectedly succeeded for a non-member')
+    }
+    return 'insert denied for an authenticated non-owner'
+  })
+)
+
+await check('authenticated non-owner member_offers insert denied', async () =>
+  withEphemeralAuthedClient(async authed => {
+    const { error } = await authed.from('member_offers').insert({
+      venue_id: SEED_VENUE_ID,
+      member_id: '00000000-0000-4000-8000-000000000000',
+      program_id: '00000000-0000-4000-8000-000000000000',
+      code: 'PROBE01',
+    })
+    if (!error) {
+      throw new Error('member_offers insert unexpectedly succeeded for a non-member')
+    }
+    return 'insert denied for an authenticated non-owner'
+  })
+)
+
+await check('redeem_member_offer RPC service-role only', async () => {
+  const { error: anonError } = await anon.rpc('redeem_member_offer', {
+    p_venue_id: SEED_VENUE_ID,
+    p_code: 'PROBE01',
+    p_staff_membership_id: '00000000-0000-4000-8000-000000000000',
+  })
+  if (!anonError) throw new Error('redeem_member_offer callable by anon')
+
+  return withEphemeralAuthedClient(async authed => {
+    const { error: authedError } = await authed.rpc('redeem_member_offer', {
+      p_venue_id: SEED_VENUE_ID,
+      p_code: 'PROBE01',
+      p_staff_membership_id: '00000000-0000-4000-8000-000000000000',
+    })
+    if (!authedError) throw new Error('redeem_member_offer callable by an authenticated non-owner')
+    return 'not callable by anon or by an authenticated non-owner'
+  })
+})
+
 if (failures > 0) {
   console.error(`Live verification failed: ${failures} check(s) failed`)
   process.exit(1)

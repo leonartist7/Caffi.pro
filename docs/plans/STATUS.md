@@ -3,7 +3,7 @@
 Living document. Tracks what's actually done vs. missing against
 `MASTER-PLAN-v2-operating-system.md`'s sequence, kept current as work
 lands — update this file in the same PR as any status-changing work,
-don't let it drift. Last updated: 2026-08-01.
+don't let it drift. Last updated: 2026-08-10.
 
 ## 🔴 NOW tier
 
@@ -38,6 +38,56 @@ Unchanged — nothing started, all correctly deferred.
   green. **Not yet verified live** — needs `IMPERSONATION_SECRET` set in
   Vercel and a real click-through, same as R3/R4's live-verification gaps.
   See `BUILD-LOG-admin-impersonation.md`.
+
+## Lane A — Loyalty & member growth
+
+Tracks `MASTER-PLAN-v2R-remastered.md` §6 Lane A (`PLAN-10`–`PLAN-19`).
+This section didn't exist until now — Lane A's first two items landed via
+direct commits to `main` before `STATUS.md`'s per-lane sections were
+established (PR #60 backfilled the fact of their completion; this is the
+first PR to give Lane A its own section, matching Lane B's and Lane C's).
+
+- **PLAN-10 (Batch schema migration)**: ✅ **merged**. The schema
+  foundation every Lane A/B/C item since has built on —
+  `loyalty_programs`, `member_offers`, `survey_responses`,
+  `push_subscriptions`, `members.birthday_month`/`birthday_day`, plus
+  Lane B/C's tables in the same batch. Confirmed live via `list_tables`
+  by every subsequent lane's preflight.
+- **PLAN-11 (Members directory rebuild)**: ✅ **merged**. Real
+  server-side pagination + search, replacing the silent 100-row cap that
+  was quietly losing a venue's own customer graph past that count.
+- **PLAN-12 through PLAN-18**: ❌ **not started** — no branches, no PRs,
+  no spec docs existed anywhere in this repo as of this session
+  (confirmed via `git ls-remote`, a full PR-history search, and a
+  file/content grep across `app/`, `lib/`, `components/` on `main` for
+  every Lane A table PLAN-10 already created — `push_subscriptions`,
+  `member_offers`, `survey_responses` all have zero application code
+  reading or writing them). This is offer engine core, bounce-back +
+  appreciation, birthday + anniversary, referrals, surveys, mystery
+  rewards, and the web push channel. **PLAN-12 (this PR)** is the first
+  of the seven — see below.
+- **PLAN-12 (Offer engine core)**: 🟡 **built, PR open**. The library's
+  foundation every later program type configures rather than
+  reimplements. `redeem_member_offer()` RPC mirrors the existing
+  `redeem_reward()` exactly (row-lock + typed `ERRCODE`s +
+  `service_role`-only), so the once-only redemption guarantee reuses an
+  already-proven pattern rather than inventing a new one. Owner surface
+  at `/loyalty` (program CRUD + issue-offer flow), counter redemption
+  (`/api/counter/redeem-offer`, new "Have a code?" UI phase), member
+  pass shows active offers. **Deliberate scope cut, stated with teeth
+  same as PLAN-12's own master-plan framing**: only `points_value`
+  credits anything in this PR (via `points_ledger`, the same mechanism
+  the existing rewards system uses) — `value_cents`-type programs are
+  schema-supported and redemption marks them used, but nothing wires a
+  dollar value into checkout as an automatic discount, since no
+  store-credit/discount mechanism exists anywhere in this codebase yet.
+  The owner UI says so explicitly wherever a dollar value is entered.
+  **Not verified live** — the Supabase MCP connector for `aro-platform`
+  disconnected mid-session; every design claim was checked by reading
+  the actual migration SQL and the existing `redeem_reward()` function
+  directly, not assumed, but the three-concurrent-redemption race, the
+  cross-venue rejection, and the three new `scripts/verify-live.mjs`
+  checks are all unrun against a real database. `BUILD-LOG-PLAN-12.md`.
 
 ## Lane B — Commerce & kitchen ops
 
@@ -296,11 +346,11 @@ prose, same rule as Lane B's note above.
   (see its "Post-review pass" section for the complete finding-by-finding
   list, including two flagged-not-fixed items with reasoning).
 
-- **PLAN-37 (Hours + tips CSV export)**: 🟡 **built, PR #75 open
-  (draft).** Server route (`app/api/tips/export`, owner-only) calls
-  PLAN-36's `runTipReport()` directly — no re-querying or re-deriving, so
-  CSV values match the report row for row by construction. New
-  `lib/csv.ts`: RFC 4180 field escaping, UTF-8 BOM, and integer-exact
+- **PLAN-37 (Hours + tips CSV export)**: ✅ **merged** (PR #75). Server
+  route (`app/api/tips/export`, owner-only) calls PLAN-36's
+  `runTipReport()` directly — no re-querying or re-deriving, so CSV
+  values match the report row for row by construction. New `lib/csv.ts`:
+  RFC 4180 field escaping, UTF-8 BOM, and integer-exact
   cents/minutes-to-decimal-string conversions (verified via an exhaustive
   round-trip check — `10.10` never renders as `10.1` or `10.100000001`).
   Filename carries venue slug + period. Emits `report.exported`
@@ -308,7 +358,12 @@ prose, same rule as Lane B's note above.
   The Export CSV link lives in the shared `TipsReportClient`, so both the
   owner (`/tips`) and admin (`/tips-admin`) paths get it. Period parsing
   matches PLAN-36's venue-timezone-aware approach exactly (never the
-  browser's or this server's). Full detail:
+  browser's or this server's). **Real gap found and fixed in post-draft
+  audit before merge**: `escapeCsvField` did not neutralize a leading
+  `=`/`+`/`-`/`@`, a CSV-formula-injection vector reachable via an
+  owner/manager-set `staff_name` — fixed with the standard OWASP
+  single-quote-prefix neutralization. **Lane C (PLAN-30 through PLAN-37)
+  is now fully merged to main.** Full detail:
   `docs/plans/BUILD-LOG-PLAN-37.md`.
 
 ## Recommendation folded in today: HQ ↔ venue-console unification
