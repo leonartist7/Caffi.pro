@@ -96,6 +96,13 @@ const STRINGS = {
   batchSuccess: (count: number) => `Issued ${count} offer${count === 1 ? '' : 's'}.`,
   skippedNote: (count: number) =>
     count > 0 ? ` (${count} already hold an unredeemed offer from this program, skipped)` : '',
+  runDaily: "Run today's birthday/anniversary issues now",
+  runningDaily: 'Running…',
+  runDailyResult: (birthday: number, anniversary: number) =>
+    `Issued ${birthday} birthday and ${anniversary} anniversary offer${birthday + anniversary === 1 ? '' : 's'}.`,
+  runDailyFailed: "Couldn't run today's issues — try again.",
+  runDailyHint:
+    'Runs automatically every day once CRON_SECRET is set — use this to test or catch up in the meantime.',
 } as const
 
 export function LoyaltyClient({ venueId }: { venueId: string }) {
@@ -110,6 +117,8 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
   const [defaultDollars, setDefaultDollars] = useState('')
   const [delayDays, setDelayDays] = useState('')
   const [windowDays, setWindowDays] = useState('')
+
+  const [runningDaily, setRunningDaily] = useState(false)
 
   const [batchFor, setBatchFor] = useState<Program | null>(null)
   const [cohortStatus, setCohortStatus] = useState<'regular' | 'fading'>('regular')
@@ -281,6 +290,30 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
     }
   }
 
+  async function runDailyNow() {
+    if (runningDaily) return
+    setRunningDaily(true)
+    try {
+      const res = await fetch('/api/loyalty/run-birthday-anniversary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ venue_id: venueId }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.error || 'run failed')
+      toast.success(STRINGS.runDailyResult(body.birthdayIssued, body.anniversaryIssued))
+    } catch (error) {
+      console.error('[loyalty] run-daily failed:', error)
+      toast.error(STRINGS.runDailyFailed)
+    } finally {
+      setRunningDaily(false)
+    }
+  }
+
+  const hasActiveDateProgram = programs.some(
+    p => p.status === 'active' && (p.type === 'birthday' || p.type === 'anniversary')
+  )
+
   function openBatchPanel(program: Program) {
     setBatchFor(program)
     setCohortStatus('regular')
@@ -364,6 +397,20 @@ export function LoyaltyClient({ venueId }: { venueId: string }) {
         </button>
       </div>
       <p className="text-sm text-aro-muted mb-4">{STRINGS.subtitle}</p>
+
+      {hasActiveDateProgram && (
+        <div className="rounded-xl bg-aro-sand/40 border border-aro-hairline px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+          <p className="text-xs text-aro-muted">{STRINGS.runDailyHint}</p>
+          <button
+            type="button"
+            onClick={runDailyNow}
+            disabled={runningDaily}
+            className="shrink-0 rounded-lg border border-aro-hairline px-3 py-2 text-xs font-medium text-aro-ink-soft hover:bg-aro-sand disabled:opacity-60"
+          >
+            {runningDaily ? STRINGS.runningDaily : STRINGS.runDaily}
+          </button>
+        </div>
+      )}
 
       {showForm && (
         <div className="rounded-xl bg-white border border-aro-hairline p-4 mb-4 space-y-3">
