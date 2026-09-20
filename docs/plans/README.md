@@ -1,5 +1,7 @@
 # Execution plans — ranked by leverage (2026-07-09)
 
+> Historical reference. The [Product OS](../product-os/README.md) is the current strategy and execution authority. Old live-environment instructions and build-success claims are not release approval.
+
 Written for a less-capable model to execute without questions. Each plan:
 goal, exact files, ordered steps, the edge cases that actually bite, and
 verifiable acceptance criteria. House rules from `docs/audit/REBUILD-PLAN.md`

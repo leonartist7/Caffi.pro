@@ -1,5 +1,7 @@
 # ☕ CAFFI.PRO - PROJECT MASTER PLAN
 
+> Historical reference. The [Product OS](docs/product-os/README.md) is the current strategy and execution authority. Old live-environment instructions and build-success claims are not release approval.
+
 > **Last Updated:** November 12, 2025
 > **Project Status:** 85% MVP Complete
 > **Current Phase:** Production Readiness & Feature Expansion
