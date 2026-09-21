@@ -244,11 +244,8 @@ export function CreativeStudio({
         )}
       </section>
 
-      {/* Visible stub, never omitted and never a dead button (§7.6). */}
-      <section
-        aria-disabled="true"
-        className="rounded-2xl border border-dashed border-aro-hairline bg-aro-cream-warm/60 p-5 md:p-6"
-      >
+      {/* Visible non-interactive status content; no unsupported ARIA state. */}
+      <section className="rounded-2xl border border-dashed border-aro-hairline bg-aro-cream-warm/60 p-5 md:p-6">
         <div className="flex items-center gap-3">
           <h2 className="font-display text-base font-bold text-aro-muted">{STRINGS.imageTitle}</h2>
           <span className="rounded-full bg-aro-sand px-2.5 py-0.5 font-mono text-[0.65rem] uppercase tracking-[0.1em] text-aro-muted">

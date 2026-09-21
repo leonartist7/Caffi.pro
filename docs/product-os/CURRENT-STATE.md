@@ -2,7 +2,7 @@
 id: current-state
 title: Executive diagnosis
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-21
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -20,14 +20,19 @@ Caffi.pro is a Next.js 14 / React 18 application with ARO HQ, venue-owner, count
 - Vercel lists a READY production deployment for this exact main SHA. The GitHub status agrees. Both relevant Supabase projects report INACTIVE in a read-only project inventory on 2026-09-20. No database was resumed.
 - A server-side AI abstraction exists, but selects direct OpenAI, not Gateway. Apple/Google wallet endpoints and owner campaigns are explicitly stubbed/coming soon. [AI provider](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/ai/provider.ts), [wallet](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/app/api/wallet), [modules](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/modules.ts).
 
+## 2026-09-21 SPEC-01 update
+- `requireVenueRole` now constrains membership lookup to `is_active = true` and fails closed when returned membership data is incomplete. Its Vitest matrix records the pre-fix revoked owner/manager/admin failure and now passes 13 mocked gate tests, including same-org access and guessed cross-tenant resource IDs. This is application-boundary evidence, not an RLS or live proof.
+- Type check and zero-warning lint pass. The Creative Studio informational section no longer applies unsupported `aria-disabled` semantics. A production-equivalent build command now supplies fixture-only environment values and is wired into CI; local completion remains pending because this workstation's Next/Webpack compilation outlasted the command wrapper before emitting a terminal result.
+- Resettable fixture definitions and local-only `db:reset`/`test:db` commands exist. Local migration/RLS/SQL/browser verification is blocked here because Supabase CLI, Docker and `psql` are unavailable; no hosted project was contacted.
+
 ## Ten highest-leverage issues
 | Priority | Finding and evidence | Next action |
 |---|---|---|
 | 1 | Relevant database projects INACTIVE; current runtime parity unknown. [Service evidence](evidence/SERVICES-2026-09-20.md) | Prepare isolated demo environment; founder decides restoration, never silently resume production |
-| 2 | requireVenueRole reads memberships without is_active, unlike requireAroAdmin. [Authorization](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/authz.ts) | SPEC-01: reproduce revoked owner/manager/admin access, then repair and regression-test |
+| 2 | `requireVenueRole` now filters active memberships and has mocked revoked-access/cross-tenant regression coverage. Independent security review and local RLS replay remain pending. | Review [SPEC-01](specs/SPEC-01-quality-and-access.md) evidence; complete local DB verification before closing the authorization gate |
 | 3 | Delivery checkout supports postal-prefix zones, not courier dispatch. [Storefront](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/storefront.ts), [checkout](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/components/storefront/CheckoutForm.tsx) | SPEC-03: durable delivery foundation and simulator |
 | 4 | Stripe session creation lacks an explicit provider idempotency option; refund webhook reconciliation is deferred. [Adapter](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/payments/adapters/stripe.ts), [webhook](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/app/api/webhooks/stripe/route.ts) | SPEC-02: prove concurrent checkout/recovery behavior and reconcile refunds before live delivery |
-| 5 | No app regression test command or root PR quality pipeline. Default build skips lint. [Package](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/package.json), [config](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/next.config.js), [workflow](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/.github/workflows/opencode.yml) | SPEC-01: separate required type/lint/test/build/migration checks |
+| 5 | Vitest, strict lint, type, documentation and isolated build commands are now separately wired in PR CI. Local DB/browser checks remain blocked and `next build` still requires a terminal local/CI result. | Use the new quality workflow and local fixture runbook; do not treat unavailable DB/browser checks as passed |
 | 6 | Historical loyalty/browser verification is incomplete, even where PRs merged. [PLAN-12 log](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/docs/plans/BUILD-LOG-PLAN-12.md), [PLAN-18 log](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/docs/plans/BUILD-LOG-PLAN-18.md) | SPEC-06: concurrent redemption/referral, scheduler and real-device push qualification |
 | 7 | HQ impersonation is inconsistent across owner pages. [Home](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/app/(owner)/home/page.tsx), [helper](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/impersonation.ts) | SPEC-02: one effective venue resolution and audited operator journey |
 | 8 | Courier/POS access, first market and payment account model are undecided. [Founder gates](FOUNDER-DECISIONS.md) | Parallel feasibility evidence; no vendor promises |
