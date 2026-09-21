@@ -18,6 +18,7 @@
     "test:db": "node scripts/test-local-db.mjs",
     "build:isolated": "node scripts/build-isolated.mjs",
     "docs:check": "node docs/product-os/check.mjs",
+    "audit:dependencies": "npm audit --omit=dev --audit-level=critical",
     "verify:live": "node scripts/verify-live.mjs",
     "verify:ordering-rpc": "node scripts/verify-ordering-rpc.mjs",
     "prepare": "husky"

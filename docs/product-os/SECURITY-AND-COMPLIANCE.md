@@ -2,7 +2,7 @@
 id: security-and-compliance
 title: Security and compliance strategy
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-21
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -29,10 +29,10 @@ Jurisdiction is undecided. GDPR, CASL, CAN-SPAM, TCPA and local rules are applic
 Founder/legal review is required for merchant-of-record and payout responsibility, taxes, courier claims/refunds, tip recipients, restricted goods, processor agreements, retention and cross-border processing. Initial delivery excludes regulated goods until specifically approved.
 
 ## Known risk register
-- Active-membership omission: static finding, unpatched in this documentation PR.
+- Active-membership application-boundary omission: repaired in SPEC-01 with mocked regression coverage; independent security review and isolated RLS replay remain required before this gate closes.
 - Existing refund reconciliation is deferred; no safe live refund completion claim.
 - Historical legacy-project RLS exposure: not reverified while project INACTIVE.
-- Comment-driven agent workflow trust and moving action ref: review before relying on it.
+- Comment-driven agent workflow now restricts trusted author associations and pins action SHAs; review its permissions and branch-protection interaction before relying on it.
 - Provider access, shared credentials and payment account model: unresolved founder gates.
 
 Evidence: [current state](CURRENT-STATE.md), [services](evidence/SERVICES-2026-09-20.md). Supabase [RLS documentation](https://supabase.com/docs/guides/database/postgres/row-level-security) confirms that grants and row policies are separate and service roles can bypass RLS.
