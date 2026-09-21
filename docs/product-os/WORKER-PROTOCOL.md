@@ -2,13 +2,15 @@
 id: worker-protocol
 title: Worker protocol
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [product-os]
 ---
 
 # Worker protocol
 
 Back to [ledger](EXECUTION-LEDGER.md), [roadmap](ROADMAP.md) and [quality](QUALITY-STRATEGY.md).
+
+Every worker follows the [continuity procedure](CONTINUITY.md) at startup, before implementation, at review and at handoff. Documentation maintenance is part of the packet's definition of done.
 
 ## Packet index
 - [SPEC-01 quality and access](specs/SPEC-01-quality-and-access.md)

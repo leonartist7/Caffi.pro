@@ -2,13 +2,27 @@
 id: roadmap
 title: Roadmap
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [product-os]
 ---
 
 # Roadmap
 
 Back to [vision](VISION.md) and [execution ledger](EXECUTION-LEDGER.md). Day 1 starts when implementation workers begin; dates below are relative targets, not vendor promises.
+
+## Five implementation phases
+
+This is the canonical grouping agreed on 2026-09-21. It preserves the seven detailed packets rather than creating a competing backlog. Apply the [continuity procedure](CONTINUITY.md) throughout. Product OS publication is the preparatory deliverable; no runtime phase is complete at this update.
+
+| Phase | Owned packets and outcome | Exit gate |
+|---|---|---|
+| 1. Reliable foundation | [SPEC-01](specs/SPEC-01-quality-and-access.md): active-membership authorization, baseline lint/build recovery, automated checks, isolated database and resettable synthetic venue | Reproducible build; lint/types/tests pass; tenant isolation and revoked access verified; environment setup documented |
+| 2. Connected ordering | [SPEC-02](specs/SPEC-02-connected-sales-journey.md): branded mobile ordering, availability/modifiers, test payment, acceptance, kitchen and truthful guest status | Complete guest-to-kitchen journey; duplicate submissions, payment retries, closed venues and unavailable items tested |
+| 3. Delivery | [SPEC-03](specs/SPEC-03-delivery-foundation.md) and [SPEC-04](specs/SPEC-04-first-courier.md): quotes, dispatch/reconciliation, simulator, own drivers and first accessible courier | Simulator and driver journeys pass; no duplicate booking on retries; timeout/cancellation/failure recovery verified; provider sandbox separately verified and controlled real delivery required for live readiness |
+| 4. Connected operations and growth | [SPEC-05](specs/SPEC-05-pos-connection.md) and [SPEC-06](specs/SPEC-06-growth-and-creative.md): POS acknowledgements/recovery, guest history, loyalty and grounded creative/owner assistance | Rejected POS orders recoverable; loyalty reconciles; tenant-scoped context; consequential AI actions require application-enforced permissions |
+| 5. First-client qualification | [SPEC-07](specs/SPEC-07-onboarding-and-release.md): repeatable onboarding, connection health, support, recovery and supervised pilot | Mobile/staff/accessibility journeys pass; rollback demonstrated; venue acceptance evidence and explicit live activation authorization recorded |
+
+Provider feasibility and external decision collection start in Phase 1. Independent contracts, fixtures and runbooks may proceed while vendor access is blocked, but a blocked gate is never treated as passed. The ledger's independent local/sandbox/live columns remain authoritative. The weekly windows below are planning targets, not automatic phase transitions.
 
 | Window | Slice / outcome | Dependencies and gate | Lead |
 |---|---|---|---|
@@ -22,7 +36,7 @@ Back to [vision](VISION.md) and [execution ledger](EXECUTION-LEDGER.md). Day 1 s
 | Weeks 9–13 | SPEC-07: onboarding and release qualification | Full staging evidence; explicit production approval | GPT-6 Astra xhigh |
 
 ## Now
-Publish this Product OS. Run SPEC-01 and bounded SPEC-02 work. In parallel, prepare provider feasibility dossiers without opening paid accounts. Design delivery contracts and test fixtures without waiting for a market decision.
+Product OS is published in [draft PR #83](https://github.com/leonartist7/Caffi.pro/pull/83), pending review and merge as of 2026-09-21. Start SPEC-01 from the documented strategy dependency, then bounded SPEC-02 work. Prepare provider feasibility dossiers without opening paid accounts. Design delivery contracts and test fixtures without waiting for a market decision.
 
 ## Next
 End-to-end simulator delivery, payment recovery, own-driver milestones, first approved courier adapter and first POS connection. Demo should tell a complete story from branded order to kitchen, handoff, guest status and repeat visit.

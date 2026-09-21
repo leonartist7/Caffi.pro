@@ -2,7 +2,7 @@
 id: readme
 title: ARO Product OS
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-21
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -20,6 +20,8 @@ The canonical product strategy and execution entry point for Caffi.pro. The firs
 4. [Security](SECURITY-AND-COMPLIANCE.md), [quality](QUALITY-STRATEGY.md), [design](DESIGN-SYSTEM-STRATEGY.md)
 5. [Roadmap](ROADMAP.md), [execution ledger](EXECUTION-LEDGER.md), [worker protocol](WORKER-PROTOCOL.md)
 6. [Founder decisions](FOUNDER-DECISIONS.md), [evidence](EVIDENCE.md), [handoff](handoffs/HANDOFF-2026-09-20.md)
+
+For every new or resumed implementation session, follow [continuity and documentation maintenance](CONTINUITY.md). The [roadmap](ROADMAP.md) groups the seven packets into five gated phases. The ledger records actual progress; phase numbering is not evidence of completion.
 
 ## Authority and maintenance
 This package implements the founder-approved strategy as documentation. Runtime features described in specs are future work, not delivered by this PR. Earlier plans and build logs remain historical evidence; this package supersedes their sequencing, not the code they describe.

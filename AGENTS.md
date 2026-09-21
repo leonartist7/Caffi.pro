@@ -4,6 +4,7 @@ These instructions were introduced with the Product OS on 2026-09-20. No root AG
 
 - Start with [Product OS](docs/product-os/README.md), [current state](docs/product-os/CURRENT-STATE.md), and [execution ledger](docs/product-os/EXECUTION-LEDGER.md).
 - Use the assigned spec and [worker protocol](docs/product-os/WORKER-PROTOCOL.md). Historical plans are evidence, not current priorities or permission to run live SQL.
+- Follow the [five-phase roadmap](docs/product-os/ROADMAP.md) and [continuity procedure](docs/product-os/CONTINUITY.md): select eligible work, specify before coding, verify acceptance criteria, update affected documents in the same PR, and leave an exact resume point.
 - Every implementation PR updates the execution ledger with exact changes, checks, environment, blockers and next owner.
 - Separate code presence, local verification, sandbox verification and live verification. Do not claim production readiness from build success.
 - Preserve tenant/row authorization, money idempotency and server-only secrets. Sensitive changes require independent architecture/security review.

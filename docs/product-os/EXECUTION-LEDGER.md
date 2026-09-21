@@ -2,7 +2,7 @@
 id: execution-ledger
 title: Execution ledger
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-21
 tags: [product-os]
 ---
 
@@ -34,3 +34,7 @@ Use explicit status: ready, active, review, blocked, complete. Mark complete onl
 
 ## 2026-09-20 entry
 Completed strategy documentation and evidence inventory. Corrected PLAN-13–18 merge statuses, removed unsupported legacy-database recoverability assertion, and made root/legacy entry points lead here. No production data/configuration or application feature was changed. [Handoff](handoffs/HANDOFF-2026-09-20.md).
+
+## 2026-09-21 entry
+
+OS-00 remains in review in [draft PR #83](https://github.com/leonartist7/Caffi.pro/pull/83), with initial documentation commit b9cd3c90d499f50f4e5c84e7b97db4d1b9c2f9fe. Added the canonical five-phase mapping and [continuity procedure](CONTINUITY.md), linked from root AGENTS.md and the worker entry points. Runtime SPEC-01 through SPEC-07 remain unimplemented by this work. Next owner: SPEC-01 worker; next action: verify the strategy dependency and expand quality/access acceptance criteria into tests before implementation. Documentation verification for this follow-up is recorded in the PR; no application or live environment change.
