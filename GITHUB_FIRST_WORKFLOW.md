@@ -1,5 +1,7 @@
 # 🚀 GitHub-First Workflow (No VS Code Required!)
 
+> Historical reference. The [Product OS](docs/product-os/README.md) is the current strategy and execution authority. Old live-environment instructions and build-success claims are not release approval.
+
 **The Simple Way:** You give instructions → I code → You review on GitHub → Merge → Auto-deploys
 
 ---

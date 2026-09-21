@@ -1,5 +1,7 @@
 # 🏗️ CAFFI.PRO - MASTER BUILD DOCUMENT
 
+> Historical reference. The [Product OS](docs/product-os/README.md) is the current strategy and execution authority. Old live-environment instructions and build-success claims are not release approval.
+
 **Version:** 2.0
 **Last Updated:** November 12, 2025
 **Project Status:** ~50% Complete (Phase 1-5 Done, Phase 6-8 Remaining)

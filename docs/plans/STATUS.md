@@ -1,9 +1,8 @@
 # aro — project status
 
-Living document. Tracks what's actually done vs. missing against
-`MASTER-PLAN-v2-operating-system.md`'s sequence, kept current as work
-lands — update this file in the same PR as any status-changing work,
-don't let it drift. Last updated: 2026-08-10.
+Historical status snapshot, originally updated 2026-08-10; merge-status corrections applied 2026-09-20.
+
+Current authority: [Product OS](../product-os/README.md), [current state](../product-os/CURRENT-STATE.md), and [execution ledger](../product-os/EXECUTION-LEDGER.md). Update the canonical ledger in future PRs. Historical live/configuration statements below describe their original sessions and are not current verification. Both relevant Supabase projects report INACTIVE on 2026-09-20; see [service evidence](../product-os/evidence/SERVICES-2026-09-20.md).
 
 ## 🔴 NOW tier
 
@@ -16,7 +15,7 @@ don't let it drift. Last updated: 2026-08-10.
 
 ## 🟡 NEXT tier
 
-All nine items (N1–N9) remain **not started**. R3+R4 landing unblocks N2
+Historical N1–N9 summary (superseded; do not treat as current): R3+R4 landing unblocks N2
 (site-copy assist) and N5's prerequisite (R4 "proven" — not yet, pending
 the OpenAI key). Everything else is exactly as gated as `MASTER-PLAN-v2`
 already describes (N1/N6 on vendor decisions, N7 on pricing decision,
@@ -83,7 +82,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   Supabase service-role key / MCP connection in this container; every
   claim is argued from the SQL, not fired against a real database.
   `BUILD-LOG-PLAN-12.md`.
-- **PLAN-13 (Bounce-back + appreciation)**: 🟡 **built, PR open**. Adds
+- **PLAN-13 (Bounce-back + appreciation)**: ✅ **merged** ([PR #77](https://github.com/leonartist7/Caffi.pro/pull/77)). Live verification remains separate. Adds
   `member_offers.valid_from`/`period_key` (the shared "not redeemable yet"
   boundary and "don't double-issue per period" guarantee every later
   automatic-issuance item reuses) and a new `P0005` boundary on
@@ -95,7 +94,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   offer from the program. **Not verified live** — same gap as PLAN-12; no
   webhook fire, no batch-panel click-through, no database access in this
   session. `BUILD-LOG-PLAN-13.md`.
-- **PLAN-14 (Birthday + anniversary)**: 🟡 **built, PR open**. One-shot
+- **PLAN-14 (Birthday + anniversary)**: ✅ **merged** ([PR #78](https://github.com/leonartist7/Caffi.pro/pull/78)). Live verification remains separate. One-shot
   month/day capture on the pass (no client JS needed — plain form POST,
   409 on a second write enforced in the `UPDATE`'s own `WHERE`, not just a
   pre-read check), venue-local issuance via a new
@@ -110,7 +109,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   verified live** — same gap as PLAN-12/13; the capture form was never
   submitted, the cron route's branches were read not curled.
   `BUILD-LOG-PLAN-14.md`.
-- **PLAN-15 (Referral engine)**: 🟡 **built, PR open**. Member loop
+- **PLAN-15 (Referral engine)**: ✅ **merged** ([PR #79](https://github.com/leonartist7/Caffi.pro/pull/79)). Live verification remains separate. Member loop
   end-to-end: share block on `/pass` (Web Share + clipboard fallback),
   `ref` capture on join (silently ignored if unknown/cross-venue, never
   fails the join), credit on the referred member's first visit — never
@@ -126,7 +125,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   not accessible from this session, and its prerequisite (R1) is itself
   still not done. **Not verified live** — same gap as every Lane A PR
   this session. `BUILD-LOG-PLAN-15.md`.
-- **PLAN-16 (Survey promotions)**: 🟡 **built, PR open**. Zero
+- **PLAN-16 (Survey promotions)**: ✅ **merged** ([PR #80](https://github.com/leonartist7/Caffi.pro/pull/80)). Live verification remains separate. Zero
   migrations — `survey_responses` (PLAN-10) already had the exact shape
   needed, including the DB-level one-response-per-member unique index.
   Owner-authored 3–5 questions (`loyalty_programs.config.questions`,
@@ -139,7 +138,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   choice-question count breakdown, flagged rather than rushed. **Not
   verified live** — same gap as every Lane A PR this session.
   `BUILD-LOG-PLAN-16.md`.
-- **PLAN-17 (Mystery reward gamification)**: 🟡 **built, PR open**. The
+- **PLAN-17 (Mystery reward gamification)**: ✅ **merged** ([PR #81](https://github.com/leonartist7/Caffi.pro/pull/81)). Live verification remains separate. The
   client never draws — one real `Math.random()` call, server-side, at
   issue time, feeding a pure cumulative-weight selector
   (`lib/loyalty/mystery.ts`), verified over 100,000 simulated draws
@@ -153,7 +152,7 @@ first PR to give Lane A its own section, matching Lane B's and Lane C's).
   shows expected cost per reveal live as prizes are edited. **Not
   verified live** — same gap as every Lane A PR this session; the reveal
   animation was never seen render. `BUILD-LOG-PLAN-17.md`.
-- **PLAN-18 (Web push channel)**: 🟡 **built, PR open**. Zero migrations
+- **PLAN-18 (Web push channel)**: ✅ **merged** ([PR #82](https://github.com/leonartist7/Caffi.pro/pull/82)). Live verification remains separate. Zero migrations
   — `push_subscriptions`/`messages.channel = 'push'` (both PLAN-10)
   already had everything needed. New `web-push` dependency;
   `lib/push/provider.ts` mirrors the existing
@@ -275,7 +274,7 @@ enumerates concrete items through `PLAN-37`). Preflight confirmed live
 Supabase MCP access to `aro-platform` (`jjgccfrwjkwknyjtbtxa`);
 `staff_shifts`/`tip_allocations` (PLAN-10) both live before any Lane C
 work began. Each item is its own branch off fresh `origin/main` (never
-stacked), so these show up as separate open PRs until they merge; resolve
+stacked), these were separate PRs and have since merged (see the Product OS PR inventory); resolve
 a STATUS.md conflict here by replacing this whole section, not unioning
 prose, same rule as Lane B's note above.
 

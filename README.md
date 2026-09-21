@@ -1,5 +1,7 @@
 # ☕ Caffi.pro - Multi-Tenant Coffee Shop Management Platform
 
+> Start with the [Product OS](docs/product-os/README.md) for current strategy, evidence, roadmap and execution packets. The material below is historical setup context; production readiness must be checked against the [current state](docs/product-os/CURRENT-STATE.md).
+
 **Version:** 2.0
 **Status:** ~50% Complete (Phase 1-5 Done)
 **Tech Stack:** Next.js 14 + TypeScript + Supabase + Tailwind CSS
@@ -33,11 +35,11 @@ Caffi.pro is a **white-label SaaS platform** that enables independent coffee sho
 npm install
 
 # Set up environment variables
-cp .env.local.example .env.local
+cp .env.example .env.local
 # Edit .env.local with your Supabase credentials
 
-# Apply database migrations in Supabase SQL Editor
-# See MASTER_BUILD_DOCUMENT.md for migration order
+# Replay migrations only in an isolated local/test database
+# See docs/product-os/QUALITY-STRATEGY.md; live changes require approval
 
 # Start development server
 npm run dev
@@ -58,13 +60,13 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-key
 
 ### Essential Reading
 
-1. **[MASTER_BUILD_DOCUMENT.md](./MASTER_BUILD_DOCUMENT.md)** - Complete build reference for AI agents
+1. **[Product OS](docs/product-os/README.md)** - Canonical strategy and worker entry point
 2. **[PROJECT_CONTEXT.md](./PROJECT_CONTEXT.md)** - Comprehensive project overview (1,150 lines)
 3. **[PROJECT_ANALYSIS_COMPREHENSIVE.md](./PROJECT_ANALYSIS_COMPREHENSIVE.md)** - Technical analysis (1,113 lines)
 
 ### Setup Guides
 
-4. **[ENABLE_DEV_MODE.md](./ENABLE_DEV_MODE.md)** - Dev RLS policies setup (⚠️ Required)
+4. **[Quality strategy](docs/product-os/QUALITY-STRATEGY.md)** - Isolated development and test setup; never enable permissive RLS on a live project
 5. **[CUSTOM_DOMAIN_SETUP.md](./CUSTOM_DOMAIN_SETUP.md)** - Custom domain configuration
 6. **[MOBILE_TESTING_GUIDE.md](./MOBILE_TESTING_GUIDE.md)** - Mobile testing on Windows 11
 

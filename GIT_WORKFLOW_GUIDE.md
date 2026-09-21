@@ -1,5 +1,7 @@
 # 🔄 Git Workflow Guide - VS Code + GitHub + Claude Code Cloud + Vercel
 
+> Historical reference. The [Product OS](docs/product-os/README.md) is the current strategy and execution authority. Old live-environment instructions and build-success claims are not release approval.
+
 **Your Current Setup:**
 
 - 🖥️ **VS Code (Local)** - Your main development environment
