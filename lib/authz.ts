@@ -164,11 +164,14 @@ export async function requireVenueRole(
     }
 
     // Pending invites carry user_id = NULL until accepted, so matching on
-    // user_id already restricts this to accepted memberships.
+    // user_id already restricts this to accepted memberships. Revocation is
+    // an authorization boundary too: keep it in the query and in the match
+    // below so unexpected/incomplete database rows fail closed.
     const { data: memberships, error: membershipError } = await admin
       .from('memberships')
-      .select('role, venue_id, org_id')
+      .select('role, venue_id, org_id, is_active')
       .eq('user_id', user.id)
+      .eq('is_active', true)
 
     const rows = memberships ?? []
 
@@ -182,6 +185,7 @@ export async function requireVenueRole(
 
     const match = rows.find(
       m =>
+        m.is_active === true &&
         (m.role === 'aro_admin' ||
           m.venue_id === venue.venue_id ||
           (m.venue_id === null && m.org_id === venue.org_id)) &&

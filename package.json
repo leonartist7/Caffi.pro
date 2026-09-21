@@ -11,6 +11,13 @@
     "start": "next start",
     "lint": "next lint",
     "lint:strict": "next lint --max-warnings 0",
+    "test:unit": "vitest run --configLoader runner --config vitest.config.ts",
+    "test:unit:watch": "vitest --configLoader runner --config vitest.config.ts",
+    "test:browser": "playwright test",
+    "db:reset": "node scripts/reset-local-fixtures.mjs",
+    "test:db": "node scripts/test-local-db.mjs",
+    "build:isolated": "node scripts/build-isolated.mjs",
+    "docs:check": "node docs/product-os/check.mjs",
     "verify:live": "node scripts/verify-live.mjs",
     "verify:ordering-rpc": "node scripts/verify-ordering-rpc.mjs",
     "prepare": "husky"
@@ -34,6 +41,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.1",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
@@ -46,7 +54,8 @@
     "postcss": "^8.4.32",
     "prettier": "^3.6.2",
     "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
