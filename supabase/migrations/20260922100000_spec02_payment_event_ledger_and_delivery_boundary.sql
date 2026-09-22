@@ -22,6 +22,39 @@ ALTER TABLE public.payment_provider_events ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.payment_provider_events FROM anon, authenticated;
 GRANT ALL ON public.payment_provider_events TO service_role;
 
+-- A late signed success can arrive after a retry was reserved. Lock the order
+-- and quarantine every payable attempt together, so no browser can resume or
+-- create another checkout while the money state is reconciled by an operator.
+CREATE OR REPLACE FUNCTION public.quarantine_order_payment_attempts(
+  p_order_id UUID,
+  p_venue_id UUID,
+  p_raw JSONB DEFAULT '{}'::JSONB
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  PERFORM 1 FROM public.orders AS o
+  WHERE o.order_id = p_order_id AND o.venue_id = p_venue_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'ORDER_NOT_FOUND';
+  END IF;
+  UPDATE public.payments AS p
+  SET status = 'reconciliation_required', raw = COALESCE(p.raw, '{}'::JSONB) || p_raw
+  WHERE p.order_id = p_order_id
+    AND p.venue_id = p_venue_id
+    AND p.status IN ('pending', 'failed');
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.quarantine_order_payment_attempts(UUID, UUID, JSONB)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.quarantine_order_payment_attempts(UUID, UUID, JSONB)
+  TO service_role;
+
 -- A delivery selection is a restaurant fulfilment preference only. A future
 -- SPEC-03 courier dispatch transaction must own this state transition.
 CREATE OR REPLACE FUNCTION public.transition_order_status(

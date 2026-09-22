@@ -108,6 +108,15 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PAYMENT_NOT_PENDING';
   END IF;
 
+  IF EXISTS (
+    SELECT 1 FROM public.payments AS p
+    WHERE p.order_id = p_order_id
+      AND p.venue_id = p_venue_id
+      AND p.status IN ('succeeded', 'reconciliation_required')
+  ) THEN
+    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PAYMENT_NOT_RETRYABLE';
+  END IF;
+
   SELECT * INTO v_pending FROM public.payments AS p
   WHERE p.order_id = p_order_id AND p.venue_id = p_venue_id AND p.status = 'pending'
   ORDER BY p.created_at DESC
@@ -120,15 +129,6 @@ BEGIN
       'idempotency_key', v_pending.idempotency_key,
       'raw', v_pending.raw
     );
-  END IF;
-
-  IF EXISTS (
-    SELECT 1 FROM public.payments AS p
-    WHERE p.order_id = p_order_id
-      AND p.venue_id = p_venue_id
-      AND p.status IN ('succeeded', 'reconciliation_required')
-  ) THEN
-    RAISE EXCEPTION USING ERRCODE = 'P0001', MESSAGE = 'PAYMENT_NOT_RETRYABLE';
   END IF;
 
   v_operation_key := 'order:' || p_order_id::TEXT || ':checkout:' || p_proposed_attempt_key::TEXT;
@@ -207,6 +207,15 @@ BEGIN
     RETURN;
   END IF;
   IF v_payment.status <> 'pending' THEN
+    IF v_payment.status <> 'succeeded' THEN
+      -- The order row is already locked. Quarantine a retry that may have
+      -- been reserved while this verified success was in flight.
+      UPDATE public.payments AS p
+      SET status = 'reconciliation_required', raw = COALESCE(p.raw, '{}'::JSONB) || p_raw
+      WHERE p.order_id = v_payment.order_id
+        AND p.venue_id = v_payment.venue_id
+        AND p.status IN ('pending', 'failed');
+    END IF;
     RETURN QUERY SELECT v_payment.order_id, v_payment.venue_id, false, false, v_payment.status <> 'succeeded';
     RETURN;
   END IF;

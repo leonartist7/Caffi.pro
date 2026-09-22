@@ -228,6 +228,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
   const storedCheckout = (existingPayment?.raw as { checkout_url?: string } | null)?.checkout_url
   const recoveredRedirect = recoverCheckout({
+    orderStatus: order.status,
     paymentStatus: existingPayment?.status,
     storedCheckoutUrl: storedCheckout,
     confirmationUrl,
@@ -239,6 +240,12 @@ export async function POST(request: NextRequest) {
       tracking_token: trackingToken,
       payment_mode: existingPayment?.provider,
     })
+  }
+  if (order.status !== 'pending') {
+    return NextResponse.json(
+      { error: 'This order can no longer start or resume payment.' },
+      { status: 409 }
+    )
   }
 
   const retryingFailedPayment = existingPayment?.status === 'failed'
@@ -333,6 +340,7 @@ export async function POST(request: NextRequest) {
         .eq('idempotency_key', attemptKey)
         .maybeSingle()
       const racedRedirect = recoverCheckout({
+        orderStatus: order.status,
         paymentStatus: racedPayment?.status,
         storedCheckoutUrl: (racedPayment?.raw as { checkout_url?: string } | null)?.checkout_url,
         confirmationUrl,

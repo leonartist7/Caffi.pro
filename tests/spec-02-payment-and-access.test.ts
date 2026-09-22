@@ -110,6 +110,7 @@ describe('SPEC-02-AC-03 checkout idempotency boundary', () => {
   it('resumes a persisted provider checkout after an interrupted browser navigation', () => {
     expect(
       recoverCheckout({
+        orderStatus: 'pending',
         paymentStatus: 'pending',
         storedCheckoutUrl: 'https://checkout.example.test/cs_once',
         confirmationUrl: '/shop/roastery/order-confirmation/order-a?tracking=token-a',
@@ -117,11 +118,28 @@ describe('SPEC-02-AC-03 checkout idempotency boundary', () => {
     ).toBe('https://checkout.example.test/cs_once')
     expect(
       recoverCheckout({
+        orderStatus: 'paid',
         paymentStatus: 'succeeded',
         storedCheckoutUrl: 'https://checkout.example.test/cs_once',
         confirmationUrl: '/shop/roastery/order-confirmation/order-a?tracking=token-a',
       })
     ).toBe('/shop/roastery/order-confirmation/order-a?tracking=token-a')
+    expect(
+      recoverCheckout({
+        orderStatus: 'canceled',
+        paymentStatus: 'pending',
+        storedCheckoutUrl: 'https://checkout.example.test/cs_once',
+        confirmationUrl: '/shop/roastery/order-confirmation/order-a?tracking=token-a',
+      })
+    ).toBeNull()
+    expect(
+      recoverCheckout({
+        orderStatus: 'pending',
+        paymentStatus: 'reconciliation_required',
+        storedCheckoutUrl: 'https://checkout.example.test/cs_once',
+        confirmationUrl: '/shop/roastery/order-confirmation/order-a?tracking=token-a',
+      })
+    ).toBeNull()
   })
 })
 

@@ -183,12 +183,11 @@ export async function POST(request: NextRequest) {
     // payment itself before acknowledgement, so checkout reservation cannot
     // create another payable attempt while an operator investigates.
     if (event.type === 'payment.succeeded') {
-      const { error: quarantineError } = await admin
-        .from('payments')
-        .update({ status: 'reconciliation_required', raw })
-        .eq('provider', 'stripe')
-        .eq('provider_ref', event.providerRef)
-        .in('status', ['pending', 'failed'])
+      const { error: quarantineError } = await admin.rpc('quarantine_order_payment_attempts', {
+        p_order_id: payment.order_id,
+        p_venue_id: payment.venue_id,
+        p_raw: raw,
+      })
       if (quarantineError) {
         console.error('[stripe-webhook] payment quarantine failed:', quarantineError.message)
         return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
