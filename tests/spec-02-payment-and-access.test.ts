@@ -56,6 +56,7 @@ describe('SPEC-02-AC-03 checkout idempotency boundary', () => {
   const originalMode = process.env.CAFFI_PAYMENT_MODE
   const originalFixtures = process.env.CAFFI_SYNTHETIC_FIXTURES
   const originalVenue = process.env.CAFFI_SYNTHETIC_VENUE_ID
+  const originalSupabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -66,6 +67,7 @@ describe('SPEC-02-AC-03 checkout idempotency boundary', () => {
     process.env.CAFFI_PAYMENT_MODE = originalMode
     process.env.CAFFI_SYNTHETIC_FIXTURES = originalFixtures
     process.env.CAFFI_SYNTHETIC_VENUE_ID = originalVenue
+    process.env.NEXT_PUBLIC_SUPABASE_URL = originalSupabaseUrl
   })
 
   it('passes the stable operation key to Stripe for every checkout retry', async () => {
@@ -92,8 +94,13 @@ describe('SPEC-02-AC-03 checkout idempotency boundary', () => {
     process.env.CAFFI_PAYMENT_MODE = 'test'
     process.env.CAFFI_SYNTHETIC_FIXTURES = '1'
     process.env.CAFFI_SYNTHETIC_VENUE_ID = 'venue-a'
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321'
     expect(isSyntheticPaymentModeForVenue('venue-a')).toBe(true)
     expect(isSyntheticPaymentModeForVenue('venue-b')).toBe(false)
+
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://hosted.example.test'
+    expect(isSyntheticPaymentModeForVenue('venue-a')).toBe(false)
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'http://127.0.0.1:54321'
 
     const provider = getProvider({ venueId: 'venue-a' })
     expect(provider.key).toBe('test')

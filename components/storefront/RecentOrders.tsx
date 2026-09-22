@@ -14,7 +14,6 @@ interface RecentOrder {
 type RecentOrderCredential = {
   order_id: string
   tracking_token: string
-  resume_url?: string
 }
 
 type LoadedRecentOrder = RecentOrder & { credential: RecentOrderCredential }
@@ -90,14 +89,6 @@ export function RecentOrders({ slug }: { slug: string }) {
             </p>
           </div>
           </Link>
-          {order.status === 'pending' && order.credential.resume_url?.startsWith('https://') ? (
-            <a
-              href={order.credential.resume_url}
-              className="mr-3 rounded-full bg-aro-espresso px-3 py-2 text-xs font-bold text-aro-cream"
-            >
-              Resume payment
-            </a>
-          ) : null}
           <ArrowRight className="h-5 w-5 text-aro-terra" />
         </div>
       ))}

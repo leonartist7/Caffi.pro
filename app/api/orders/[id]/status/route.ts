@@ -7,12 +7,20 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const { data, error } = await getSupabaseAdmin()
     .from('orders')
     .select(
-      'order_id, status, order_type, guest_name, subtotal_cents, tip_cents, total_cents, placed_at'
+      'order_id, venue_id, status, order_type, guest_name, subtotal_cents, tip_cents, total_cents, placed_at'
     )
     .eq('order_id', params.id)
     .eq('guest_tracking_token', trackingToken)
     .maybeSingle()
   if (error || !data) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+  const { data: payment } = await getSupabaseAdmin()
+    .from('payments')
+    .select('status')
+    .eq('order_id', data.order_id)
+    .eq('venue_id', data.venue_id)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
   return NextResponse.json({
     order_id: data.order_id,
     status: data.status,
@@ -22,5 +30,6 @@ export async function GET(request: Request, { params }: { params: { id: string }
     tip_cents: data.tip_cents,
     total_cents: data.total_cents,
     placed_at: data.placed_at,
+    payment_state: payment?.status === 'reconciliation_required' ? 'reconciliation_required' : undefined,
   })
 }

@@ -16,18 +16,25 @@ export async function GET(request: NextRequest) {
   const kitchenConfig = parseKitchenConfig(venue?.brand_kit ?? null)
   const { data: orders, error } = await admin
     .from('orders')
-    .select('*')
+    .select('order_id, status, order_type, guest_name, placed_at, tip_cents, total_cents')
     .eq('venue_id', session.venueId)
     .in('status', ['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery'])
     .order('placed_at')
   if (error) return NextResponse.json({ error: 'Failed to load orders' }, { status: 500 })
   const ids = (orders ?? []).map(order => order.order_id)
   const { data: items } = ids.length
-    ? await admin.from('order_items').select('*').in('order_id', ids).order('order_item_id')
+    ? await admin
+        .from('order_items')
+        .select('order_item_id, order_id, name_snapshot, quantity, notes')
+        .in('order_id', ids)
+        .order('order_item_id')
     : { data: [] }
   const itemIds = (items ?? []).map(item => item.order_item_id)
   const { data: modifiers } = itemIds.length
-    ? await admin.from('order_item_modifiers').select('*').in('order_item_id', itemIds)
+    ? await admin
+        .from('order_item_modifiers')
+        .select('id, order_item_id, name_snapshot')
+        .in('order_item_id', itemIds)
     : { data: [] }
   const { data: eightySixed } = await admin
     .from('menu_items')

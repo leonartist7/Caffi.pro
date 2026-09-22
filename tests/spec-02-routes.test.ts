@@ -29,6 +29,8 @@ describe('SPEC-02-AC-06 scoped guest order status', () => {
     const query = {
       select: vi.fn(() => query),
       eq: vi.fn(() => query),
+      order: vi.fn(() => query),
+      limit: vi.fn(() => query),
       maybeSingle: vi.fn(async () => ({
         data: {
           order_id: 'order-a',

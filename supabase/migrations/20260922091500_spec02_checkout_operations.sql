@@ -154,6 +154,49 @@ REVOKE ALL ON FUNCTION public.reserve_storefront_payment_attempt(UUID, UUID, TEX
 GRANT EXECUTE ON FUNCTION public.reserve_storefront_payment_attempt(UUID, UUID, TEXT, INTEGER, TEXT, UUID)
   TO service_role;
 
+-- Provider creation happens outside a transaction. Re-lock the order before
+-- attaching its resulting URL so a concurrent cancellation cannot leave a
+-- payable checkout attached to a canceled order.
+CREATE OR REPLACE FUNCTION public.attach_storefront_checkout(
+  p_order_id UUID,
+  p_venue_id UUID,
+  p_attempt_key UUID,
+  p_provider_ref TEXT,
+  p_checkout_url TEXT,
+  p_provider_operation_key TEXT
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_updated UUID;
+BEGIN
+  PERFORM 1 FROM public.orders AS o
+  WHERE o.order_id = p_order_id AND o.venue_id = p_venue_id AND o.status = 'pending'
+  FOR UPDATE;
+  IF NOT FOUND THEN RETURN false; END IF;
+  UPDATE public.payments AS p
+  SET provider_ref = p_provider_ref,
+      raw = COALESCE(p.raw, '{}'::JSONB) || jsonb_build_object(
+        'checkout_url', p_checkout_url,
+        'provider_operation_key', p_provider_operation_key
+      )
+  WHERE p.order_id = p_order_id
+    AND p.venue_id = p_venue_id
+    AND p.idempotency_key = p_attempt_key
+    AND p.status = 'pending'
+  RETURNING p.payment_id INTO v_updated;
+  RETURN v_updated IS NOT NULL;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.attach_storefront_checkout(UUID, UUID, UUID, TEXT, TEXT, TEXT)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.attach_storefront_checkout(UUID, UUID, UUID, TEXT, TEXT, TEXT)
+  TO service_role;
+
 -- A verified provider success after cancellation must not award points,
 -- deplete stock, or emit order.paid. Preserve it for manual reconciliation.
 ALTER TABLE public.payments DROP CONSTRAINT IF EXISTS payments_status_check;

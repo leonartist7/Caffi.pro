@@ -46,7 +46,7 @@ Back to [SPEC-02](../specs/SPEC-02-connected-sales-journey.md), [execution ledge
 - Provider sandbox, live payment, live database, courier, deployment and customer-message checks are not run. No external side effect was initiated.
 - The Phase 1 dependency remains unmerged with a failing critical dependency audit and a blocking mutable OpenCode action supply-chain finding. It must be reconciled before Phase 2 is rebased to main.
 - The same CI run's production dependency audit remains failed on the existing critical Next.js advisory; checks were not weakened to hide it.
-- An independent Astra xhigh static review found and drove fixes for payment concurrency, terminal-state, refund-binding, tenant isolation and fixture SQL defects. Its final late-success quarantine finding was corrected after that pass; one more independent confirmation and local migration replay are required before these gates can close.
+- An independent Astra xhigh static review accepted the final payment, authorization and tenant-isolation diff after driving fixes for payment concurrency, terminal-state, refund-binding, guest capability disclosure, recovery ordering and fixture SQL defects. This closes the static review gate only; local migration replay, concurrency execution and browser evidence remain required before release gates can close.
 
 ## Migration, rollback and exact next action
 

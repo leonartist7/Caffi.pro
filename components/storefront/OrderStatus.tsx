@@ -39,6 +39,7 @@ interface StatusData {
   tip_cents: number
   total_cents: number
   placed_at: string
+  payment_state?: 'reconciliation_required'
 }
 
 const LABELS: Record<string, string> = {
@@ -51,6 +52,7 @@ const LABELS: Record<string, string> = {
   completed: 'Completed',
   canceled: 'Canceled',
   refunded: 'Refunded',
+  reconciliation_required: 'Payment needs review',
 }
 
 export function OrderStatus({
@@ -185,11 +187,18 @@ export function OrderStatus({
         Order {order.order_id.slice(0, 8)}
       </p>
       <h1 className="mt-2 font-display text-4xl text-aro-espresso">
-        {LABELS[order.status] || order.status}
+        {order.payment_state === 'reconciliation_required'
+          ? LABELS.reconciliation_required
+          : LABELS[order.status] || order.status}
       </h1>
       <p className="mt-3 text-aro-muted">
         Thanks, {order.first_name}. This page updates automatically as your order moves.
       </p>
+      {order.payment_state === 'reconciliation_required' ? (
+        <p className="mt-3 rounded-2xl bg-aro-sand/60 px-4 py-3 text-sm text-aro-muted">
+          We&apos;re checking this payment. Please do not try again while the café resolves it.
+        </p>
+      ) : null}
       <div className="mt-6 rounded-2xl bg-aro-sand/60 px-4 py-3">
         <div className="flex items-center justify-between">
           <span className="text-sm capitalize">{order.order_type.replace('_', ' ')}</span>

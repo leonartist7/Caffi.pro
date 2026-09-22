@@ -59,10 +59,19 @@ export function getProvider(_venue?: {
 
 /** Explicit non-production fixture opt-in, bound to one synthetic venue. */
 export function isSyntheticPaymentModeForVenue(venueId: string | undefined): boolean {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  let isLoopbackDatabase = false
+  try {
+    const host = supabaseUrl ? new URL(supabaseUrl).hostname : ''
+    isLoopbackDatabase = host === 'localhost' || host === '127.0.0.1' || host === '::1'
+  } catch {
+    isLoopbackDatabase = false
+  }
   return (
     process.env.NODE_ENV !== 'production' &&
     process.env.CAFFI_PAYMENT_MODE === 'test' &&
     process.env.CAFFI_SYNTHETIC_FIXTURES === '1' &&
+    isLoopbackDatabase &&
     Boolean(venueId) &&
     venueId === process.env.CAFFI_SYNTHETIC_VENUE_ID
   )

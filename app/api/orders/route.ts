@@ -226,17 +226,10 @@ export async function POST(request: NextRequest) {
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
-  const storedCheckout = (existingPayment?.raw as { checkout_url?: string } | null)?.checkout_url
-  const recoveredRedirect = recoverCheckout({
-    orderStatus: order.status,
-    paymentStatus: existingPayment?.status,
-    storedCheckoutUrl: storedCheckout,
-    confirmationUrl,
-  })
-  if (recoveredRedirect) {
+  if (existingPayment?.status === 'succeeded') {
     return NextResponse.json({
       order,
-      redirectUrl: recoveredRedirect,
+      redirectUrl: confirmationUrl,
       tracking_token: trackingToken,
       payment_mode: existingPayment?.provider,
     })
@@ -249,6 +242,12 @@ export async function POST(request: NextRequest) {
   }
 
   const retryingFailedPayment = existingPayment?.status === 'failed'
+  if (existingPayment && !['pending', 'failed'].includes(existingPayment.status)) {
+    return NextResponse.json(
+      { error: 'This payment requires reconciliation before it can continue.' },
+      { status: 409 }
+    )
+  }
   const provider = getProvider({ venueId: order.venue_id })
   if (existingPayment && !retryingFailedPayment && existingPayment.provider !== provider.key) {
     return NextResponse.json(
@@ -256,8 +255,10 @@ export async function POST(request: NextRequest) {
       { status: 409 }
     )
   }
-  if (!existingPayment || retryingFailedPayment) {
-    const proposedAttemptKey = retryingFailedPayment ? crypto.randomUUID() : order.order_id
+  if (!existingPayment || retryingFailedPayment || existingPayment.status === 'pending') {
+    const proposedAttemptKey = retryingFailedPayment
+      ? crypto.randomUUID()
+      : (existingPayment?.idempotency_key as string | undefined) ?? order.order_id
     const { data: reservedAttempt, error: reserveError } = await admin.rpc(
       'reserve_storefront_payment_attempt',
       {
@@ -301,6 +302,22 @@ export async function POST(request: NextRequest) {
     console.error('[orders] payment reservation has no stable operation key')
     return NextResponse.json({ error: 'Payment setup failed. Please try again.' }, { status: 500 })
   }
+  // Resume only after the database reservation has locked the order and
+  // rejected a cancellation or reconciliation quarantine.
+  const recoveredRedirect = recoverCheckout({
+    orderStatus: 'pending',
+    paymentStatus: existingPayment?.status,
+    storedCheckoutUrl: (existingPayment?.raw as { checkout_url?: string } | null)?.checkout_url,
+    confirmationUrl,
+  })
+  if (recoveredRedirect) {
+    return NextResponse.json({
+      order,
+      redirectUrl: recoveredRedirect,
+      tracking_token: trackingToken,
+      payment_mode: existingPayment?.provider,
+    })
+  }
 
   try {
     const checkout = await provider.createCheckout({
@@ -314,17 +331,17 @@ export async function POST(request: NextRequest) {
       idempotencyKey: providerOperationKey,
       metadata: { client_uuid: body.client_uuid },
     })
-    const { data: updatedPayment, error: paymentError } = await admin
-      .from('payments')
-      .update({
-        provider_ref: checkout.providerRef,
-        raw: { checkout_url: checkout.redirectUrl, provider_operation_key: providerOperationKey },
-      })
-      .eq('order_id', order.order_id)
-      .eq('idempotency_key', attemptKey)
-      .eq('status', 'pending')
-      .select('payment_id')
-      .maybeSingle()
+    const { data: updatedPayment, error: paymentError } = await admin.rpc(
+      'attach_storefront_checkout',
+      {
+        p_order_id: order.order_id,
+        p_venue_id: order.venue_id,
+        p_attempt_key: attemptKey,
+        p_provider_ref: checkout.providerRef,
+        p_checkout_url: checkout.redirectUrl,
+        p_provider_operation_key: providerOperationKey,
+      }
+    )
     if (paymentError) {
       console.error('[orders] payment record failed:', paymentError)
       return NextResponse.json(
@@ -339,16 +356,10 @@ export async function POST(request: NextRequest) {
         .eq('order_id', order.order_id)
         .eq('idempotency_key', attemptKey)
         .maybeSingle()
-      const racedRedirect = recoverCheckout({
-        orderStatus: order.status,
-        paymentStatus: racedPayment?.status,
-        storedCheckoutUrl: (racedPayment?.raw as { checkout_url?: string } | null)?.checkout_url,
-        confirmationUrl,
-      })
-      if (racedRedirect) {
+      if (racedPayment?.status === 'succeeded') {
         return NextResponse.json({
           order,
-          redirectUrl: racedRedirect,
+          redirectUrl: confirmationUrl,
           tracking_token: trackingToken,
           payment_mode: racedPayment?.provider,
         })

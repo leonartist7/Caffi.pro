@@ -152,7 +152,6 @@ export function CheckoutForm({
       const recentOrder = {
         order_id: body.order.order_id as string,
         tracking_token: body.tracking_token as string,
-        resume_url: body.payment_mode === 'test' ? undefined : (body.redirectUrl as string | undefined),
       }
       localStorage.setItem(
         recentKey,
