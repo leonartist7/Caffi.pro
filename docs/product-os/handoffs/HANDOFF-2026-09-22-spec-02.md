@@ -14,6 +14,7 @@ Back to [SPEC-02](../specs/SPEC-02-connected-sales-journey.md), [execution ledge
 
 - Base dependency: unmerged Phase 1 implementation at `c1b51d998eec961b00830d17bb5662737d4d5366`, draft PR [#84](https://github.com/leonartist7/Caffi.pro/pull/84). Phase 1 application checks passed, but its production dependency audit fails and its review found an OpenCode supply-chain issue; do not treat Phase 1 gates as closed.
 - Branch: `codex/phase-02-connected-ordering`.
+- Draft PR [#85](https://github.com/leonartist7/Caffi.pro/pull/85) now includes head `f51569f949a7056e1d16025bf39f20eddcba5331`. It targets draft PR #84 rather than main; draft PR #83 is the underlying Product OS dependency. All three were open and unmerged at the 2026-09-22 handoff check.
 - Owned paths: storefront checkout/status, payment adapters/webhook, counter/kitchen authorization and recovery UI, local migration/fixtures/SQL suites, SPEC-02 evidence.
 - No shared delivery job, courier adapter, dispatch route or live service was created. Delivery selection remains a restaurant fulfillment choice only.
 
@@ -40,7 +41,7 @@ Back to [SPEC-02](../specs/SPEC-02-connected-sales-journey.md), [execution ledge
 
 ## Checks, limits and blockers
 
-- Passed locally: `npm run type-check`, `npm run lint:strict`, `npm run test:unit` (27 tests), `node docs/product-os/check.mjs`, and `git diff --check`. GitHub Actions run `35697491599` also passed type, strict lint, unit, docs, and the isolated build on this commit.
+- Passed locally: `npm run type-check`, `npm run lint:strict`, `npm run test:unit` (27 tests), `node docs/product-os/check.mjs`, and `git diff --check`. [GitHub Actions run 35768078420](https://github.com/leonartist7/Caffi.pro/actions/runs/35768078420) passed type, strict lint, unit, docs and isolated build at the final implementation head `f51569f`.
 - The first isolated build failed only because the restricted local sandbox could not fetch the app's configured public Google Fonts. The same isolated build completed after approved network access. It emitted the existing Supabase Edge Runtime and Sentry deprecation warnings; no build error remained.
 - `npm run db:reset` is blocked because Supabase CLI/Docker are absent. `npm run test:db` is blocked because `SUPABASE_TEST_DATABASE_URL` is unset (and would then require `psql`). Browser tests are not run because no disposable database/browser environment is available.
 - Provider sandbox, live payment, live database, courier, deployment and customer-message checks are not run. No external side effect was initiated.
@@ -52,4 +53,6 @@ Back to [SPEC-02](../specs/SPEC-02-connected-sales-journey.md), [execution ledge
 
 Apply `20260921090000_spec02_guest_tracking.sql` before code that requires tracking tokens. It adds a nullable-backfilled-then-required UUID with a default and a server-only lookup function; it does not modify historical orders beyond assigning a token. Roll back application code by disabling the new routes/UI and reverting the migration only through a reviewed forward migration; do not delete payment/order history or tokens. The synthetic adapter is disabled by removing either explicit flag.
 
-**Exact next action:** obtain a final independent confirmation of the late-success payment quarantine, then start a disposable local Supabase stack, run `npm run db:reset` and `npm run test:db`, and add Playwright guest → test-payment → kitchen → guest status coverage. Hand the accepted/ready `order` and separate `payment` contracts to SPEC-03 so it can add an explicit staff dispatch action and delivery job lifecycle without treating delivery selection as a courier booking.
+**Exact next action for SPEC-02 verification:** on a machine with Docker, Supabase CLI and `psql`, start a disposable local Supabase stack, run `npm run db:reset` and `npm run test:db`, then add Playwright guest → test-payment → kitchen → guest status coverage. The independent Astra xhigh static review is accepted; database and browser gates are still open.
+
+**Phase 3 start:** verify PRs #83–#85 and their dependency SHAs before branching. No independent Astra ultra approval of the shared delivery schema, lifecycle and provider contract is recorded in the Product OS. Prepare the concrete SPEC-03 contract review and continue independent simulator fixtures and current official Uber Direct feasibility work while that review is pending. SPEC-03 may then add explicit staff dispatch and a separate delivery job lifecycle without treating delivery selection as courier booking. The Phase 1 OpenCode supply-chain finding, critical dependency audit, local SQL/RLS replay and browser journey remain visible prerequisites rather than silently closed gates.
