@@ -52,3 +52,7 @@ Keep merged modules and current schema. Do not replay historical branches onto m
 The old assertion that the legacy database is “unrecoverable” is unsupported; INACTIVE does not establish recoverability or present RLS. Historical RLS exposure needs a fresh metadata review after authorized restoration.
 
 No percentage-complete estimate is defensible. The useful maturity measure is the [execution ledger](EXECUTION-LEDGER.md).
+
+## 2026-09-22 Phase 3 review checkpoint
+
+The baseline delivery gaps above now have implementation in draft [PR #87](https://github.com/leonartist7/Caffi.pro/pull/87): quote-bound checkout, durable simulator dispatch/reconciliation, own-driver authorization and milestones, staff recovery and minimal guest tracking. [Independent contract and implementation review](evidence/SPEC-03-IMPLEMENTATION-REVIEW-2026-09-22.md) is accepted for its exact recorded revisions. Simulator-only operation remains restricted to disposable synthetic infrastructure. Full SQL/browser acceptance is still under verification; the [ledger](EXECUTION-LEDGER.md) records passing and failed runs separately. [PR #86](https://github.com/leonartist7/Caffi.pro/pull/86) contains independent Uber Direct feasibility and offline fixtures; no external courier adapter or sandbox/live coverage exists. Critical dependency audit and OpenCode findings remain unresolved.

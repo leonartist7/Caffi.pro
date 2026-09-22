@@ -126,10 +126,24 @@ BEGIN
     IF v_rows <> 0 THEN RAISE EXCEPTION 'No-recipe order should write zero movements, got %', v_rows; END IF;
 
     -- ------------------------------------------------------------------
-    -- Test: refund reverses exactly, preserves originals, is itself
-    -- idempotent.
+    -- SPEC-02 rejects a workflow status transition as refund authorization.
+    -- Test that denial, then exercise the internal stock-only reversal RPC
+    -- separately with these synthetic rows inside this rollback transaction.
     -- ------------------------------------------------------------------
-    PERFORM transition_order_status(v_order_id, v_venue_id, 'refunded', 'test');
+    BEGIN
+        PERFORM transition_order_status(v_order_id, v_venue_id, 'refunded', 'test');
+        RAISE EXCEPTION 'Status transition incorrectly authorized refund';
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM <> 'PAYMENT_RECONCILIATION_REQUIRED' THEN RAISE; END IF;
+    END;
+    IF EXISTS (SELECT 1 FROM inventory_movements WHERE order_id=v_order_id AND reason='sale_reversal') THEN
+        RAISE EXCEPTION 'Denied refund reversed inventory';
+    END IF;
+    IF (SELECT status FROM payments WHERE provider='stripe' AND provider_ref=v_ref)<>'succeeded' THEN
+        RAISE EXCEPTION 'Denied refund changed confirmed payment';
+    END IF;
+    v_rows := reverse_order_stock_depletion(v_order_id);
+    IF v_rows <> 2 THEN RAISE EXCEPTION 'Internal synthetic reversal should insert 2 rows, got %', v_rows; END IF;
 
     SELECT count(*) INTO v_rows FROM inventory_movements
     WHERE order_id = v_order_id AND reason = 'sale_reversal';

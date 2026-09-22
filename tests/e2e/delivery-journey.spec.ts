@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHmac, randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
 
@@ -19,6 +19,7 @@ test.beforeAll(() => {
     'SUPABASE_SERVICE_ROLE_KEY',
     'CAFFI_LOCAL_FIXTURE_PASSWORD',
     'CAFFI_DELIVERY_WORKER_SECRET',
+    'CAFFI_DELIVERY_WEBHOOK_SECRET',
   ]) {
     if (!process.env[name])
       throw new Error(`Required isolated journey configuration missing: ${name}`)
@@ -322,5 +323,119 @@ test('SPEC-03-AC-04/05/06 concurrent dispatch books once and durable simulator r
     ).toBeVisible()
   } finally {
     await ownerContext.close()
+  }
+})
+
+test('SPEC-03-AC-01/07 authenticated webhook quarantine is durable, deduplicated and hidden from drivers', async ({
+  browser,
+  request,
+  baseURL,
+}) => {
+  test.setTimeout(120_000)
+  const secret = process.env.CAFFI_DELIVERY_WEBHOOK_SECRET!
+  expect(secret.length).toBeGreaterThanOrEqual(32)
+  const connectionId = '1b000000-0000-4000-8000-000000000001'
+  const eventId = `fixture-event-${randomUUID()}`
+  const externalRef = `unmatched-fixture-${randomUUID()}`
+  // Exact raw bytes are signed in the runner; neither signing nor service keys
+  // enter browser JavaScript. This is our simulator protocol, not Uber evidence.
+  const raw = JSON.stringify({
+    provider_event_id: eventId,
+    external_ref: externalRef,
+    state: 'picked_up',
+    occurred_at: new Date().toISOString(),
+  })
+  const signature = createHmac('sha256', secret).update(raw).digest('hex')
+  const invalidSignature = `${signature[0] === '0' ? '1' : '0'}${signature.slice(1)}`
+  const path = `/api/webhooks/delivery/simulator/${connectionId}`
+  const inbox = () =>
+    database
+      .from('delivery_events')
+      .select(
+        'id,venue_id,connection_id,job_id,external_ref,provider_event_id,state,processed_at,outcome'
+      )
+      .eq('connection_id', connectionId)
+      .eq('provider_event_id', eventId)
+      .throwOnError()
+  const send = (header: string) =>
+    request.post(path, {
+      headers: { 'Content-Type': 'application/json', 'x-simulator-signature': header },
+      data: raw,
+    })
+
+  const rejected = await send(invalidSignature)
+  expect(rejected.status()).toBe(401)
+  expect((await inbox()).data).toEqual([])
+
+  // Semantically equivalent JSON must not pass a signature over different bytes.
+  const changedBytes = await request.post(path, {
+    headers: { 'Content-Type': 'application/json', 'x-simulator-signature': signature },
+    data: `${raw}\n`,
+  })
+  expect(changedBytes.status()).toBe(401)
+  expect((await inbox()).data).toEqual([])
+
+  const accepted = await send(signature)
+  expect(accepted.status()).toBe(200)
+  expect(await accepted.json()).toEqual({ received: true })
+  const afterAcknowledgement = await inbox()
+  expect(afterAcknowledgement.data).toHaveLength(1)
+  const recorded = afterAcknowledgement.data![0]
+  expect(recorded).toMatchObject({
+    venue_id: venueId,
+    connection_id: connectionId,
+    job_id: null,
+    external_ref: externalRef,
+    provider_event_id: eventId,
+    state: 'picked_up',
+    processed_at: null,
+    outcome: 'quarantined',
+  })
+
+  const replays = await Promise.all([send(signature), send(signature)])
+  for (const replay of replays) {
+    expect(replay.status()).toBe(200)
+    expect(await replay.json()).toEqual({ received: true })
+  }
+  expect((await inbox()).data).toEqual(afterAcknowledgement.data)
+
+  const ownerContext = await browser.newContext({ baseURL })
+  const driverContext = await browser.newContext({ baseURL })
+  try {
+    const owner = await ownerContext.newPage()
+    const driver = await driverContext.newPage()
+    await login(owner, 'spec01-owner@test.local')
+    const ownerQueue = await owner.request.get(`/api/deliveries?venue_id=${venueId}`)
+    expect(ownerQueue.status()).toBe(200)
+    const ownerBody = await ownerQueue.json()
+    expect(ownerBody.quarantined_events.length).toBeLessThanOrEqual(100)
+    const summary = ownerBody.quarantined_events.find(
+      (event: { id: string }) => event.id === recorded.id
+    )
+    expect(summary).toMatchObject({
+      external_ref: externalRef,
+      provider_event_id: eventId,
+      connection_id: connectionId,
+      state: 'picked_up',
+    })
+    expect(Object.keys(summary).sort()).toEqual(
+      ['id', 'connection_id', 'external_ref', 'provider_event_id', 'state', 'received_at'].sort()
+    )
+    await expect(owner.getByRole('region', { name: 'Unmatched courier events' })).toContainText(
+      externalRef
+    )
+
+    await login(driver, 'spec02-counter@test.local')
+    const driverQueue = await driver.request.get(`/api/deliveries?venue_id=${venueId}`)
+    expect(driverQueue.status()).toBe(200)
+    const driverBody = await driverQueue.json()
+    expect(Object.keys(driverBody)).toEqual(['jobs'])
+    expect(driverBody).not.toHaveProperty('quarantined_events')
+    expect(JSON.stringify(driverBody)).not.toContain(eventId)
+    expect(JSON.stringify(driverBody)).not.toContain(externalRef)
+    await expect(driver.getByRole('region', { name: 'Unmatched courier events' })).toHaveCount(0)
+  } finally {
+    await ownerContext.close()
+    await driverContext.close()
   }
 })

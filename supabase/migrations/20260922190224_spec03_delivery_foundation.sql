@@ -109,7 +109,7 @@ END $$;
 
 CREATE FUNCTION public.delivery_price_cart(p_venue_id uuid,p_items jsonb,p_zone_id uuid,p_address jsonb) RETURNS jsonb
 LANGUAGE plpgsql SET search_path='' AS $$
-DECLARE v public.venues%rowtype; z public.delivery_zones%rowtype; i jsonb; cat public.menu_items%rowtype; g record;
+DECLARE v public.venues%rowtype; z public.delivery_zones%rowtype; i jsonb; cat public.menu_items%rowtype; selected_group record;
  mids uuid[]; mods jsonb; n integer; qty integer; unit integer; subtotal integer:=0; tax integer; lines jsonb:='[]'; addr jsonb;
 BEGIN
  SELECT * INTO v FROM public.venues WHERE venue_id=p_venue_id AND NOT coalesce(kill_switch,false);
@@ -127,9 +127,9 @@ BEGIN
   SELECT count(*) INTO n FROM public.modifiers m JOIN public.modifier_groups g ON g.group_id=m.group_id
    WHERE m.modifier_id=ANY(mids) AND m.venue_id=p_venue_id AND g.venue_id=p_venue_id AND g.item_id=cat.item_id AND m.is_active;
   IF n<>cardinality(mids) THEN RAISE EXCEPTION 'INVALID_MODIFIERS'; END IF;
-  FOR g IN SELECT * FROM public.modifier_groups WHERE item_id=cat.item_id AND venue_id=p_venue_id LOOP
-   SELECT count(*) INTO n FROM public.modifiers WHERE group_id=g.group_id AND modifier_id=ANY(mids);
-   IF n<g.min_select OR n>g.max_select THEN RAISE EXCEPTION 'MODIFIER_SELECTION_INVALID'; END IF;
+  FOR selected_group IN SELECT * FROM public.modifier_groups WHERE item_id=cat.item_id AND venue_id=p_venue_id LOOP
+   SELECT count(*) INTO n FROM public.modifiers WHERE group_id=selected_group.group_id AND modifier_id=ANY(mids);
+   IF n<selected_group.min_select OR n>selected_group.max_select THEN RAISE EXCEPTION 'MODIFIER_SELECTION_INVALID'; END IF;
   END LOOP;
   SELECT cat.price_cents+coalesce(sum(price_delta_cents),0),coalesce(jsonb_agg(jsonb_build_object('name',name,'price_delta_cents',price_delta_cents) ORDER BY sort_order,name),'[]')
    INTO unit,mods FROM public.modifiers WHERE modifier_id=ANY(mids);

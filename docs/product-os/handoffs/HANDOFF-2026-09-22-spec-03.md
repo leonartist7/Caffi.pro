@@ -51,3 +51,11 @@ Owner/manager grants or revokes venue-specific driver capability and assigns an 
 Migration 20260922190224_spec03_delivery_foundation.sql is additive. Replay only on disposable infrastructure for this PR. Rollback first disables CAFFI_DELIVERY_MODE and worker invocation, while retaining tables, attempts, event history and controlled reconciliation access. Do not drop tables with outstanding or unresolved effects; schema reversal requires a separately reviewed history-preserving migration. Both scoped branches disable Vercel Git deployment; no deployment checks were emitted on their initial published commits.
 
 SPEC-04 remains separate in draft PR #86. No credentials, commercial eligibility, provider-sandbox lifecycle or live results exist. Critical dependency audit, prior OpenCode finding, sandbox access and separately authorized controlled real delivery remain external gates.
+
+## Independent implementation review resolution
+
+Astra xhigh approved `51773223293e049b258b8d4f545e0e1770d6146a` after all ten findings were resolved. See [review evidence](../evidence/SPEC-03-IMPLEMENTATION-REVIEW-2026-09-22.md). Local suite now passes 48 tests. CI `35773987675` passed migration replay and eight legacy RLS checks but failed the outdated ordering amount-mismatch expectation. That expectation now asserts Phase 2 reconciliation and blocks further payable attempts. Run `35774596919` owns the subsequent full SQL/browser result; pending at this checkpoint. No runtime success is inferred from static approval.
+
+## Runtime failure checkpoint
+
+CI `35774596919` passed disposable migration replay and six of eight SQL suites (RLS, ordering, reservations, costing, 86-ing and SPEC-02). The depletion suite attempted a refund that SPEC-02 deliberately denies; its regression must assert that denial and exercise reversal with an explicit synthetic database fixture. SPEC-03 exposed a PL/pgSQL record/table-alias collision in cart pricing. The local Auth preparation also exposed the installed Supabase client requiring native WebSocket, unavailable under the prior Node 20 CI runtime; quality jobs now select Node 22. Browser tests did not execute in this failed run. These observed failures are preserved rather than described as passing from static review.
