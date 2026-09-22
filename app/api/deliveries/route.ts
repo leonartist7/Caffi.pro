@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         ),
       })
     const quoteIds = (contexts.data ?? []).map(c => c.current_quote_id)
-    const [pending, quotes, access, members] = await Promise.all([
+    const [pending, quotes, access, members, quarantined] = await Promise.all([
       admin
         .from('orders')
         .select('order_id,status')
@@ -73,8 +73,15 @@ export async function GET(request: Request) {
         .select('user_id,full_name,venue_id,org_id')
         .eq('is_active', true)
         .eq('role', 'staff'),
+      admin
+        .from('delivery_events')
+        .select('id,connection_id,external_ref,provider_event_id,state,received_at')
+        .eq('venue_id', venue)
+        .is('processed_at', null)
+        .order('received_at', { ascending: false })
+        .limit(100),
     ])
-    if (pending.error || quotes.error || access.error || members.error)
+    if (pending.error || quotes.error || access.error || members.error || quarantined.error)
       throw new DeliveryHttpError('DELIVERY_QUEUE_UNAVAILABLE', 503)
     const { data: venueRow } = await admin
       .from('venues')
@@ -82,6 +89,7 @@ export async function GET(request: Request) {
       .eq('venue_id', venue)
       .single()
     return json({
+      quarantined_events: quarantined.data ?? [],
       jobs: jobs.map(j => ({
         id: j.id,
         order_id: j.order_id,

@@ -79,6 +79,13 @@ BEGIN
  SELECT count(*) INTO n FROM public.delivery_outbox WHERE delivery_outbox.job_id=job_id AND action='create';
  IF n<>1 THEN RAISE EXCEPTION 'Duplicate create effect'; END IF;
  -- Refresh requires expected version, even before any possible send.
+ UPDATE public.delivery_quotes SET expires_at=now()-interval '1 second' WHERE id=(j->>'quote_id')::uuid;
+ IF jsonb_array_length(public.delivery_claim_work(1))<>0 THEN RAISE EXCEPTION 'Expired unsent quote was claimed'; END IF;
+ PERFORM pg_temp.expect_error(format('SELECT public.delivery_action(%L,%L,%L,%L)',job_id,owner_id,'reconcile','{"reason":"Attempt recovery of expired unsent quote"}'),'QUOTE_REFRESH_REQUIRED');
+ IF (SELECT state FROM public.delivery_jobs WHERE id=job_id)<>'dispatch_pending'
+ OR EXISTS(SELECT 1 FROM public.delivery_attempts WHERE delivery_attempts.job_id=job_id)
+ OR EXISTS(SELECT 1 FROM public.delivery_outbox WHERE delivery_outbox.job_id=job_id AND action='lookup') THEN RAISE EXCEPTION 'Unsent reconcile poisoned refresh'; END IF;
+ SELECT to_jsonb(jb) INTO j FROM public.delivery_jobs jb WHERE id=job_id;
  q:=public.delivery_refresh_quote(order_id,owner_id);
  PERFORM pg_temp.expect_error(format('SELECT public.delivery_dispatch(%L,%L,%L,%L,0,999)',order_id,owner_id,q->>'id',op),'VERSION_CONFLICT');
  j:=public.delivery_dispatch(order_id,owner_id,(q->>'id')::uuid,gen_random_uuid(),0,(j->>'version')::integer);

@@ -108,8 +108,12 @@ if (process.env.GITHUB_ACTIONS === 'true') {
   console.log(`::add-mask::${env.CAFFI_LOCAL_FIXTURE_PASSWORD}`)
   console.log(`::add-mask::${env.CAFFI_DELIVERY_WORKER_SECRET}`)
 }
-run('node', ['scripts/test-local-db.mjs'])
+// SQL suites are transactional and roll back. Collect independent browser evidence
+// even if a SQL assertion fails, then fail the entire job visibly.
+const failures = []
+try { run('node', ['scripts/test-local-db.mjs']) } catch (error) { failures.push(error) }
 run('node', ['scripts/ci-local-auth-fixtures.mjs'])
 // Playwright exits nonzero if no tests exist. Never use --pass-with-no-tests.
-run('npm', ['run', 'test:browser', '--', '--workers=1'])
+try { run('npm', ['run', 'test:browser', '--', '--workers=1']) } catch (error) { failures.push(error) }
+if (failures.length) throw new AggregateError(failures, 'Required isolated verification failed.')
 console.log('Disposable local SQL/RLS and browser checks passed. No provider sandbox or live evidence.')

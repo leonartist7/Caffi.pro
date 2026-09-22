@@ -30,6 +30,14 @@ type ReadyOrder = {
   currency: string
 }
 type QueueData = {
+  quarantined_events?: {
+    id: string
+    connection_id: string
+    external_ref: string
+    provider_event_id: string
+    state: string
+    received_at: string
+  }[]
   jobs: Job[]
   drivers?: { user_id: string; full_name: string }[]
   orders?: ReadyOrder[]
@@ -175,6 +183,27 @@ export function DeliveryQueue({ venueId, userId }: { venueId: string; userId: st
   const managing = Boolean(data?.orders && data?.drivers)
   return (
     <div className="space-y-6">
+      {managing && Boolean(data?.quarantined_events?.length) && (
+        <section
+          aria-label="Unmatched courier events"
+          className="rounded-xl border border-amber-300 bg-amber-50 p-4"
+        >
+          <h2 className="font-semibold">Unmatched courier events</h2>
+          <p>
+            These authenticated events have no attached delivery yet. Check the connection and
+            booking reference with operations before taking any booking action. Never dispatch again
+            to resolve an unknown booking.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {data?.quarantined_events?.map(event => (
+              <li key={event.id}>
+                Connection {event.connection_id}; booking {event.external_ref}; event{' '}
+                {event.provider_event_id}: {event.state}. Received {event.received_at}.
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl">Deliveries</h1>

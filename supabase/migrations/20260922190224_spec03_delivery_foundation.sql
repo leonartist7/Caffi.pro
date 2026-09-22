@@ -431,6 +431,12 @@ BEGIN
   END IF;
  ELSIF p_action='reconcile' THEN
   IF nullif(btrim(p_input->>'reason'),'') IS NULL THEN RAISE EXCEPTION 'REASON_REQUIRED'; END IF;
+  -- Lookup is recovery for a possibly sent effect, never a substitute for
+  -- refreshing an expired quote that has provably not left this database.
+  PERFORM 1 FROM public.delivery_outbox WHERE job_id=j.id FOR UPDATE;
+  IF NOT EXISTS(SELECT 1 FROM public.delivery_attempts WHERE job_id=j.id AND action='create' AND outcome='authorized') THEN
+   RAISE EXCEPTION 'QUOTE_REFRESH_REQUIRED';
+  END IF;
   UPDATE public.delivery_outbox SET attempts=0 WHERE job_id=j.id AND action='lookup' AND (lease_until IS NULL OR lease_until<now());
   PERFORM public.delivery_queue_lookup(j.id);
  ELSE RAISE EXCEPTION 'INVALID_DELIVERY_ACTION'; END IF;

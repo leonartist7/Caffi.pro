@@ -1,7 +1,7 @@
 ---
 id: SPEC-03
 title: Delivery lifecycle, simulator and restaurant drivers
-status: ready-spec
+status: review
 updated: 2026-09-22
 tags: [product-os, execution-packet]
 ---
@@ -44,7 +44,7 @@ Quote is bound to server-priced cart/address/venue and expiry; duplicate dispatc
 
 **Risks:** Duplicate paid booking, quote changes after payment, outbox acknowledgement loss, guest IDOR and courier status conflicting with restaurant cancellation.
 
-**Release gate:** Local full journey plus SQL/RLS pass; independent Astra xhigh contract review; simulator enabled only for synthetic venues. Live state remains blocked.
+**Release gate:** Local full journey plus SQL/RLS pass; independent Astra ultra contract approval and Astra xhigh implementation review; simulator enabled only for synthetic venues. Live state remains blocked.
 
 **Lead:** GPT-5.6 Terra high. Sensitive changes require independent GPT-6 Astra xhigh review. Bounded non-sensitive subwork may use Sol high or Luna medium–high under the worker protocol.
 
