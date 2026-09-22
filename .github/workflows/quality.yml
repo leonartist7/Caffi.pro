@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          node-version: 22.23.2
           cache: npm
       - run: npm ci
       - run: npm run type-check
@@ -34,7 +34,39 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          node-version: 22.23.2
           cache: npm
       - run: npm ci
       - run: npm run audit:dependencies
+
+  isolated-database-browser:
+    name: disposable database, RLS and browser fixtures
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      DO_NOT_TRACK: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22.23.2
+          cache: npm
+      - run: npm ci
+      - name: Install pinned, checksum-verified Supabase CLI
+        shell: bash
+        run: |
+          curl --fail --location --retry 3 https://github.com/supabase/cli/releases/download/v2.117.0/supabase_2.117.0_linux_amd64.tar.gz -o "$RUNNER_TEMP/supabase.tar.gz"
+          echo "69c05f85b9e47ee706d30f1a6ca8a526b4e337bfd12c7ef1ef522d24e7280d24  $RUNNER_TEMP/supabase.tar.gz" | sha256sum --check
+          mkdir -p "$RUNNER_TEMP/supabase-bin"
+          tar -xzf "$RUNNER_TEMP/supabase.tar.gz" -C "$RUNNER_TEMP/supabase-bin"
+          echo "$RUNNER_TEMP/supabase-bin" >> "$GITHUB_PATH"
+      - name: Install local database client and browser
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+          npx playwright install --with-deps chromium
+      - name: Replay migrations and verify isolated fixtures
+        run: node scripts/ci-local-verify.mjs
+      - name: Stop disposable stack
+        if: always()
+        run: supabase stop --no-backup

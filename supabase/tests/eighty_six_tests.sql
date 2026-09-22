@@ -1,11 +1,11 @@
--- PLAN-26 86-ing/stock-out invariants. Safe on production: everything
+-- PLAN-26 86-ing/stock-out invariants on local synthetic fixtures. Everything
 -- rolls back. Mirrors depletion_tests.sql's harness.
 
 BEGIN;
 
 DO $$
 DECLARE
-    v_venue_id UUID := 'a0000000-0000-4000-3000-000000000001';
+    v_venue_id UUID := '13000000-0000-4000-8000-000000000001';
     v_milk_id UUID := uuid_generate_v4();
     v_beans_id UUID := uuid_generate_v4();
     v_water_id UUID := uuid_generate_v4();

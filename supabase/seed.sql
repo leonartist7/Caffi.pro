@@ -107,3 +107,13 @@ INSERT INTO delivery_zones (zone_id, venue_id, name, fee_cents, min_order_cents,
 VALUES
   ('1a000000-0000-4000-8000-000000000001', '13000000-0000-4000-8000-000000000001', 'Fixture local zone', 250, 500, ARRAY['TST'], true)
 ON CONFLICT (zone_id) DO UPDATE SET fee_cents = EXCLUDED.fee_cents, min_order_cents = EXCLUDED.min_order_cents, is_active = true;
+
+-- SPEC-03 synthetic-only connections: no credentials or external adapters.
+INSERT INTO delivery_connections(id,venue_id,provider,environment,enabled,capabilities,health) VALUES
+ ('1b000000-0000-4000-8000-000000000001','13000000-0000-4000-8000-000000000001','simulator','simulation',true,'{"scenario":"success","tracking":"milestones"}','healthy'),
+ ('1b000000-0000-4000-8000-000000000002','13000000-0000-4000-8000-000000000001','own_driver','simulation',true,'{"tracking":"milestones"}','healthy')
+ON CONFLICT(id) DO UPDATE SET enabled=true,capabilities=excluded.capabilities,health='healthy';
+INSERT INTO delivery_driver_access(venue_id,user_id,enabled) VALUES
+ ('13000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000005',true),
+ ('13000000-0000-4000-8000-000000000001','11000000-0000-4000-8000-000000000006',true)
+ON CONFLICT(venue_id,user_id) DO UPDATE SET enabled=excluded.enabled;

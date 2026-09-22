@@ -2,7 +2,7 @@
 id: integration-registry
 title: Integration registry
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [product-os]
 ---
 
@@ -29,6 +29,8 @@ Back to [architecture](ARCHITECTURE.md) and [founder gates](FOUNDER-DECISIONS.md
 | Accounting/payroll/delivery marketplaces | Separate commercial systems | Access, data scope and compliance unresolved | Later discovery only |
 
 ## Connection lifecycle
+
+SPEC-03 draft PR #87 implements disabled-by-default, tenant-scoped connection records and a strictly local synthetic simulator/restaurant-driver engine. Its provider factory rejects external adapters; no credentials are stored or requested here. Simulator is not Uber's sandbox. SPEC-04 feasibility and four offline protocol tests are independently reviewable in PR #86; absent authorized access remains the precise adapter execution blocker.
 Not connected → configured → test verified → live verified; any state can become attention needed. Store last check, safe error category, capability flags and environment. Credentials are server-held references, never displayed values. Disconnect disables new work but preserves reconciliation/audit records.
 
 Every adapter dossier must name vendor, purpose, account owner, service geography, PII fields, retention/deletion, price basis, limits, sandbox coverage, webhook authentication, timeout semantics, cancellation/refund policy, support channel and evidence date. Missing facts remain explicit; logos and marketing pages do not count as connectivity.
@@ -41,3 +43,7 @@ Every adapter dossier must name vendor, purpose, account owner, service geograph
 - D5: [Shipday on-demand API](https://docs.shipday.com/reference/on-demand-delivery)
 - D6: [Toast integration partnership](https://doc.toasttab.com/doc/devguide/integrationDevProcess.html)
 - D7: [Vercel AI Gateway](https://vercel.com/docs/ai-gateway)
+
+## 2026-09-22 verification boundary
+
+SPEC-03 simulator and restaurant-driver browser/API/database lifecycles pass in [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123) at `3b07268`: eight SQL suites and four genuine browser tests. This changes only the isolated simulator verification status. Uber Direct remains research/offline fixtures in separate PR #86, with no authorized sandbox credentials or execution. No external adapter or live courier readiness is claimed.

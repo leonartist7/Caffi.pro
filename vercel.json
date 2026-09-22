@@ -1,4 +1,10 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "codex/spec-03-delivery-foundation": false,
+      "codex/spec-04-first-courier": false
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/loyalty-daily",

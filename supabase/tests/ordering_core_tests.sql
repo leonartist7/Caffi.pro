@@ -1,10 +1,10 @@
--- Ordering Core live invariants. Safe on production: all writes roll back.
+-- Ordering Core isolated fixture invariants. All writes roll back.
 
 BEGIN;
 
 DO $$
 DECLARE
-    v_venue_id UUID := 'a0000000-0000-4000-3000-000000000001';
+    v_venue_id UUID := '13000000-0000-4000-8000-000000000001';
     v_success_order UUID := uuid_generate_v4();
     v_mismatch_order UUID := uuid_generate_v4();
     v_success_ref TEXT := 'ordering_test_' || uuid_generate_v4()::text;
@@ -110,20 +110,31 @@ BEGIN
     SELECT * INTO v_result
     FROM record_order_payment_success('stripe', v_mismatch_ref, 999, '{"test":true}');
 
-    IF v_result.applied OR NOT v_result.amount_mismatch THEN
-        RAISE EXCEPTION 'Amount mismatch was not rejected';
+    IF v_result.applied OR NOT v_result.amount_mismatch OR NOT v_result.reconciliation_required THEN
+        RAISE EXCEPTION 'Amount mismatch was not quarantined for reconciliation';
     END IF;
 
     SELECT status INTO v_status
     FROM payments WHERE provider = 'stripe' AND provider_ref = v_mismatch_ref;
-    IF v_status <> 'failed' THEN
-        RAISE EXCEPTION 'Amount mismatch did not mark pending payment failed';
+    IF v_status <> 'reconciliation_required' THEN
+        RAISE EXCEPTION 'Amount mismatch did not quarantine the payment';
     END IF;
 
     SELECT status INTO v_status FROM orders WHERE order_id = v_mismatch_order;
     IF v_status <> 'pending' THEN
         RAISE EXCEPTION 'Amount mismatch advanced the order unexpectedly';
     END IF;
+    IF EXISTS (SELECT 1 FROM events WHERE type='order.paid' AND payload->>'order_id'=v_mismatch_order::text) THEN
+        RAISE EXCEPTION 'Amount mismatch emitted a paid event';
+    END IF;
+    -- SPEC-02 intentionally replaced retryable failure with a money-safety hold.
+    -- A second payable attempt must remain impossible until reconciliation.
+    BEGIN
+        PERFORM public.reserve_storefront_payment_attempt(v_mismatch_order,v_venue_id,'stripe',1000,'CAD',uuid_generate_v4());
+        RAISE EXCEPTION 'Quarantined payment allowed another payable attempt';
+    EXCEPTION WHEN OTHERS THEN
+        IF SQLERRM <> 'PAYMENT_NOT_RETRYABLE' THEN RAISE; END IF;
+    END;
 END;
 $$;
 

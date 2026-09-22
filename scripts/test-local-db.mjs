@@ -24,16 +24,32 @@ const suites = [
   'food_costing_tests.sql',
   'eighty_six_tests.sql',
   'spec02_connected_journey_tests.sql',
+  'spec03_delivery_tests.sql',
 ]
 
+const failures = []
 for (const suite of suites) {
   const file = path.join(root, 'supabase', 'tests', suite)
-  if (!existsSync(file)) throw new Error(`Missing required SQL suite: ${file}`)
+  if (!existsSync(file)) {
+    console.error(`FAIL: Missing required SQL suite: ${file}`)
+    failures.push(suite)
+    continue
+  }
+  console.log(`Running required SQL suite: ${suite}`)
+  // Each suite has its own connection and rollback transaction. ON_ERROR_STOP
+  // terminates a failed session, rolling its writes back before the next suite.
   const result = spawnSync('psql', ['-v', 'ON_ERROR_STOP=1', databaseUrl, '-f', file], { stdio: 'inherit' })
   if (result.error?.code === 'ENOENT') {
     console.error('Blocked: psql is not installed. Install PostgreSQL client tools for the local fixture check.')
     process.exit(1)
   }
-  if (result.error) throw result.error
-  if (result.status !== 0) process.exit(result.status ?? 1)
+  if (result.error || result.status !== 0) {
+    console.error(`FAIL: ${suite}${result.error ? ` (${result.error.message})` : ''}`)
+    failures.push(suite)
+  }
 }
+if (failures.length) {
+  console.error(`Required SQL verification failed in ${failures.length}/${suites.length} suites: ${failures.join(', ')}`)
+  process.exit(1)
+}
+console.log(`All ${suites.length} required SQL suites passed.`)

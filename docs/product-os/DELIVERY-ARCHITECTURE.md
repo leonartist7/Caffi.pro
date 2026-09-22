@@ -2,11 +2,17 @@
 id: delivery-architecture
 title: Delivery architecture and interface contract
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [product-os]
 ---
 
 # Delivery architecture and interface contract
+
+## 2026-09-22 implementation contract
+
+The [revision 2 concrete packet](specs/SPEC-03-contract-review.md) supersedes the illustrative proposal below where more specific. [Independent Astra ultra approval](evidence/SPEC-03-CONTRACT-REVIEW-2026-09-22.md) precedes the SPEC-03 implementation in draft PR #87. The initial engine supports isolated simulator and own-driver workflows only; external provider selection fails closed. There is no live readiness claim.
+
+Operational job states include booked; quote is a separate record. Once a create may have been sent, v1 never repeats it, even after an absence lookup. The immutable delivery_order_context freezes guest charges, cart, structured destination and currency for replay. Owner/manager can approve a fresh provider quote only for a never-sent job with matching version. Post-implementation review and executed SQL/browser evidence remain separate gates.
 
 Back to [architecture](ARCHITECTURE.md), [registry](INTEGRATION-REGISTRY.md); implemented by [SPEC-03](specs/SPEC-03-delivery-foundation.md) and [SPEC-04](specs/SPEC-04-first-courier.md). This is a proposed contract, not existing code.
 
@@ -64,3 +70,7 @@ Use the same job timeline, assignment and milestone API without external provide
 Ship simulator-only and globally disabled external adapters first. Simulator permits deterministic success, unavailable, expiry, delayed/out-of-order events, timeout-after-create, cancellation rejection and failure. Enable one sandbox venue after contract tests; enable live only after F-01/F-03/F-05 and controlled delivery approval.
 
 Delivery is live-verified only after an actual approved delivery, not after simulator or sandbox success.
+
+## Verified implementation checkpoint
+
+[PR #87](https://github.com/leonartist7/Caffi.pro/pull/87) implements the approved revision-2 contract at tested head `3b07268948e04e79dfaddf45df3e83c7c32eb25c`. Independent Astra ultra approved the contract before implementation; Astra xhigh approved implemented booking/tenant safeguards. All eight disposable SQL suites and four real browser tests pass in [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123). The simulator and own-driver workflows remain synthetic/loopback-only. External provider creation is disabled; SPEC-04 stays separate and blocked on authorized sandbox/commercial access. Recovery and history-preserving rollback are in the [handoff](handoffs/HANDOFF-2026-09-22-spec-03.md). No marketplace/POS boundary changed.
