@@ -32,6 +32,8 @@ Back to [SPEC-03](SPEC-03-delivery-foundation.md), [delivery architecture](../DE
 
 Gate: independent GPT-6 Astra ultra approval of this revision is REQUIRED before dependent implementation. No approval is claimed here. Base is unmerged PR #85 at ef3afe239aba282604670496675ea72e73250a99, inheriting #84 and #83. Phase 2 static security review was accepted; critical dependency audit, Phase 1 OpenCode supply chain, SQL/RLS and browser gates remain open.
 
+**Gate resolved:** independent Astra ultra approved revision 2 at ad4b16d786eeee59409dc0cbfe52d22f5580da23; [dated review and finding disposition](../evidence/SPEC-03-CONTRACT-REVIEW-2026-09-22.md). The paragraph above preserves the initial review request. Approval is static contract evidence only.
+
 ## Persistence and authorization
 
 All new tables have UUID primary keys, venue_id, created_at; tenant foreign keys use UNIQUE(venue_id,id) targets and composite relationships. orders receives UNIQUE(venue_id,order_id). RLS is enabled; anon/authenticated have NO direct grants or policies for these service-owned operational records. Only service_role can access tables and execute mutation RPCs; revoke EXECUTE from PUBLIC, anon, authenticated for every function. Functions use fixed empty search_path and schema qualification. API service-role access is always preceded by authenticated resource-first scope checks. SQL user-action RPCs also recheck active membership using a server-derived auth user UUID; clients cannot supply actor IDs.

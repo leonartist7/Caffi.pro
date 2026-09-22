@@ -1,0 +1,10 @@
+{
+  "success": { "create": "confirmed", "lookupStates": ["booked", "assigned", "picked_up", "delivered"], "expectedBookings": 1 },
+  "unavailable": { "create": "rejected", "lookupStates": [], "expectedBookings": 0 },
+  "timeout_after_create": { "create": "unknown", "lookupStates": ["booked", "assigned", "picked_up", "delivered"], "expectedBookings": 1 },
+  "lookup_unavailable": { "create": "unknown", "lookupStates": ["unknown"], "expectedBookings": 1 },
+  "failed_delivery": { "create": "confirmed", "lookupStates": ["assigned", "picked_up", "failed"], "expectedBookings": 1 },
+  "cancellation_rejected": { "create": "confirmed", "lookupStates": ["picked_up", "delivered"], "cancel": "rejected", "expectedBookings": 1 },
+  "cancellation_unknown": { "create": "confirmed", "lookupStates": ["cancelled"], "cancel": "unknown", "expectedBookings": 1 },
+  "out_of_order": { "create": "confirmed", "eventStates": ["assigned", "delivered", "picked_up", "assigned", "delivered"], "expectedFinalState": "delivered", "expectedBookings": 1 }
+}

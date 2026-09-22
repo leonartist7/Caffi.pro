@@ -2,7 +2,7 @@
 id: SPEC-03
 title: Delivery lifecycle, simulator and restaurant drivers
 status: ready-spec
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [product-os, execution-packet]
 ---
 
@@ -21,6 +21,20 @@ Implement DELIVERY-ARCHITECTURE.md in a sequence of reviewed commits: types/stat
 Use the specified provider interface and separate payment/preparation/delivery state. Durable outbox with leases; unknown result forces reconciliation. Composite tenant/resource relationships and one active/unknown dispatch per order. Credentials referenced server-side. Simulator network access disabled.
 
 ## Acceptance and test plan
+
+The [concrete contract packet](SPEC-03-contract-review.md) must receive independent Astra ultra approval before shared contract implementation. Stable slice IDs:
+
+| ID | Acceptance |
+|---|---|
+| SPEC-03-AC-01 | Tenant-scoped persistence, composite relationships and service-only grants |
+| SPEC-03-AC-02 | Server-only provider interface with explicit unknown outcomes |
+| SPEC-03-AC-03 | Bound, expiring, server-priced quotes and atomic checkout consumption |
+| SPEC-03-AC-04 | Payment/acceptance prerequisites and one booking per order |
+| SPEC-03-AC-05 | Durable leases, retries, cancellation and reconciliation |
+| SPEC-03-AC-06 | Deterministic network-disabled simulator with failure scenarios |
+| SPEC-03-AC-07 | Authorized staff queue, exceptions and recovery actions |
+| SPEC-03-AC-08 | Explicit driver capability, assignment and authorized milestones |
+| SPEC-03-AC-09 | Scoped guest timeline and honest tracking accuracy |
 Quote is bound to server-priced cart/address/venue and expiry; duplicate dispatch requests return the same job. Timeout-after-create never causes a second courier. Verified events cannot cross tenants or regress terminal status. Authorized driver assignment and pickup/delivery milestones work without granting manager powers. Guest page shows honest status without exposing staff/PII data.
 
 **Tests:** Pure transition tests, concurrent dispatch SQL tests, expired/changed quote tests, forged/replayed/out-of-order webhook tests, worker crash and lease expiry tests, cancellation races, driver revocation and scoped guest tracking tests; Playwright quote→paid fixture→accepted→dispatch→delivered.
