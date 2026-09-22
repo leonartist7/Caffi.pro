@@ -86,7 +86,7 @@ async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
   stage('Guest checkout delivery details')
   await page.getByRole('button', { name: 'Delivery', exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill('Synthetic Delivery Guest')
-  await page.getByLabel('Delivery service', { exact: true }).selectOption(mode)
+  await page.getByRole('combobox', { name: 'Delivery service', exact: true }).selectOption(mode)
   await page.getByLabel('Address', { exact: true }).fill('1 Synthetic Fixture Street')
   await page.getByLabel('Postal code', { exact: true }).fill('TST 123')
   await page.getByLabel('City', { exact: true }).fill('Fixture City')
