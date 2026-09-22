@@ -40,11 +40,12 @@ Back to [SPEC-02](../specs/SPEC-02-connected-sales-journey.md), [execution ledge
 
 ## Checks, limits and blockers
 
-- Passed locally: `npm run type-check`, `npm run lint:strict`, `npm run test:unit` (27 tests), `node docs/product-os/check.mjs`, and `git diff --check`. The isolated build reached compilation but did not emit a terminal result in its local wrapper after the latest changes, so it is not claimed as a final pass.
+- Passed locally: `npm run type-check`, `npm run lint:strict`, `npm run test:unit` (27 tests), `node docs/product-os/check.mjs`, and `git diff --check`. GitHub Actions run `35697491599` also passed type, strict lint, unit, docs, and the isolated build on this commit.
 - The first isolated build failed only because the restricted local sandbox could not fetch the app's configured public Google Fonts. The same isolated build completed after approved network access. It emitted the existing Supabase Edge Runtime and Sentry deprecation warnings; no build error remained.
 - `npm run db:reset` is blocked because Supabase CLI/Docker are absent. `npm run test:db` is blocked because `SUPABASE_TEST_DATABASE_URL` is unset (and would then require `psql`). Browser tests are not run because no disposable database/browser environment is available.
 - Provider sandbox, live payment, live database, courier, deployment and customer-message checks are not run. No external side effect was initiated.
 - The Phase 1 dependency remains unmerged with a failing critical dependency audit and a blocking mutable OpenCode action supply-chain finding. It must be reconciled before Phase 2 is rebased to main.
+- The same CI run's production dependency audit remains failed on the existing critical Next.js advisory; checks were not weakened to hide it.
 - An independent Astra xhigh static review found and drove fixes for payment concurrency, terminal-state, refund-binding, tenant isolation and fixture SQL defects. Its final late-success quarantine finding was corrected after that pass; one more independent confirmation and local migration replay are required before these gates can close.
 
 ## Migration, rollback and exact next action
