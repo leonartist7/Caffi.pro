@@ -21,3 +21,7 @@ This is static evidence only. Local 48-unit-test results do not replace PostgreS
 ## Runtime-repair addendum
 
 Independent Astra xhigh reviewed `5177322..47b8573450a70b5863ea9bb2c29c388b9b0c0aa7` and explicitly extended static approval to the latter SHA. The record rename removes a SQL alias collision without changing pricing logic; added tests preserve refund denial and strengthen webhook/quarantine coverage. No new blocking findings. Runtime execution remains a separate gate.
+
+Independent Astra xhigh subsequently approved `721dfb3afe1a53addfc69d27a41a53d673424c08`, including the authorized named-venue page and bounded, redacted CI diagnostics. Later `3b07268` changes only a browser selector, the exact Node 22.23.2 CI pin and handoff evidence; it does not alter the approved runtime implementation.
+
+Final exact tested revision: independent Astra xhigh explicitly approved `3b07268948e04e79dfaddf45df3e83c7c32eb25c`. No new blocking findings. [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123) independently passes all eight SQL suites and four browser tests at this revision. The dependency audit still fails; this does not confer provider or live readiness. Subsequent completion changes are evidence/documentation only.

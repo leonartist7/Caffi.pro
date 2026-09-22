@@ -70,3 +70,7 @@ Use the same job timeline, assignment and milestone API without external provide
 Ship simulator-only and globally disabled external adapters first. Simulator permits deterministic success, unavailable, expiry, delayed/out-of-order events, timeout-after-create, cancellation rejection and failure. Enable one sandbox venue after contract tests; enable live only after F-01/F-03/F-05 and controlled delivery approval.
 
 Delivery is live-verified only after an actual approved delivery, not after simulator or sandbox success.
+
+## Verified implementation checkpoint
+
+[PR #87](https://github.com/leonartist7/Caffi.pro/pull/87) implements the approved revision-2 contract at tested head `3b07268948e04e79dfaddf45df3e83c7c32eb25c`. Independent Astra ultra approved the contract before implementation; Astra xhigh approved implemented booking/tenant safeguards. All eight disposable SQL suites and four real browser tests pass in [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123). The simulator and own-driver workflows remain synthetic/loopback-only. External provider creation is disabled; SPEC-04 stays separate and blocked on authorized sandbox/commercial access. Recovery and history-preserving rollback are in the [handoff](handoffs/HANDOFF-2026-09-22-spec-03.md). No marketplace/POS boundary changed.

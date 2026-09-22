@@ -52,3 +52,7 @@ Synthetic venue can complete ordering, preparation, simulated delivery and loyal
 
 ## Success review
 Review after each slice: complete journey evidence, unresolved exceptions, support burden, cost assumptions and founder feedback. Reduce breadth before sacrificing a functioning order-to-delivery loop. Never call the 90-day programme complete simply because all planned screens exist.
+
+## 2026-09-22 Phase 3 checkpoint
+
+SPEC-03 delivery foundation is implemented in draft [PR #87](https://github.com/leonartist7/Caffi.pro/pull/87) above the unmerged Phase 2 dependency. Independent contract/security review and synthetic browser/API/database journeys pass at `3b07268`. SPEC-04 dossier and offline fixtures are separate in draft [PR #86](https://github.com/leonartist7/Caffi.pro/pull/86); adapter/sandbox acceptance remains blocked by authorized provider access and commercial/service-area decisions. Phase 3 live readiness is not complete. Dependency audit and OpenCode findings remain open; see the [ledger](EXECUTION-LEDGER.md) for exact evidence.

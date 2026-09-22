@@ -43,3 +43,7 @@ Every adapter dossier must name vendor, purpose, account owner, service geograph
 - D5: [Shipday on-demand API](https://docs.shipday.com/reference/on-demand-delivery)
 - D6: [Toast integration partnership](https://doc.toasttab.com/doc/devguide/integrationDevProcess.html)
 - D7: [Vercel AI Gateway](https://vercel.com/docs/ai-gateway)
+
+## 2026-09-22 verification boundary
+
+SPEC-03 simulator and restaurant-driver browser/API/database lifecycles pass in [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123) at `3b07268`: eight SQL suites and four genuine browser tests. This changes only the isolated simulator verification status. Uber Direct remains research/offline fixtures in separate PR #86, with no authorized sandbox credentials or execution. No external adapter or live courier readiness is claimed.
