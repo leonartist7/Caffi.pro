@@ -6,6 +6,8 @@ import { requireVenueRole } from '@/lib/authz'
 import { getTipConfig } from '@/lib/storefront'
 import { isVenueOpenForOrdering, parseOrderingHours } from '@/lib/orders/opening-hours'
 import { recoverCheckout } from '@/lib/orders/checkout-recovery'
+import { address as validateDeliveryAddress, boundedBody, UUID } from '@/lib/delivery/validation'
+import { simulationEnabled } from '@/lib/delivery/provider'
 
 interface CreatedOrder {
   order_id: string
@@ -38,7 +40,10 @@ const FRIENDLY_ERRORS: Record<string, string> = {
   OUTSIDE_DELIVERY_ZONE: 'That postal code is outside this delivery area.',
   DELIVERY_MINIMUM_NOT_MET: 'Your cart does not meet this delivery zone minimum.',
   INVALID_TIP: 'That tip amount is not valid.',
-  CHECKOUT_CART_CHANGED: 'Your cart changed since checkout started. Review it and start checkout again.',
+  QUOTE_EXPIRED: 'Your delivery quote expired. Request a new quote.',
+  QUOTE_MISMATCH: 'Your delivery details changed. Request a new quote.',
+  CHECKOUT_CART_CHANGED:
+    'Your cart changed since checkout started. Review it and start checkout again.',
 }
 
 function orderError(message: string): string {
@@ -71,6 +76,8 @@ function checkoutFingerprint(
     guest?: { name?: string; phone?: string; email?: string }
     delivery_address?: string | null
     delivery_postal_code?: string | null
+    delivery_quote_id?: string | null
+    delivery_address_structured?: unknown
     items?: Array<{ item_id?: string; quantity?: number; modifier_ids?: string[]; notes?: string }>
     notes?: string
     member_pass_serial?: string | null
@@ -99,6 +106,12 @@ function checkoutFingerprint(
     notes: body.notes?.trim() || '',
     member_pass_serial: body.member_pass_serial || null,
     tip_cents: tipCents,
+    ...(body.delivery_quote_id
+      ? {
+          delivery_quote_id: body.delivery_quote_id,
+          delivery_address_structured: body.delivery_address_structured,
+        }
+      : {}),
   }
   return createHash('sha256').update(JSON.stringify(canonical)).digest('hex')
 }
@@ -134,13 +147,15 @@ export async function POST(request: NextRequest) {
     guest?: { name?: string; phone?: string; email?: string }
     delivery_address?: string | null
     delivery_postal_code?: string | null
+    delivery_quote_id?: string | null
+    delivery_address_structured?: unknown
     items?: Array<{ item_id?: string; quantity?: number; modifier_ids?: string[]; notes?: string }>
     notes?: string
     member_pass_serial?: string | null
     tip_cents?: number
   }
   try {
-    body = await request.json()
+    body = JSON.parse(await boundedBody(request))
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
@@ -154,21 +169,52 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: FRIENDLY_ERRORS.INVALID_TIP }, { status: 400 })
   }
 
+  if (body.delivery_quote_id) {
+    if (body.order_type !== 'delivery' || !UUID.test(body.delivery_quote_id))
+      return NextResponse.json({ error: 'Invalid delivery quote' }, { status: 400 })
+    try {
+      body.delivery_address_structured = validateDeliveryAddress(body.delivery_address_structured)
+    } catch {
+      return NextResponse.json({ error: 'Invalid delivery address' }, { status: 400 })
+    }
+  } else if (body.delivery_address_structured) {
+    return NextResponse.json({ error: 'Delivery quote required' }, { status: 400 })
+  }
   let tipCents = body.tip_cents ?? 0
   if (body.order_type === 'delivery' && tipCents > 0) {
-    const tipConfig = await getTipConfig(body.venue_slug)
-    if (!tipConfig.delivery_enabled) tipCents = 0
+    // Quoted checkout uses the submitted tip unchanged for immutable replay.
+    // A consumed quote can only recover its exact fingerprint inside the SQL RPC.
+    const consumed = body.delivery_quote_id
+      ? await getSupabaseAdmin()
+          .from('delivery_quotes')
+          .select('consumed_order_id')
+          .eq('id', body.delivery_quote_id)
+          .maybeSingle()
+      : null
+    if (!consumed?.data?.consumed_order_id) {
+      const tipConfig = await getTipConfig(body.venue_slug)
+      if (!tipConfig.delivery_enabled) {
+        if (body.delivery_quote_id)
+          return NextResponse.json(
+            { error: 'Delivery tips are not enabled. Review your checkout.' },
+            { status: 409 }
+          )
+        tipCents = 0
+      }
+    }
   }
 
   const admin = getSupabaseAdmin()
   const { data: venueAvailability, error: venueAvailabilityError } = await admin
     .from('venues')
-    .select('kill_switch, reservation_config, timezone')
+    .select('venue_id, kill_switch, reservation_config, timezone')
     .eq('slug', body.venue_slug)
     .maybeSingle()
   if (venueAvailabilityError || !venueAvailability || venueAvailability.kill_switch) {
     return NextResponse.json({ error: FRIENDLY_ERRORS.VENUE_NOT_FOUND }, { status: 409 })
   }
+  if (body.delivery_quote_id && !simulationEnabled(venueAvailability.venue_id))
+    return NextResponse.json({ error: 'Delivery is not configured' }, { status: 409 })
   if (
     !isVenueOpenForOrdering(
       parseOrderingHours(
@@ -178,25 +224,34 @@ export async function POST(request: NextRequest) {
     )
   ) {
     return NextResponse.json(
-      { error: 'This storefront is currently closed. Please try again during opening hours.', code: 'VENUE_CLOSED' },
+      {
+        error: 'This storefront is currently closed. Please try again during opening hours.',
+        code: 'VENUE_CLOSED',
+      },
       { status: 409 }
     )
   }
-  const { data, error } = await admin.rpc('create_storefront_order_checked', {
-    p_venue_slug: body.venue_slug,
-    p_client_uuid: body.client_uuid,
-    p_order_type: body.order_type,
-    p_items: body.items,
-    p_guest: body.guest ?? {},
-    p_table_token: body.table_token || null,
-    p_zone_id: body.zone_id || null,
-    p_delivery_address: body.delivery_address || null,
-    p_delivery_postal_code: body.delivery_postal_code || null,
-    p_notes: body.notes || null,
-    p_member_pass_serial: body.member_pass_serial || null,
-    p_tip_cents: tipCents,
-    p_request_fingerprint: checkoutFingerprint(body, tipCents),
-  })
+  const { data, error } = await admin.rpc(
+    body.delivery_quote_id ? 'create_delivery_order_checked' : 'create_storefront_order_checked',
+    {
+      p_venue_slug: body.venue_slug,
+      p_client_uuid: body.client_uuid,
+      p_order_type: body.order_type,
+      p_items: body.items,
+      p_guest: body.guest ?? {},
+      p_table_token: body.table_token || null,
+      p_zone_id: body.zone_id || null,
+      p_delivery_address: body.delivery_address || null,
+      p_delivery_postal_code: body.delivery_postal_code || null,
+      p_notes: body.notes || null,
+      p_member_pass_serial: body.member_pass_serial || null,
+      p_tip_cents: tipCents,
+      p_request_fingerprint: checkoutFingerprint(body, tipCents),
+      ...(body.delivery_quote_id
+        ? { p_quote_id: body.delivery_quote_id, p_address: body.delivery_address_structured }
+        : {}),
+    }
+  )
   if (error || !data) {
     console.error('[orders] atomic order creation failed:', error)
     const errorMessage = error?.message ?? ''
@@ -216,7 +271,10 @@ export async function POST(request: NextRequest) {
   )
   if (trackingError || typeof trackingToken !== 'string') {
     console.error('[orders] tracking credential lookup failed:', trackingError?.message)
-    return NextResponse.json({ error: 'We could not resume this order safely. Please try again.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'We could not resume this order safely. Please try again.' },
+      { status: 500 }
+    )
   }
   const confirmationUrl = confirmationPath(body.venue_slug, order.order_id, trackingToken)
   let { data: existingPayment } = await admin
@@ -258,7 +316,7 @@ export async function POST(request: NextRequest) {
   if (!existingPayment || retryingFailedPayment || existingPayment.status === 'pending') {
     const proposedAttemptKey = retryingFailedPayment
       ? crypto.randomUUID()
-      : (existingPayment?.idempotency_key as string | undefined) ?? order.order_id
+      : ((existingPayment?.idempotency_key as string | undefined) ?? order.order_id)
     const { data: reservedAttempt, error: reserveError } = await admin.rpc(
       'reserve_storefront_payment_attempt',
       {
@@ -281,7 +339,10 @@ export async function POST(request: NextRequest) {
           { status: 409 }
         )
       }
-      return NextResponse.json({ error: 'Payment setup failed. Please try again.' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Payment setup failed. Please try again.' },
+        { status: 500 }
+      )
     }
     const reservedPayment = reservedAttempt as {
       status: string
@@ -290,7 +351,10 @@ export async function POST(request: NextRequest) {
       provider: string
     }
     if (reservedPayment.provider !== provider.key || reservedPayment.status !== 'pending') {
-      return NextResponse.json({ error: 'Payment setup is still being prepared. Please retry.' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'Payment setup is still being prepared. Please retry.' },
+        { status: 409 }
+      )
     }
     existingPayment = reservedPayment
   }
@@ -364,7 +428,10 @@ export async function POST(request: NextRequest) {
           payment_mode: racedPayment?.provider,
         })
       }
-      return NextResponse.json({ error: 'Payment setup is still being prepared. Please retry.' }, { status: 409 })
+      return NextResponse.json(
+        { error: 'Payment setup is still being prepared. Please retry.' },
+        { status: 409 }
+      )
     }
     return NextResponse.json(
       {

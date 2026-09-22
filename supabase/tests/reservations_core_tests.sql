@@ -1,10 +1,10 @@
--- Reservations Core live invariants. Safe on production: all writes roll back.
+-- Reservations Core isolated fixture invariants. All writes roll back.
 
 BEGIN;
 
 DO $$
 DECLARE
-    v_venue_id UUID := 'a0000000-0000-4000-3000-000000000001';
+    v_venue_id UUID := '13000000-0000-4000-8000-000000000001';
     v_client_uuid UUID := uuid_generate_v4();
     v_starts_at TIMESTAMPTZ;
     v_row public.reservations%ROWTYPE;

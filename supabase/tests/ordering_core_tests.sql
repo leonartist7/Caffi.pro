@@ -1,10 +1,10 @@
--- Ordering Core live invariants. Safe on production: all writes roll back.
+-- Ordering Core isolated fixture invariants. All writes roll back.
 
 BEGIN;
 
 DO $$
 DECLARE
-    v_venue_id UUID := 'a0000000-0000-4000-3000-000000000001';
+    v_venue_id UUID := '13000000-0000-4000-8000-000000000001';
     v_success_order UUID := uuid_generate_v4();
     v_mismatch_order UUID := uuid_generate_v4();
     v_success_ref TEXT := 'ordering_test_' || uuid_generate_v4()::text;

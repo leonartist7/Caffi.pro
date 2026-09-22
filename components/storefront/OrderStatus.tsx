@@ -40,6 +40,27 @@ interface StatusData {
   total_cents: number
   placed_at: string
   payment_state?: 'reconciliation_required'
+  delivery?: {
+    state: string
+    provider: string
+    tracking_accuracy: 'milestones' | 'provider_estimate'
+    updated_at: string
+    eta?: string | null
+    exception: boolean
+  } | null
+}
+
+const DELIVERY_LABELS: Record<string, string> = {
+  dispatch_pending: 'Waiting for dispatch',
+  booked: 'Delivery booked',
+  assigned: 'Driver assigned',
+  picked_up: 'Picked up',
+  delivered: 'Delivered',
+  reconciliation_required: 'Delivery update being checked',
+  cancellation_pending: 'Cancellation requested',
+  cancelled: 'Delivery cancelled',
+  failed: 'Delivery unsuccessful',
+  returned: 'Returned to the restaurant',
 }
 
 const LABELS: Record<string, string> = {
@@ -112,10 +133,12 @@ export function OrderStatus({
         })
         if (!active) return
         if (!response.ok) {
-          setMissing(true)
+          if ([401, 403, 404, 410].includes(response.status)) setMissing(true)
+          else setLoadError(true)
           return
         }
         setOrder(await response.json())
+        setMissing(false)
         setLoadError(false)
       } catch {
         if (active) setLoadError(true)
@@ -130,13 +153,18 @@ export function OrderStatus({
   }, [orderId, trackingToken])
 
   useEffect(() => {
-    if (!order || !['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'].includes(order.status)) {
+    if (
+      !order ||
+      !['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'].includes(
+        order.status
+      )
+    ) {
       return
     }
     try {
-      const operation = JSON.parse(localStorage.getItem(`aro-order-operation:${order.order_id}`) || 'null') as
-        | { slug?: string; client_uuid?: string }
-        | null
+      const operation = JSON.parse(
+        localStorage.getItem(`aro-order-operation:${order.order_id}`) || 'null'
+      ) as { slug?: string; client_uuid?: string } | null
       const clientKey = `aro-order-id:${slug}`
       if (operation?.slug === slug && localStorage.getItem(clientKey) === operation.client_uuid) {
         localStorage.removeItem(clientKey)
@@ -198,6 +226,55 @@ export function OrderStatus({
         <p className="mt-3 rounded-2xl bg-aro-sand/60 px-4 py-3 text-sm text-aro-muted">
           We&apos;re checking this payment. Please do not try again while the café resolves it.
         </p>
+      ) : null}
+      {loadError ? (
+        <p role="status" className="mt-3 text-sm text-aro-muted">
+          Updates are delayed. Showing the last confirmed information while we retry.
+        </p>
+      ) : null}
+      {order.order_type === 'delivery' ? (
+        <section
+          aria-label="Delivery tracking"
+          className="mt-6 rounded-2xl border border-aro-hairline bg-white/60 p-4 text-left"
+        >
+          <h2 className="font-display text-xl">Delivery</h2>
+          <p className="mt-2 font-semibold">
+            {order.delivery
+              ? DELIVERY_LABELS[order.delivery.state] || 'Waiting for a confirmed delivery update'
+              : 'No confirmed delivery tracking is available yet.'}
+          </p>
+          {order.delivery?.provider === 'simulator' ? (
+            <p className="mt-2 text-sm">Simulated delivery. No real courier is travelling.</p>
+          ) : null}
+          {order.delivery?.exception ? (
+            <p className="mt-2 text-sm">
+              The restaurant is checking a delivery issue. Payment and any refund are handled
+              separately.
+            </p>
+          ) : null}
+          {order.delivery?.tracking_accuracy === 'milestones' ? (
+            <p className="mt-2 text-sm text-aro-muted">
+              Tracking uses confirmed milestones. Live location and arrival estimates are not
+              available.
+            </p>
+          ) : null}
+          {order.delivery?.tracking_accuracy === 'provider_estimate' &&
+          order.delivery.eta &&
+          Number.isFinite(Date.parse(order.delivery.eta)) ? (
+            <p className="mt-2 text-sm">
+              Provider&apos;s estimated arrival: {new Date(order.delivery.eta).toLocaleTimeString()}
+              . This is an estimate.
+            </p>
+          ) : null}
+          {order.delivery?.updated_at && Number.isFinite(Date.parse(order.delivery.updated_at)) ? (
+            <p className="mt-2 text-xs text-aro-muted">
+              Last confirmed update:{' '}
+              <time dateTime={order.delivery.updated_at}>
+                {new Date(order.delivery.updated_at).toLocaleString()}
+              </time>
+            </p>
+          ) : null}
+        </section>
       ) : null}
       <div className="mt-6 rounded-2xl bg-aro-sand/60 px-4 py-3">
         <div className="flex items-center justify-between">

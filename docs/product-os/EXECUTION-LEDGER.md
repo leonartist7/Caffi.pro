@@ -12,6 +12,8 @@ tags: [product-os]
 
 SPEC-03 active on codex/spec-03-delivery-foundation from reverified unmerged #85 head ef3afe239aba282604670496675ea72e73250a99. Stable AC-01..09 and a [concrete contract-review packet](specs/SPEC-03-contract-review.md) precede implementation; independent Astra ultra review is pending. Independent simulator scenario fixtures, isolated CI setup and SPEC-04 Uber feasibility proceed while shared contracts wait. No Uber access exists; no sandbox/live verification claimed. [Current handoff](handoffs/HANDOFF-2026-09-22-spec-03.md).
 
+Subsequent checkpoint: Astra ultra approved revision 2 at ad4b16d after five findings were resolved. Draft [PR #87](https://github.com/leonartist7/Caffi.pro/pull/87) owns implementation, isolated CI and review evidence. Separate SPEC-04 feasibility/fixtures are [PR #86](https://github.com/leonartist7/Caffi.pro/pull/86), blocked on authorized provider access. Initial CI 35771277302 failed startup without actionable diagnostics; 35772482145 exposed the historical optional Roastery seed dependency. Empty replay is being repaired without inventing a production venue. These failures remain evidence; database/browser passing results are pending.
+
 Back to [Product OS](README.md). This is the single authoritative execution ledger. Historical STATUS.md is superseded.
 
 Columns are independent: code/document presence, local verification, provider sandbox verification, live verification and dependency state. “Not run” must not become “passed” because another column passed.

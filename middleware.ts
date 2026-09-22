@@ -41,6 +41,8 @@ export async function middleware(request: NextRequest) {
   // Main app domains (localhost, Vercel preview, production)
   const isMainDomain =
     hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
     hostname.startsWith('localhost:') ||
     hostname.endsWith('.vercel.app') ||
     hostname === 'caffi.pro' ||

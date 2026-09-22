@@ -2,11 +2,17 @@
 id: delivery-architecture
 title: Delivery architecture and interface contract
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [product-os]
 ---
 
 # Delivery architecture and interface contract
+
+## 2026-09-22 implementation contract
+
+The [revision 2 concrete packet](specs/SPEC-03-contract-review.md) supersedes the illustrative proposal below where more specific. [Independent Astra ultra approval](evidence/SPEC-03-CONTRACT-REVIEW-2026-09-22.md) precedes the SPEC-03 implementation in draft PR #87. The initial engine supports isolated simulator and own-driver workflows only; external provider selection fails closed. There is no live readiness claim.
+
+Operational job states include booked; quote is a separate record. Once a create may have been sent, v1 never repeats it, even after an absence lookup. The immutable delivery_order_context freezes guest charges, cart, structured destination and currency for replay. Owner/manager can approve a fresh provider quote only for a never-sent job with matching version. Post-implementation review and executed SQL/browser evidence remain separate gates.
 
 Back to [architecture](ARCHITECTURE.md), [registry](INTEGRATION-REGISTRY.md); implemented by [SPEC-03](specs/SPEC-03-delivery-foundation.md) and [SPEC-04](specs/SPEC-04-first-courier.md). This is a proposed contract, not existing code.
 

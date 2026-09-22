@@ -1,4 +1,13 @@
 -- Idempotent Ordering Core demo for the canonical Roastery venue.
+-- Historical environments already contain this optional demo venue. Empty
+-- local/CI databases do not: synthetic fixtures are loaded by seed.sql later.
+-- Do not invent a customer/venue merely to make schema replay succeed.
+DO $$
+BEGIN
+IF NOT EXISTS (SELECT 1 FROM public.venues WHERE venue_id='a0000000-0000-4000-3000-000000000001') THEN
+    RAISE NOTICE 'Optional Roastery ordering demo skipped: canonical venue absent';
+    RETURN;
+END IF;
 INSERT INTO public.menu_categories (category_id, venue_id, name, display_order, is_active)
 VALUES
 ('c1000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Coffee',10,true),
@@ -37,3 +46,5 @@ ON CONFLICT (table_id) DO UPDATE SET label=EXCLUDED.label, is_active=true;
 INSERT INTO public.delivery_zones (zone_id, venue_id, name, fee_cents, min_order_cents, postal_prefixes, is_active)
 VALUES ('c6000000-0000-4000-8000-000000000001','a0000000-0000-4000-3000-000000000001','Calgary core',500,2000,ARRAY['T2N','T2P','T2R'],true)
 ON CONFLICT (zone_id) DO UPDATE SET name=EXCLUDED.name, fee_cents=EXCLUDED.fee_cents, min_order_cents=EXCLUDED.min_order_cents, postal_prefixes=EXCLUDED.postal_prefixes, is_active=true;
+END;
+$$;

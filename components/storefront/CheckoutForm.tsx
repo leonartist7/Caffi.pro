@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Coffee, MapPin, ShoppingBag, Truck } from 'lucide-react'
 import { useOrderingCart } from '@/contexts/OrderingCartContext'
@@ -43,6 +43,20 @@ export function CheckoutForm({
   const [zoneId, setZoneId] = useState(zones[0]?.zone_id ?? '')
   const [address, setAddress] = useState('')
   const [postalCode, setPostalCode] = useState('')
+  const [city, setCity] = useState('')
+  const [countryCode, setCountryCode] = useState('')
+  const [deliveryMode, setDeliveryMode] = useState('legacy')
+  const [deliveryModes, setDeliveryModes] = useState<string[]>([])
+  const [quoting, setQuoting] = useState(false)
+  const [quoteError, setQuoteError] = useState('')
+  const [quote, setQuote] = useState<{
+    quote_id: string
+    expires_at: string
+    guest_charge_minor: number
+    currency: string
+    fingerprint: string
+  } | null>(null)
+  const [now, setNow] = useState(0)
   const [notes, setNotes] = useState('')
   const [passSerial, setPassSerial] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -53,6 +67,110 @@ export function CheckoutForm({
   )
   const [customTip, setCustomTip] = useState('')
   const [tipError, setTipError] = useState('')
+
+  const quoteItems = cart.items.map(item => ({
+    item_id: item.item_id,
+    quantity: item.quantity,
+    modifier_ids: item.modifiers.map(modifier => modifier.modifier_id),
+    notes: item.notes,
+  }))
+  const structuredAddress = {
+    countryCode: countryCode.trim().toUpperCase(),
+    postalCode,
+    city,
+    line1: address,
+  }
+  const quoteFingerprint = JSON.stringify({
+    slug,
+    orderType,
+    deliveryMode,
+    zoneId,
+    structuredAddress,
+    items: quoteItems,
+    currency: cart.currency,
+  })
+  const currentFingerprint = useRef(quoteFingerprint)
+  currentFingerprint.current = quoteFingerprint
+  const needsQuote = orderType === 'delivery' && deliveryMode !== 'legacy'
+  const validQuote =
+    quote?.fingerprint === quoteFingerprint && Date.parse(quote.expires_at) > now ? quote : null
+
+  useEffect(() => {
+    const controller = new AbortController()
+    setDeliveryModes([])
+    setDeliveryMode('legacy')
+    void fetch(`/api/delivery/options?${new URLSearchParams({ venue_slug: slug })}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+    })
+      .then(async response => (response.ok ? response.json() : { modes: [] }))
+      .then(body => {
+        if (!controller.signal.aborted)
+          setDeliveryModes(
+            Array.isArray(body.modes)
+              ? body.modes.filter((mode: string) => ['simulator', 'own_driver'].includes(mode))
+              : []
+          )
+      })
+      .catch(() => {
+        /* Optional delivery modes fail closed; legacy checkout remains available. */
+      })
+    return () => controller.abort()
+  }, [slug])
+
+  useEffect(() => {
+    setQuote(null)
+    setQuoteError('')
+  }, [quoteFingerprint])
+
+  useEffect(() => {
+    if (!quote) return
+    setNow(Date.now())
+    const timer = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(timer)
+  }, [quote])
+
+  async function requestQuote() {
+    setQuoting(true)
+    setQuoteError('')
+    setQuote(null)
+    const fingerprint = quoteFingerprint
+    try {
+      const response = await fetch('/api/delivery/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          venue_slug: slug,
+          items: quoteItems,
+          zone_id: zoneId,
+          address: structuredAddress,
+          mode: deliveryMode,
+        }),
+      })
+      const body = await response.json().catch(() => ({}))
+      if (!response.ok)
+        throw new Error(
+          body.error || 'Delivery quote is unavailable. Check your address and try again.'
+        )
+      if (currentFingerprint.current !== fingerprint) return
+      if (
+        typeof body.quote_id !== 'string' ||
+        !Number.isSafeInteger(body.guest_charge_minor) ||
+        body.guest_charge_minor < 0 ||
+        body.currency?.toUpperCase() !== cart.currency.toUpperCase() ||
+        !(Date.parse(body.expires_at) > Date.now())
+      ) {
+        throw new Error('Delivery quote could not be validated. Please request another quote.')
+      }
+      setNow(Date.now())
+      setQuote({ ...body, fingerprint })
+    } catch (caught) {
+      if (currentFingerprint.current === fingerprint)
+        setQuoteError(caught instanceof Error ? caught.message : 'Delivery quote failed')
+    } finally {
+      setQuoting(false)
+    }
+  }
 
   useEffect(() => {
     if (!cart.items.length) router.replace(`/shop/${slug}/menu`)
@@ -88,7 +206,12 @@ export function CheckoutForm({
     }
   }, [tipSelection, customTip, maxTip])
 
-  const deliveryFeeCents = orderType === 'delivery' ? (selectedZone?.fee_cents ?? 0) : 0
+  const deliveryFeeCents =
+    orderType === 'delivery'
+      ? needsQuote && validQuote
+        ? validQuote.guest_charge_minor
+        : (selectedZone?.fee_cents ?? 0)
+      : 0
   const estimatedTotal = useMemo(
     () => cart.subtotalCents + deliveryFeeCents + tipCents,
     [cart.subtotalCents, deliveryFeeCents, tipCents]
@@ -96,6 +219,10 @@ export function CheckoutForm({
 
   async function submit(event: React.FormEvent) {
     event.preventDefault()
+    if (needsQuote && (!validQuote || Date.parse(validQuote.expires_at) <= Date.now())) {
+      setQuoteError('Request a current delivery quote before payment.')
+      return
+    }
     setSubmitting(true)
     setError('')
     setStubbed(false)
@@ -115,6 +242,12 @@ export function CheckoutForm({
           guest: { name, phone, email },
           delivery_address: orderType === 'delivery' ? address : null,
           delivery_postal_code: orderType === 'delivery' ? postalCode : null,
+          ...(needsQuote
+            ? {
+                delivery_quote_id: validQuote!.quote_id,
+                delivery_address_structured: structuredAddress,
+              }
+            : {}),
           items: cart.items.map(item => ({
             item_id: item.item_id,
             quantity: item.quantity,
@@ -240,6 +373,25 @@ export function CheckoutForm({
             </h2>
             {zones.length ? (
               <div className="mt-4 space-y-4">
+                {deliveryModes.length ? (
+                  <label className="block text-sm font-semibold">
+                    Delivery service
+                    <select
+                      value={deliveryMode}
+                      onChange={event => setDeliveryMode(event.target.value)}
+                      className="mt-2 w-full rounded-2xl border border-aro-hairline bg-white/60 px-4 py-3"
+                    >
+                      <option value="legacy">Restaurant delivery</option>
+                      {deliveryModes.map(mode => (
+                        <option key={mode} value={mode}>
+                          {mode === 'simulator'
+                            ? 'Simulated delivery — no real courier'
+                            : 'Restaurant driver with confirmed tracking'}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 <label className="block text-sm font-semibold">
                   Zone
                   <select
@@ -269,6 +421,51 @@ export function CheckoutForm({
                   onChange={setPostalCode}
                   placeholder="T2N 1N4"
                 />
+                {needsQuote ? (
+                  <div className="space-y-4">
+                    <Field
+                      label="City"
+                      required
+                      value={city}
+                      onChange={setCity}
+                      placeholder="Delivery city"
+                    />
+                    <Field
+                      label="Country code"
+                      required
+                      value={countryCode}
+                      onChange={setCountryCode}
+                      placeholder="Two-letter country code"
+                    />
+                    <button
+                      type="button"
+                      disabled={
+                        quoting ||
+                        submitting ||
+                        !address.trim() ||
+                        !postalCode.trim() ||
+                        !city.trim() ||
+                        !/^[A-Za-z]{2}$/.test(countryCode.trim())
+                      }
+                      onClick={() => void requestQuote()}
+                      className="min-h-[44px] rounded-full bg-aro-espresso px-5 py-3 text-white disabled:opacity-50"
+                    >
+                      {quoting ? 'Checking delivery…' : 'Get delivery quote'}
+                    </button>
+                    <p role="status" className="text-sm text-aro-muted">
+                      {validQuote
+                        ? `Delivery charge ${formatCents(validQuote.guest_charge_minor, validQuote.currency)}. Quote expires at ${new Date(validQuote.expires_at).toLocaleTimeString()}.`
+                        : quote
+                          ? 'Your delivery quote has expired. Request another quote.'
+                          : 'A current quote is required. Address or cart changes require a new quote.'}
+                    </p>
+                    {quoteError ? (
+                      <p role="alert" className="text-sm text-aro-rose">
+                        {quoteError}
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             ) : (
               <p className="mt-3 text-sm text-aro-rose">
@@ -400,7 +597,8 @@ export function CheckoutForm({
             <span className="font-mono">{formatCents(estimatedTotal, cart.currency)}</span>
           </div>
           <p className="pt-1 text-xs text-aro-cream/50">
-            Tax and final pricing are securely recalculated before payment. Delivery selection does not book a courier.
+            Tax and final pricing are securely recalculated before payment. Delivery selection does
+            not book a courier.
           </p>
         </div>
         {error ? (
@@ -420,6 +618,7 @@ export function CheckoutForm({
             submitting ||
             !cart.items.length ||
             (orderType === 'delivery' && !zones.length) ||
+            (needsQuote && (!validQuote || quoting)) ||
             Boolean(tipError)
           }
           className="mt-5 w-full rounded-full bg-aro-terra px-5 py-4 text-sm font-bold text-white disabled:opacity-50"
