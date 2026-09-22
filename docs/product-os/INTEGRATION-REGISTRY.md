@@ -2,7 +2,7 @@
 id: integration-registry
 title: Integration registry
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-22
 tags: [product-os]
 ---
 
@@ -15,7 +15,7 @@ Back to [architecture](ARCHITECTURE.md) and [founder gates](FOUNDER-DECISIONS.md
 | Supabase | Auth, tenant data, operational records | Existing account; restoration/capacity cost not verified | Relevant projects INACTIVE; F-02, read-only parity then isolated tests |
 | Vercel | Hosting, schedules, previews | Existing account; runtime/cron limits verify before worker activation | Current main READY; env parity unknown |
 | Stripe | Hosted checkout, signed payment events; no card details stored by ARO | Processing/account/Connect costs unresolved, F-05 | Code present; test reconciliation then approved merchant setup |
-| Uber Direct | Courier delivery; minimum address/contact/order metadata | Per-delivery terms, region and platform account arrangement unverified | First feasibility candidate, API sandbox documented [D1] |
+| Uber Direct | Courier delivery; minimum address/contact/order metadata | Per-delivery terms, region and platform account arrangement unverified | Official research and synthetic fixture tests complete; authorized sandbox access, region/account approval and adapter absent. [2026-09-22 dossier](evidence/UBER-DIRECT-2026-09-22.md) |
 | DoorDash Drive | Direct courier service, not marketplace listings | Production access restricted; no timeline [D2] | Adapter only after access gate |
 | Deliverect | Candidate POS/channel/dispatch intermediary | Partner agreement, supported direction and merchant billing unknown [D3] | Validate ARO as ordering partner; do not mistake courier-partner API for dispatcher access |
 | Stuart | Regional courier service, delivery contacts | Account, coverage and commercial quote [D4] | Candidate when service area chosen |

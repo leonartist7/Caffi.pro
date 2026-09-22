@@ -1,8 +1,8 @@
 ---
 id: SPEC-04
 title: First white-label courier connection
-status: ready-spec
-updated: 2026-09-20
+status: blocked-access
+updated: 2026-09-22
 tags: [product-os, execution-packet]
 ---
 
@@ -25,6 +25,17 @@ Recorded feasible region/account arrangement, quote expiry/currency mapping, can
 
 **Tests:** Signed/invalid event fixtures, provider schema changes, quote unavailable/expired, token expiry, timeout after create, duplicate event, cancellation rejection, provider lookup; opt-in sandbox end-to-end with sanitized evidence.
 
+### Stable acceptance IDs (defined before this slice)
+
+| ID | Acceptance | Current evidence |
+|---|---|---|
+| SPEC-04-AC-01 | Dated official feasibility dossier: geography, account/billing, PII, protocols and recovery limitations | [Dossier](../evidence/UBER-DIRECT-2026-09-22.md); research complete with commercial questions explicitly unresolved |
+| SPEC-04-AC-02 | Sanitized independent protocol fixtures and offline tests | `tests/fixtures/uber-direct/protocol.json`; `npm run test:courier-fixtures`; fixture evidence only, adapter contract tests await implementation |
+| SPEC-04-AC-03 | Server-only adapter using approved SPEC-03 contract and authorized sandbox access | Blocked: no authorized credentials or approved account arrangement; no adapter implemented |
+| SPEC-04-AC-04 | Opt-in provider sandbox lifecycle/failure verification | Not run; requires AC-03 and access. Live verification is a separate founder gate |
+
+The fixture-only slice branches from Phase 2 PR #85 head `ef3afe239aba282604670496675ea72e73250a99` on `codex/spec-04-first-courier`. PRs #83–#85 remain unmerged dependencies. Before adapter implementation, rebase onto the independently approved SPEC-03 contract commit and record that exact SHA. No shared contract is introduced by these fixtures. [Handoff](../handoffs/HANDOFF-2026-09-22-spec-04.md).
+
 ## Dependencies, risk and release gate
 **Dependencies:** SPEC-03; founder commercial gates. Feasibility research can proceed without credentials; adapter sandbox execution cannot.
 
@@ -36,3 +47,5 @@ Recorded feasible region/account arrangement, quote expiry/currency mapping, can
 
 ## Ready-to-paste worker prompt
 > Execute SPEC-04 with Uber Direct as the first feasibility candidate, not an assumed approved vendor. Document account/region/cost/data boundaries from current official sources. Implement only against authorized sandbox access using the reviewed delivery contract. Do not create paid accounts or real deliveries. Report unsupported cases and update registry/ledger; draft PR only.
+
+Final dependency checkpoint: separate [SPEC-03 PR #87](https://github.com/leonartist7/Caffi.pro/pull/87) passes all eight SQL suites and four genuine browser tests at `3b07268` with independent architecture/security approvals. These core results do not establish Uber adapter or sandbox acceptance. SPEC-04 access/commercial blockers remain as recorded above.
