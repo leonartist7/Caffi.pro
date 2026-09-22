@@ -1,0 +1,15 @@
+{
+  "evidence": "synthetic-offline-only",
+  "reviewedAt": "2026-09-22",
+  "quote": {"kind":"delivery_quote","id":"dqt_fixture","created":"2026-09-22T12:00:00Z","expires":"2026-09-22T12:15:00Z","fee":558,"currency":"usd","currency_type":"USD","dropoff_eta":"2026-09-22T12:44:00Z"},
+  "createIntent": {"idempotency_key":"fixture-operation-001","external_id":"fixture-order-001","quote_id":"dqt_fixture"},
+  "createConfirmed": {"kind":"delivery","id":"del_fixture","status":"pending","live_mode":false,"external_id":"fixture-order-001"},
+  "scenarios": [
+    {"name":"quote-unavailable","operation":"quote","transport":"response","httpStatus":400,"providerCode":null,"expected":"unavailable"},
+    {"name":"invalid-address","operation":"quote","transport":"response","httpStatus":400,"providerCode":null,"expected":"unavailable"},
+    {"name":"token-expired","operation":"lookup","transport":"response","httpStatus":401,"providerCode":null,"expected":"authentication-required"},
+    {"name":"timeout-after-create","operation":"create","transport":"timeout-after-possible-send","httpStatus":null,"providerCode":null,"expected":"reconciliation-required","allowNewBooking":false},
+    {"name":"cancellation-rejected","operation":"cancel","transport":"response","httpStatus":409,"providerCode":null,"expected":"retain-current-state"}
+  ],
+  "limitations": ["Partial illustrative payloads; not captured responses or complete provider schemas", "Scenario HTTP statuses are synthetic fault injection; exact provider errors need authorized sandbox capture", "No inferred lookup-by-idempotency-key endpoint or negative-proof guarantee"]
+}

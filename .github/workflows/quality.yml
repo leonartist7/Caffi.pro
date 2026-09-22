@@ -23,6 +23,7 @@ jobs:
       - run: npm run type-check
       - run: npm run lint:strict
       - run: npm run test:unit
+      - run: npm run test:courier-fixtures
       - run: npm run docs:check
       - run: npm run build:isolated
 

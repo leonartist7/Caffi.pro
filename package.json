@@ -12,6 +12,7 @@
     "lint": "next lint",
     "lint:strict": "next lint --max-warnings 0",
     "test:unit": "vitest run --configLoader runner --config vitest.config.ts",
+    "test:courier-fixtures": "node --test tests/spec-04-protocol.test.mjs",
     "test:unit:watch": "vitest --configLoader runner --config vitest.config.ts",
     "test:browser": "playwright test",
     "db:reset": "node scripts/reset-local-fixtures.mjs",
