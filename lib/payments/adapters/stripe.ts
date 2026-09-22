@@ -32,6 +32,12 @@ function metadataOrderId(metadata: Stripe.Metadata | null | undefined): string {
   return orderId
 }
 
+function paymentIntentRef(
+  paymentIntent: string | Stripe.PaymentIntent | null | undefined
+): string | undefined {
+  return typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id
+}
+
 /** Stripe Checkout adapter — the only place the Stripe SDK is imported. */
 export class StripePaymentProvider implements PaymentProvider {
   readonly key = 'stripe'
@@ -41,34 +47,37 @@ export class StripePaymentProvider implements PaymentProvider {
       throw new Error('Checkout amount must be a non-negative integer in cents')
     }
 
-    const session = await stripeClient().checkout.sessions.create({
-      mode: 'payment',
-      success_url: input.successUrl,
-      cancel_url: input.cancelUrl,
-      client_reference_id: input.orderId,
-      metadata: {
-        ...input.metadata,
-        order_id: input.orderId,
-        venue_id: input.venueId,
-      },
-      payment_intent_data: {
+    const session = await stripeClient().checkout.sessions.create(
+      {
+        mode: 'payment',
+        success_url: input.successUrl,
+        cancel_url: input.cancelUrl,
+        client_reference_id: input.orderId,
         metadata: {
           ...input.metadata,
           order_id: input.orderId,
           venue_id: input.venueId,
         },
-      },
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: input.currency.toLowerCase(),
-            unit_amount: input.amountCents,
-            product_data: { name: input.description },
+        payment_intent_data: {
+          metadata: {
+            ...input.metadata,
+            order_id: input.orderId,
+            venue_id: input.venueId,
           },
         },
-      ],
-    })
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: input.currency.toLowerCase(),
+              unit_amount: input.amountCents,
+              product_data: { name: input.description },
+            },
+          },
+        ],
+      },
+      { idempotencyKey: input.idempotencyKey }
+    )
 
     if (!session.url) {
       throw new Error('Stripe did not return a Checkout redirect URL')
@@ -105,6 +114,7 @@ export class StripePaymentProvider implements PaymentProvider {
         orderId: metadataOrderId(session.metadata),
         amountCents: session.amount_total,
         providerEventId: event.id,
+        paymentIntentRef: paymentIntentRef(session.payment_intent),
       }
     }
 
@@ -121,6 +131,7 @@ export class StripePaymentProvider implements PaymentProvider {
         orderId: metadataOrderId(session.metadata),
         amountCents: session.amount_total,
         providerEventId: event.id,
+        paymentIntentRef: paymentIntentRef(session.payment_intent),
       }
     }
 
@@ -134,10 +145,11 @@ export class StripePaymentProvider implements PaymentProvider {
       const intent = await stripeClient().paymentIntents.retrieve(charge.payment_intent)
       return {
         type: 'refund.succeeded',
-        providerRef: intent.id,
+        providerRef: charge.id,
         orderId: metadataOrderId(intent.metadata),
         amountCents: charge.amount_refunded,
         providerEventId: event.id,
+        paymentIntentRef: intent.id,
       }
     }
 

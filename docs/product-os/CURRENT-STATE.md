@@ -2,7 +2,7 @@
 id: current-state
 title: Executive diagnosis
 status: accepted-strategy
-updated: 2026-09-21
+updated: 2026-09-22
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -24,6 +24,11 @@ Caffi.pro is a Next.js 14 / React 18 application with ARO HQ, venue-owner, count
 - `requireVenueRole` now constrains membership lookup to `is_active = true` and fails closed when returned membership data is incomplete. Its Vitest matrix records the pre-fix revoked owner/manager/admin failure and now passes 13 mocked gate tests, including same-org access and guessed cross-tenant resource IDs. This is application-boundary evidence, not an RLS or live proof.
 - Type check and zero-warning lint pass. The Creative Studio informational section no longer applies unsupported `aria-disabled` semantics. A production-equivalent build command now supplies fixture-only environment values and is wired into CI; local completion remains pending because this workstation's Next/Webpack compilation outlasted the command wrapper before emitting a terminal result.
 - Resettable fixture definitions and local-only `db:reset`/`test:db` commands exist. Local migration/RLS/SQL/browser verification is blocked here because Supabase CLI, Docker and `psql` are unavailable; no hosted project was contacted.
+
+## 2026-09-22 SPEC-02 update
+- Connected-ordering code now reserves a fingerprinted checkout operation before any provider effect, uses a stable Stripe provider idempotency key, a strict local-only fixture-venue test payment adapter, server-generated guest tracking tokens, opening-hour checkout refusal and active-membership rechecks on kitchen requests. Signed provider events have a durable service-only reconciliation ledger. Delivery selection remains a restaurant fulfillment selection; it does not book or represent a courier.
+- 27 Vitest assertions cover opening hours, synthetic-provider isolation, provider retry key/recovery, payment event ordering, safe paid-order cancellation refusal, revoked counter access, cross-tenant counter IDs and guest tracking status. The fixture-only SQL suite adds server price, changed-cart operation rejection, invalid modifier, duplicate operation, cross-tenant item and dispatch-boundary checks, but local replay remains blocked by absent Supabase CLI/Docker/psql.
+- `npm run build:isolated` passes with network access. The restricted sandbox cannot fetch the app's Google Fonts, which causes a local-only font-fetch failure before compilation; this is recorded separately from the successful build. Provider sandbox, Playwright journey and live checks are not run.
 
 ## Ten highest-leverage issues
 | Priority | Finding and evidence | Next action |

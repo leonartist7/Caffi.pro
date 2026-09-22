@@ -5,8 +5,10 @@ import {
   PaymentProviderIgnoredEventError,
   PaymentProviderInvalidEventError,
 } from '@/lib/payments/provider'
+import type { ProviderEvent } from '@/lib/payments/provider'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { issueBounceBackOffersForOrder } from '@/lib/loyalty/bounce-back-issue'
+import { decidePaymentEvent, type StoredPayment } from '@/lib/payments/event-contract'
 
 export const runtime = 'nodejs'
 
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
   }
 
   const rawBody = await request.text()
-  let event
+  let event: ProviderEvent
   try {
     event = await getProvider().verifyWebhook(rawBody, signature)
   } catch (error) {
@@ -46,6 +48,155 @@ export async function POST(request: NextRequest) {
     provider_event_type: event.type,
     provider_ref: event.providerRef,
     amount_cents: event.amountCents,
+    payment_intent_ref: event.paymentIntentRef ?? null,
+  }
+
+  let paymentQuery = admin
+    .from('payments')
+    .select('order_id, venue_id, amount_cents, status')
+    .eq('provider', 'stripe')
+  paymentQuery =
+    event.type === 'refund.succeeded'
+      ? paymentQuery
+          .eq('order_id', event.orderId)
+          .eq('raw->>payment_intent_ref', event.paymentIntentRef ?? '__missing_payment_intent__')
+          .eq('status', 'succeeded')
+      : paymentQuery.eq('provider_ref', event.providerRef)
+  const { data: payment, error: paymentLookupError } = await paymentQuery.maybeSingle()
+  if (paymentLookupError || !payment) {
+    if (event.type === 'refund.succeeded') {
+      const { data: refundOrder } = await admin
+        .from('orders')
+        .select('order_id, venue_id')
+        .eq('order_id', event.orderId)
+        .maybeSingle()
+      if (refundOrder) {
+        const { error: deferredRefundError } = await admin.from('payment_provider_events').insert({
+          provider: 'stripe',
+          provider_event_id: event.providerEventId,
+          order_id: refundOrder.order_id,
+          venue_id: refundOrder.venue_id,
+          provider_ref: event.providerRef,
+          event_type: event.type,
+          amount_cents: event.amountCents,
+          outcome: 'reconciliation_required',
+          detail: { ...raw, reason: 'refund_without_matching_settled_payment' },
+          processed_at: new Date().toISOString(),
+        })
+        if (deferredRefundError && deferredRefundError.code !== '23505') {
+          console.error('[stripe-webhook] deferred refund ledger insert failed:', deferredRefundError.message)
+          return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+        }
+        return NextResponse.json({ received: true, reconciliation_required: true }, { status: 202 })
+      }
+    }
+    console.error('[stripe-webhook] no stored payment for verified provider reference')
+    return NextResponse.json({ error: 'Invalid payment event' }, { status: 400 })
+  }
+
+  // A provider event ID is the durable idempotency boundary. It is written
+  // before state changes so a retry can never create a second refund record or
+  // double-apply a late payment transition.
+  const { data: insertedLedger, error: ledgerInsertError } = await admin
+    .from('payment_provider_events')
+    .insert({
+      provider: 'stripe',
+      provider_event_id: event.providerEventId,
+      order_id: payment.order_id,
+      venue_id: payment.venue_id,
+      provider_ref: event.providerRef,
+      event_type: event.type,
+      amount_cents: event.amountCents,
+      detail: raw,
+    })
+    .select('outcome')
+    .maybeSingle()
+  if (ledgerInsertError && ledgerInsertError.code !== '23505') {
+    console.error('[stripe-webhook] event ledger insert failed:', ledgerInsertError.message)
+    return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+  }
+  if (ledgerInsertError?.code === '23505') {
+    const { data: priorLedger, error: priorLedgerError } = await admin
+      .from('payment_provider_events')
+      .select('outcome')
+      .eq('provider', 'stripe')
+      .eq('provider_event_id', event.providerEventId)
+      .maybeSingle()
+    if (priorLedgerError || !priorLedger) {
+      console.error('[stripe-webhook] event ledger replay lookup failed:', priorLedgerError?.message)
+      return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+    }
+    if (priorLedger.outcome !== 'received') {
+      return NextResponse.json({ received: true, replayed: true, outcome: priorLedger.outcome })
+    }
+  } else if (!insertedLedger) {
+    return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+  }
+
+  async function settleLedger(outcome: string, detail: Record<string, unknown> = {}) {
+    const { data, error } = await admin
+      .from('payment_provider_events')
+      .update({ outcome, detail: { ...raw, ...detail }, processed_at: new Date().toISOString() })
+      .eq('provider', 'stripe')
+      .eq('provider_event_id', event.providerEventId)
+      .eq('outcome', 'received')
+      .select('outcome')
+      .maybeSingle()
+    if (error) {
+      console.error('[stripe-webhook] event ledger update failed:', error.message)
+      return null
+    }
+    if (data?.outcome) return data.outcome
+    const { data: settled, error: settledError } = await admin
+      .from('payment_provider_events')
+      .select('outcome')
+      .eq('provider', 'stripe')
+      .eq('provider_event_id', event.providerEventId)
+      .maybeSingle()
+    if (settledError || !settled) {
+      console.error('[stripe-webhook] settled ledger lookup failed:', settledError?.message)
+      return null
+    }
+    return settled.outcome as string
+  }
+
+  const decision = decidePaymentEvent(event, {
+    orderId: payment.order_id,
+    amountCents: payment.amount_cents,
+    status: payment.status,
+  } as StoredPayment)
+  if (decision.kind === 'reject') {
+    console.error('[stripe-webhook] verified event does not match stored payment:', decision.reason)
+    if (!(await settleLedger('rejected', { reason: decision.reason }))) {
+      return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+    }
+    return NextResponse.json({ error: 'Invalid payment event' }, { status: 400 })
+  }
+  if (decision.kind === 'replay') {
+    if (!(await settleLedger('replayed'))) {
+      return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+    }
+    return NextResponse.json({ received: true, replayed: true })
+  }
+  if (decision.kind === 'reconciliation_required') {
+    // A signed success mismatch or success-after-failure quarantines the
+    // payment itself before acknowledgement, so checkout reservation cannot
+    // create another payable attempt while an operator investigates.
+    if (event.type === 'payment.succeeded') {
+      const { error: quarantineError } = await admin.rpc('quarantine_order_payment_attempts', {
+        p_order_id: payment.order_id,
+        p_venue_id: payment.venue_id,
+        p_raw: raw,
+      })
+      if (quarantineError) {
+        console.error('[stripe-webhook] payment quarantine failed:', quarantineError.message)
+        return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+      }
+    }
+    if (!(await settleLedger('reconciliation_required', { reason: decision.reason }))) {
+      return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+    }
+    return NextResponse.json({ received: true, reconciliation_required: true }, { status: 202 })
   }
 
   if (event.type === 'payment.succeeded') {
@@ -65,15 +216,20 @@ export async function POST(request: NextRequest) {
       venue_id: string
       applied: boolean
       amount_mismatch: boolean
+      reconciliation_required: boolean
     }
-    if (result.amount_mismatch) {
+    if (result.reconciliation_required) {
       console.error('[stripe-webhook] AMOUNT MISMATCH', {
         providerRef: event.providerRef,
         orderId: result.order_id,
       })
       // Retrying a permanent mismatch cannot repair it. Keep the failed row
       // for an operator to investigate rather than returning a retrying 5xx.
-      return NextResponse.json({ received: true, mismatch: true })
+      const reason = result.amount_mismatch ? 'amount_mismatch' : 'terminal_payment_or_order_state'
+      if (!(await settleLedger('reconciliation_required', { reason }))) {
+        return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+      }
+      return NextResponse.json({ received: true, reconciliation_required: true }, { status: 202 })
     }
 
     // Bounce-back issuance rides the same "newly applied" boundary
@@ -90,25 +246,37 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    if (!(await settleLedger(result.applied ? 'applied' : 'replayed'))) {
+      return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+    }
     return NextResponse.json({ received: true, applied: result.applied })
   }
 
   if (event.type === 'payment.failed') {
-    const { error } = await admin
+    const { data: updatedPayment, error } = await admin
       .from('payments')
       .update({ status: 'failed', raw })
       .eq('provider', 'stripe')
       .eq('provider_ref', event.providerRef)
+      .eq('order_id', payment.order_id)
       .eq('status', 'pending')
+      .select('payment_id')
+      .maybeSingle()
     if (error) {
       console.error('[stripe-webhook] payment failure update failed:', error.message)
       return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
     }
-    return NextResponse.json({ received: true })
+    if (!(await settleLedger(updatedPayment ? 'applied' : 'reconciliation_required', updatedPayment ? {} : { reason: 'failure_raced_terminal_state' }))) {
+      return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+    }
+    return NextResponse.json({ received: true, applied: Boolean(updatedPayment) })
   }
 
-  // Refund handling becomes an append-only negative payment row in Phase 5.
-  // A verified refund event is acknowledged now, never treated as a success
-  // payment or used to mutate a money amount.
-  return NextResponse.json({ received: true, deferred: 'refund reconciliation' })
+  // Refund application remains a separate operator reconciliation concern.
+  // The verified event is recorded as pending rather than reported as a
+  // completed refund, and cannot change restaurant preparation state.
+  if (!(await settleLedger('refund_reconciliation_pending'))) {
+    return NextResponse.json({ error: 'Payment reconciliation failed' }, { status: 500 })
+  }
+  return NextResponse.json({ received: true, refund_reconciliation: 'pending' }, { status: 202 })
 }

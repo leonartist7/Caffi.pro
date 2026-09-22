@@ -56,6 +56,7 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
   const [kitchenConfig, setKitchenConfig] = useState<KitchenConfig>(parseKitchenConfig(null))
   const [busy, setBusy] = useState('')
   const [live, setLive] = useState(true)
+  const [actionError, setActionError] = useState('')
   const [muted, setMuted] = useState(true)
   const [now, setNow] = useState(() => Date.now())
   const knownIdsRef = useRef<Set<string>>(new Set())
@@ -158,14 +159,25 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
 
   async function advance(order: QueueOrder, status: string) {
     setBusy(order.order_id)
-    const res = await fetch(`/api/counter/orders/${order.order_id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    if (res.status === 401) onSessionExpired()
-    await load()
-    setBusy('')
+    setActionError('')
+    try {
+      const res = await fetch(`/api/counter/orders/${order.order_id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (res.status === 401) return onSessionExpired()
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setActionError(body.error || 'The order did not update. Please retry after refreshing.')
+        return
+      }
+      await load()
+    } catch {
+      setActionError('The order did not update. Check the connection and retry.')
+    } finally {
+      setBusy('')
+    }
   }
 
   return (
@@ -174,6 +186,8 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
         <h1 className="font-display text-4xl font-bold text-aro-espresso">{STRINGS.title}</h1>
         <div className="flex items-center gap-3">
           <span
+            role="status"
+            aria-live="polite"
             className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${
               live ? 'bg-aro-sage/20 text-aro-ink' : 'bg-aro-rose/20 text-aro-ink'
             }`}
@@ -181,6 +195,15 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
             {live ? <Wifi className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
             {live ? STRINGS.live : STRINGS.reconnecting}
           </span>
+          {!live ? (
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="min-h-[44px] rounded-full bg-white px-4 text-sm font-semibold text-aro-ink"
+            >
+              Retry now
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={() => {
@@ -196,6 +219,12 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
         </div>
       </header>
 
+      {actionError ? (
+        <p role="alert" className="mb-5 rounded-2xl bg-aro-rose/20 px-4 py-3 text-sm font-semibold text-aro-ink">
+          {actionError}
+        </p>
+      ) : null}
+
       {orders.length === 0 ? (
         <p className="py-24 text-center text-2xl text-aro-muted">{STRINGS.empty}</p>
       ) : (
@@ -203,8 +232,8 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
           {orders.map(order => {
             const urgency = ticketUrgency(order.placed_at, kitchenConfig, now)
             const next =
-              order.status === 'ready' && order.order_type === 'delivery'
-                ? 'out_for_delivery'
+              order.order_type === 'delivery' && order.status === 'ready'
+                ? undefined
                 : NEXT[order.status]
             return (
               <article
@@ -249,7 +278,11 @@ export function KitchenScreen({ onSessionExpired }: { onSessionExpired: () => vo
                       {next.replace('_', ' ')}
                     </button>
                   ) : (
-                    <span />
+                    <span className="self-center text-sm text-aro-muted">
+                      {order.order_type === 'delivery'
+                        ? 'Ready for restaurant handoff. Courier dispatch is separate.'
+                        : 'Ready for guest handoff.'}
+                    </span>
                   )}
                   <button
                     disabled={busy === order.order_id}

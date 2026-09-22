@@ -23,6 +23,7 @@ const suites = [
   'depletion_tests.sql',
   'food_costing_tests.sql',
   'eighty_six_tests.sql',
+  'spec02_connected_journey_tests.sql',
 ]
 
 for (const suite of suites) {

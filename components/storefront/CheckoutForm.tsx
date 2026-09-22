@@ -128,20 +128,57 @@ export function CheckoutForm({
       })
       const body = await response.json().catch(() => ({}))
       if (!response.ok) {
+        if (body.code === 'CHECKOUT_CART_CHANGED') localStorage.removeItem(clientKey)
         setStubbed(body.code === 'PAYMENTS_STUBBED')
         throw new Error(body.error || 'Checkout failed')
       }
+      if (body.payment_mode === 'test') {
+        const simulatedPayment = await fetch(
+          `/api/orders/${encodeURIComponent(body.order.order_id)}/test-payment`,
+          {
+            method: 'POST',
+            headers: { 'x-order-tracking-token': body.tracking_token },
+          }
+        )
+        const paymentBody = await simulatedPayment.json().catch(() => ({}))
+        if (!simulatedPayment.ok) {
+          throw new Error(paymentBody.error || 'Test payment could not be completed')
+        }
+      }
       const recentKey = `aro-recent-orders:${slug}`
-      const recent = JSON.parse(localStorage.getItem(recentKey) || '[]') as string[]
+      const recent = JSON.parse(localStorage.getItem(recentKey) || '[]') as Array<
+        string | { order_id: string; tracking_token?: string; resume_url?: string }
+      >
+      const recentOrder = {
+        order_id: body.order.order_id as string,
+        tracking_token: body.tracking_token as string,
+      }
       localStorage.setItem(
         recentKey,
         JSON.stringify(
-          [body.order.order_id, ...recent.filter(id => id !== body.order.order_id)].slice(0, 10)
+          [
+            recentOrder,
+            ...recent.filter(entry =>
+              typeof entry === 'string'
+                ? entry !== body.order.order_id
+                : entry.order_id !== body.order.order_id
+            ),
+          ].slice(0, 10)
         )
       )
-      localStorage.removeItem(clientKey)
-      cart.clearCart()
-      window.location.assign(body.redirectUrl)
+      localStorage.setItem(
+        `aro-order-operation:${body.order.order_id}`,
+        JSON.stringify({ slug, client_uuid: clientUuid })
+      )
+      if (body.payment_mode === 'test') {
+        localStorage.removeItem(clientKey)
+        cart.clearCart()
+      }
+      window.location.assign(
+        body.payment_mode === 'test'
+          ? `/shop/${encodeURIComponent(slug)}/order-confirmation/${body.order.order_id}?tracking=${encodeURIComponent(body.tracking_token)}`
+          : body.redirectUrl
+      )
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Checkout failed')
     } finally {
@@ -363,7 +400,7 @@ export function CheckoutForm({
             <span className="font-mono">{formatCents(estimatedTotal, cart.currency)}</span>
           </div>
           <p className="pt-1 text-xs text-aro-cream/50">
-            Tax and final pricing are securely recalculated before payment.
+            Tax and final pricing are securely recalculated before payment. Delivery selection does not book a courier.
           </p>
         </div>
         {error ? (

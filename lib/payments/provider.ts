@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { StripePaymentProvider } from '@/lib/payments/adapters/stripe'
+import { TestPaymentProvider } from '@/lib/payments/adapters/test'
 export {
   PaymentProviderConfigurationError,
   PaymentProviderIgnoredEventError,
@@ -15,6 +16,8 @@ export interface ProviderEvent {
   orderId: string
   amountCents: number
   providerEventId: string
+  /** Underlying charge intent, when the provider event is not the checkout session. */
+  paymentIntentRef?: string
 }
 
 export interface CreateCheckoutInput {
@@ -25,6 +28,8 @@ export interface CreateCheckoutInput {
   description: string
   successUrl: string
   cancelUrl: string
+  /** Stable per-order external-effect key; reused for every retry. */
+  idempotencyKey: string
   metadata: Record<string, string>
 }
 
@@ -46,7 +51,28 @@ export interface PaymentProvider {
  * than leaking Stripe imports into order routes or components.
  */
 export function getProvider(_venue?: {
-  brand_kit?: Record<string, unknown> | null
+  venueId?: string
 }): PaymentProvider {
+  if (isSyntheticPaymentModeForVenue(_venue?.venueId)) return new TestPaymentProvider()
   return new StripePaymentProvider()
+}
+
+/** Explicit non-production fixture opt-in, bound to one synthetic venue. */
+export function isSyntheticPaymentModeForVenue(venueId: string | undefined): boolean {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  let isLoopbackDatabase = false
+  try {
+    const host = supabaseUrl ? new URL(supabaseUrl).hostname : ''
+    isLoopbackDatabase = host === 'localhost' || host === '127.0.0.1' || host === '::1'
+  } catch {
+    isLoopbackDatabase = false
+  }
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    process.env.CAFFI_PAYMENT_MODE === 'test' &&
+    process.env.CAFFI_SYNTHETIC_FIXTURES === '1' &&
+    isLoopbackDatabase &&
+    Boolean(venueId) &&
+    venueId === process.env.CAFFI_SYNTHETIC_VENUE_ID
+  )
 }

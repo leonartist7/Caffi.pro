@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { CheckCircle2, Clock3, Coffee, Loader2, Star } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { isSettledOrderStatus } from '@/lib/orders/review-config'
+import { useOrderingCart } from '@/contexts/OrderingCartContext'
 
 const REVIEW_STRINGS = {
   heading: 'Enjoyed your visit?',
@@ -38,6 +39,7 @@ interface StatusData {
   tip_cents: number
   total_cents: number
   placed_at: string
+  payment_state?: 'reconciliation_required'
 }
 
 const LABELS: Record<string, string> = {
@@ -50,21 +52,26 @@ const LABELS: Record<string, string> = {
   completed: 'Completed',
   canceled: 'Canceled',
   refunded: 'Refunded',
+  reconciliation_required: 'Payment needs review',
 }
 
 export function OrderStatus({
   orderId,
   slug,
   currency,
+  trackingToken,
   reviewUrl,
 }: {
   orderId: string
   slug: string
   currency: string
+  trackingToken: string
   reviewUrl?: string | null
 }) {
+  const cart = useOrderingCart()
   const [order, setOrder] = useState<StatusData | null>(null)
   const [missing, setMissing] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [wasAlreadyShownAtLoad, setWasAlreadyShownAtLoad] = useState(true)
   const [reviewChecked, setReviewChecked] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -98,15 +105,21 @@ export function OrderStatus({
   useEffect(() => {
     let active = true
     async function poll() {
-      const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/status`, {
-        cache: 'no-store',
-      })
-      if (!active) return
-      if (!response.ok) {
-        setMissing(true)
-        return
+      try {
+        const query = new URLSearchParams({ tracking: trackingToken })
+        const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/status?${query}`, {
+          cache: 'no-store',
+        })
+        if (!active) return
+        if (!response.ok) {
+          setMissing(true)
+          return
+        }
+        setOrder(await response.json())
+        setLoadError(false)
+      } catch {
+        if (active) setLoadError(true)
       }
-      setOrder(await response.json())
     }
     void poll()
     const timer = window.setInterval(() => void poll(), 5000)
@@ -114,7 +127,26 @@ export function OrderStatus({
       active = false
       window.clearInterval(timer)
     }
-  }, [orderId])
+  }, [orderId, trackingToken])
+
+  useEffect(() => {
+    if (!order || !['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'].includes(order.status)) {
+      return
+    }
+    try {
+      const operation = JSON.parse(localStorage.getItem(`aro-order-operation:${order.order_id}`) || 'null') as
+        | { slug?: string; client_uuid?: string }
+        | null
+      const clientKey = `aro-order-id:${slug}`
+      if (operation?.slug === slug && localStorage.getItem(clientKey) === operation.client_uuid) {
+        localStorage.removeItem(clientKey)
+        cart.clearCart()
+      }
+      localStorage.removeItem(`aro-order-operation:${order.order_id}`)
+    } catch {
+      // A storage failure should never interfere with paid order visibility.
+    }
+  }, [cart, order, slug])
 
   const settled = order ? isSettledOrderStatus(order.status) : false
   const showReviewPrompt =
@@ -135,8 +167,13 @@ export function OrderStatus({
     return <div className="py-20 text-center text-aro-muted">This order link is not available.</div>
   if (!order)
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-7 w-7 animate-spin text-aro-terra" />
+      <div className="py-20 text-center">
+        <Loader2 className="mx-auto h-7 w-7 animate-spin text-aro-terra" />
+        {loadError ? (
+          <p className="mt-4 text-sm text-aro-muted" role="status">
+            We could not refresh your order. We&apos;ll keep trying.
+          </p>
+        ) : null}
       </div>
     )
   return (
@@ -150,11 +187,18 @@ export function OrderStatus({
         Order {order.order_id.slice(0, 8)}
       </p>
       <h1 className="mt-2 font-display text-4xl text-aro-espresso">
-        {LABELS[order.status] || order.status}
+        {order.payment_state === 'reconciliation_required'
+          ? LABELS.reconciliation_required
+          : LABELS[order.status] || order.status}
       </h1>
       <p className="mt-3 text-aro-muted">
         Thanks, {order.first_name}. This page updates automatically as your order moves.
       </p>
+      {order.payment_state === 'reconciliation_required' ? (
+        <p className="mt-3 rounded-2xl bg-aro-sand/60 px-4 py-3 text-sm text-aro-muted">
+          We&apos;re checking this payment. Please do not try again while the café resolves it.
+        </p>
+      ) : null}
       <div className="mt-6 rounded-2xl bg-aro-sand/60 px-4 py-3">
         <div className="flex items-center justify-between">
           <span className="text-sm capitalize">{order.order_type.replace('_', ' ')}</span>
