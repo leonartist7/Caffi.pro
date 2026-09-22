@@ -47,3 +47,5 @@ The fixture-only slice branches from Phase 2 PR #85 head `ef3afe239aba2826046704
 
 ## Ready-to-paste worker prompt
 > Execute SPEC-04 with Uber Direct as the first feasibility candidate, not an assumed approved vendor. Document account/region/cost/data boundaries from current official sources. Implement only against authorized sandbox access using the reviewed delivery contract. Do not create paid accounts or real deliveries. Report unsupported cases and update registry/ledger; draft PR only.
+
+Final dependency checkpoint: separate [SPEC-03 PR #87](https://github.com/leonartist7/Caffi.pro/pull/87) passes all eight SQL suites and four genuine browser tests at `3b07268` with independent architecture/security approvals. These core results do not establish Uber adapter or sandbox acceptance. SPEC-04 access/commercial blockers remain as recorded above.
