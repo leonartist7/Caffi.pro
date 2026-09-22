@@ -32,7 +32,7 @@ export default async function ShopHomePage({ params }: { params: { slug: string 
         {[
           [ShoppingBag, 'Pickup', 'Order ahead and skip the queue.'],
           [Coffee, 'Dine in', 'Scan your table and order in place.'],
-          [MapPin, 'Local delivery', 'Delivered by the people who made it.'],
+          [MapPin, 'Local delivery', 'Choose delivery at checkout; the café confirms the handoff.'],
         ].map(([Icon, title, copy]) => {
           const FeatureIcon = Icon as typeof Coffee
           return (

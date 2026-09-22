@@ -2,7 +2,7 @@
 id: security-and-compliance
 title: Security and compliance strategy
 status: accepted-strategy
-updated: 2026-09-21
+updated: 2026-09-22
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -29,8 +29,9 @@ Jurisdiction is undecided. GDPR, CASL, CAN-SPAM, TCPA and local rules are applic
 Founder/legal review is required for merchant-of-record and payout responsibility, taxes, courier claims/refunds, tip recipients, restricted goods, processor agreements, retention and cross-border processing. Initial delivery excludes regulated goods until specifically approved.
 
 ## Known risk register
-- Active-membership application-boundary omission: repaired in SPEC-01 with mocked regression coverage; independent security review and isolated RLS replay remain required before this gate closes.
-- Existing refund reconciliation is deferred; no safe live refund completion claim.
+- Active-membership application-boundary omission: repaired in SPEC-01 with mocked regression coverage; the recorded independent review found the OpenCode composite action still fetches mutable runtime dependencies, so the workflow hardening gate remains open. Isolated RLS replay also remains required.
+- SPEC-02 guest tracking/payment recovery: a generated tracking token scopes guest status; checkout attempts are fingerprinted and Stripe events use a service-only durable ledger. The synthetic provider additionally binds to one configured local fixture venue. Mocked route/unit evidence exists; independent Astra xhigh review and local RLS/SQL replay remain required before this gate closes.
+- Paid-order refund is deliberately blocked from counter actions. Signed provider refund events are retained for reconciliation; no safe live refund completion claim exists.
 - Historical legacy-project RLS exposure: not reverified while project INACTIVE.
 - Comment-driven agent workflow now restricts trusted author associations and pins action SHAs; review its permissions and branch-protection interaction before relying on it.
 - Provider access, shared credentials and payment account model: unresolved founder gates.

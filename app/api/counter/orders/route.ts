@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
+import { requireActiveCounterSession } from '@/lib/counter-authorization'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { parseKitchenConfig } from '@/lib/orders/kitchen-config'
 
 export async function GET(request: NextRequest) {
-  const session = verifyCounterToken(request.cookies.get(COUNTER_COOKIE)?.value)
-  if (!session) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
+  const gate = await requireActiveCounterSession(request)
+  if (!gate.ok) return gate.response
+  const { session } = gate
   const admin = getSupabaseAdmin()
   const { data: venue } = await admin
     .from('venues')

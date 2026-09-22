@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { CheckCircle2, Clock3, Coffee, Loader2, Star } from 'lucide-react'
 import { formatCents } from '@/lib/money'
 import { isSettledOrderStatus } from '@/lib/orders/review-config'
+import { useOrderingCart } from '@/contexts/OrderingCartContext'
 
 const REVIEW_STRINGS = {
   heading: 'Enjoyed your visit?',
@@ -56,15 +57,19 @@ export function OrderStatus({
   orderId,
   slug,
   currency,
+  trackingToken,
   reviewUrl,
 }: {
   orderId: string
   slug: string
   currency: string
+  trackingToken: string
   reviewUrl?: string | null
 }) {
+  const cart = useOrderingCart()
   const [order, setOrder] = useState<StatusData | null>(null)
   const [missing, setMissing] = useState(false)
+  const [loadError, setLoadError] = useState(false)
   const [wasAlreadyShownAtLoad, setWasAlreadyShownAtLoad] = useState(true)
   const [reviewChecked, setReviewChecked] = useState(false)
   const [dismissed, setDismissed] = useState(false)
@@ -98,15 +103,21 @@ export function OrderStatus({
   useEffect(() => {
     let active = true
     async function poll() {
-      const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/status`, {
-        cache: 'no-store',
-      })
-      if (!active) return
-      if (!response.ok) {
-        setMissing(true)
-        return
+      try {
+        const query = new URLSearchParams({ tracking: trackingToken })
+        const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/status?${query}`, {
+          cache: 'no-store',
+        })
+        if (!active) return
+        if (!response.ok) {
+          setMissing(true)
+          return
+        }
+        setOrder(await response.json())
+        setLoadError(false)
+      } catch {
+        if (active) setLoadError(true)
       }
-      setOrder(await response.json())
     }
     void poll()
     const timer = window.setInterval(() => void poll(), 5000)
@@ -114,7 +125,26 @@ export function OrderStatus({
       active = false
       window.clearInterval(timer)
     }
-  }, [orderId])
+  }, [orderId, trackingToken])
+
+  useEffect(() => {
+    if (!order || !['paid', 'accepted', 'preparing', 'ready', 'out_for_delivery', 'completed'].includes(order.status)) {
+      return
+    }
+    try {
+      const operation = JSON.parse(localStorage.getItem(`aro-order-operation:${order.order_id}`) || 'null') as
+        | { slug?: string; client_uuid?: string }
+        | null
+      const clientKey = `aro-order-id:${slug}`
+      if (operation?.slug === slug && localStorage.getItem(clientKey) === operation.client_uuid) {
+        localStorage.removeItem(clientKey)
+        cart.clearCart()
+      }
+      localStorage.removeItem(`aro-order-operation:${order.order_id}`)
+    } catch {
+      // A storage failure should never interfere with paid order visibility.
+    }
+  }, [cart, order, slug])
 
   const settled = order ? isSettledOrderStatus(order.status) : false
   const showReviewPrompt =
@@ -135,8 +165,13 @@ export function OrderStatus({
     return <div className="py-20 text-center text-aro-muted">This order link is not available.</div>
   if (!order)
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-7 w-7 animate-spin text-aro-terra" />
+      <div className="py-20 text-center">
+        <Loader2 className="mx-auto h-7 w-7 animate-spin text-aro-terra" />
+        {loadError ? (
+          <p className="mt-4 text-sm text-aro-muted" role="status">
+            We could not refresh your order. We&apos;ll keep trying.
+          </p>
+        ) : null}
       </div>
     )
   return (

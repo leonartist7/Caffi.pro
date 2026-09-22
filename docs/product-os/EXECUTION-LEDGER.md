@@ -2,7 +2,7 @@
 id: execution-ledger
 title: Execution ledger
 status: accepted-strategy
-updated: 2026-09-21
+updated: 2026-09-22
 tags: [product-os]
 ---
 
@@ -20,7 +20,7 @@ Columns are independent: code/document presence, local verification, provider sa
 | HIST-OPS | PLAN-20–26 | Merged | SQL/browser rerun pending | N/A | Not reverified | SPEC-02/06 |
 | HIST-TEAM | PLAN-30–37 | Merged | Role/device rerun pending | N/A | Not reverified | SPEC-01/06 |
 | SPEC-01 | Quality and active access | Active-membership fix, Vitest/Playwright configuration, CI workflow, local-only fixture scripts and Creative Studio lint correction at `e4cf496` | Type check, strict lint, 13 Vitest tests and Product OS doc check pass; isolated build terminal result pending; DB/browser blocked by absent local tools | Not run | Not run | Review; independent security review and local DB/RLS replay required; next owner: Astra xhigh/local environment owner |
-| SPEC-02 | Connected sales journey | Spec ready | Not implemented | Not run | Not run | Local work ready; F-02 blocks hosted demo; Terra high |
+| SPEC-02 | Connected sales journey | Fingerprinted checkout reservation, checkout recovery, scoped guest tracking, venue-bound local test payment, provider-event reconciliation ledger, active kitchen membership recheck, opening-hours enforcement and resettable fixture/SQL contract on `codex/phase-02-connected-ordering` | Types, strict lint, 27 Vitest tests and docs check pass; local SQL/browser blocked by absent tooling | Not run | Not run | Review; final Astra confirmation and local migration/RLS/browser evidence required; F-02 blocks hosted demo |
 | SPEC-03 | Delivery foundation | Spec ready | Not implemented | Not run | Not run | Depends SPEC-01/02 contracts; Terra high |
 | SPEC-04 | First courier | Spec ready | Not implemented | Not run | Not run | Feasibility ready; live blocked F-01/03/05; Terra high |
 | SPEC-05 | POS connector | Spec ready | Not implemented | Not run | Not run | Contract work ready; adapter blocked F-04; Terra high |
@@ -42,3 +42,7 @@ OS-00 remains in review in [draft PR #83](https://github.com/leonartist7/Caffi.p
 ## 2026-09-21 SPEC-01 entry
 
 SPEC-01 starts from draft Product OS PR #83 dependency `2e24f4164d61a4d48b2046c3750429e5f94f506a`. Implementation commit `e4cf496c72e60a718668afc69c9a636f450bccc1` denies inactive venue, org-wide and platform-admin memberships; preserves stored-resource-first row authorization; adds 13 mocked Vitest assertions; fixes the Creative Studio lint warning; adds PR quality checks and resettable synthetic local fixtures. Local checks passed: `npm run type-check`, `npm run lint:strict`, `npm run test:unit`, and `node docs/product-os/check.mjs`. The pre-fix unit suite had four revoked/guessed-row failures before repair. `npm run audit:dependencies` correctly fails on a critical Next.js advisory; no breaking framework upgrade was applied in this packet. Local database, SQL/RLS, Playwright and provider/live checks are not run: Supabase CLI, Docker and `psql` are unavailable. The isolated build compiles with fake local values but did not reach a terminal result before the local command wrapper elapsed; CI owns the repeatable terminal check. Independent Astra xhigh security review is requested for authorization and tenant isolation before this packet's security gate can close. See [handoff](handoffs/HANDOFF-2026-09-21-spec-01.md).
+
+## 2026-09-22 SPEC-02 entry
+
+SPEC-02 starts from the unmerged SPEC-01 dependency `c1b51d998eec961b00830d17bb5662737d4d5366` (draft PR [#84](https://github.com/leonartist7/Caffi.pro/pull/84)). It records stable AC-01 through AC-07 before code. The branch adds a fingerprinted checkout reservation and Stripe idempotency key per provider effect, a network-disabled synthetic adapter bound to an explicit fixture venue, scoped guest tracking, persisted checkout recovery, a durable provider-event reconciliation ledger, active counter membership recheck, opening-hours refusal, kitchen recovery feedback and resettable two-tenant fixtures. Counter actions now refuse paid-order cancellation until a dedicated reconciliation flow exists; delivery cannot advance to `out_for_delivery` without SPEC-03 dispatch. Local evidence: `npm run type-check`, `npm run lint:strict`, `npm run test:unit` (28 tests), `npm run build:isolated` with network access, and `node docs/product-os/check.mjs` pass. The restricted sandbox build fails only on configured Google Font fetches; the network-enabled repeat passes. `npm run db:reset` remains blocked without Supabase CLI/Docker and `npm run test:db` remains blocked without a local loopback URL/psql. Browser/provider-sandbox/live checks remain not run. Independent Astra xhigh re-review is required for payment, authorization and tenant-isolation changes. See [handoff](handoffs/HANDOFF-2026-09-22-spec-02.md).

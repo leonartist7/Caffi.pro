@@ -6,8 +6,10 @@ import { OrderStatus } from '@/components/storefront/OrderStatus'
 
 export default async function ConfirmationPage({
   params,
+  searchParams,
 }: {
   params: { slug: string; id: string }
+  searchParams: { tracking?: string }
 }) {
   const tenant = await getTenantBySlug(params.slug)
   if (!tenant) notFound()
@@ -26,6 +28,7 @@ export default async function ConfirmationPage({
     .eq('order_id', params.id)
     .maybeSingle()
   if (!order || order.venue_id !== tenant.tenant_id) notFound()
+  if (!searchParams.tracking) notFound()
 
   const reviewConfig = await getReviewConfig(params.slug)
   return (
@@ -34,6 +37,7 @@ export default async function ConfirmationPage({
       orderId={params.id}
       slug={params.slug}
       currency={tenant.currency || 'CAD'}
+      trackingToken={searchParams.tracking}
       reviewUrl={reviewConfig.url}
     />
   )

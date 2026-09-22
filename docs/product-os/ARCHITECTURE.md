@@ -2,7 +2,7 @@
 id: architecture
 title: Architecture strategy
 status: accepted-strategy
-updated: 2026-09-20
+updated: 2026-09-22
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -22,6 +22,8 @@ Organizations own venues. Memberships determine active role access; operator imp
 Retain legacy tenant_id columns where present; new delivery/POS records use venue_id. Use composite tenant/resource constraints for relationships and explicit RLS/grants. Route guards protect service-role queries; RLS alone cannot protect a bypass client. Financial and operational side effects use database transactions and unique operation keys.
 
 Keep payment, preparation, delivery and POS transmission states separate. Store money as integer minor units plus currency, timestamps in UTC with venue timezone for schedules. Do not reinterpret all currencies as two-decimal currencies during international expansion.
+
+SPEC-02 adds a scoped guest tracking credential distinct from an order ID and checkout operation UUID. Public order status needs both values and returns only guest-safe status data. A retry uses the same durable provider operation key; a persisted checkout redirect is recovered before a new external effect is attempted. The local test-payment adapter is network-disabled and requires explicit synthetic-fixture flags. It is not a provider sandbox or production capability. See [DEC-005](decisions/DEC-005-synthetic-payment-and-guest-tracking.md).
 
 ## Integrations
 [Delivery architecture](DELIVERY-ARCHITECTURE.md) owns courier contracts; [SPEC-05](specs/SPEC-05-pos-connection.md) owns POS contracts. Vendor-specific code stays in adapters. Durable outbox jobs hold intended external effects; leases and reconciliation handle crashes. No background promise after an HTTP response.

@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import type { MenuCategory, MenuItem } from '@/lib/menu/types'
 import { parseTipConfig, type TipConfig } from '@/lib/orders/tip-config'
 import { parseReviewConfig, type ReviewConfig } from '@/lib/orders/review-config'
+import { isVenueOpenForOrdering, parseOrderingHours } from '@/lib/orders/opening-hours'
 
 export interface StorefrontData {
   venue: {
@@ -13,6 +14,7 @@ export interface StorefrontData {
     app_name: string | null
     currency: string
     tax_rate_bp: number
+    ordering_open: boolean
   }
   categories: MenuCategory[]
   items: MenuItem[]
@@ -30,7 +32,7 @@ export async function getStorefront(slug: string): Promise<StorefrontData | null
   const admin = getSupabaseAdmin()
   const { data: venue } = await admin
     .from('venues')
-    .select('venue_id, business_name, slug, app_name, currency, tax_rate_bp, kill_switch')
+    .select('venue_id, business_name, slug, app_name, currency, tax_rate_bp, kill_switch, reservation_config, timezone')
     .eq('slug', slug)
     .eq('kill_switch', false)
     .maybeSingle()
@@ -84,6 +86,10 @@ export async function getStorefront(slug: string): Promise<StorefrontData | null
       app_name: venue.app_name,
       currency: venue.currency || 'CAD',
       tax_rate_bp: venue.tax_rate_bp || 0,
+      ordering_open: isVenueOpenForOrdering(
+        parseOrderingHours((venue.reservation_config as { hours?: unknown } | null)?.hours),
+        venue.timezone
+      ),
     },
     categories: (categories ?? []) as MenuCategory[],
     items: itemRows.map(item => ({
