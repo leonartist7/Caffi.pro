@@ -17,3 +17,7 @@ Initial review found eight issues: driver mutation response overexposure; ambigu
 Final disposition at 5177322: **Approved for static implementation/security review. All ten reported findings resolved; no remaining blocking findings identified.** Pre-send reconciliation rejects without creating an attempt or preventing quote refresh. Owner/manager quarantine visibility is bounded and tenant-scoped; assigned drivers never receive or query its operational data. Regression tests cover these boundaries.
 
 This is static evidence only. Local 48-unit-test results do not replace PostgreSQL concurrency/RLS execution or browser journeys. Those CI gates are recorded independently. Critical dependency audit, prior OpenCode finding, provider access/sandbox and live readiness remain unresolved. No real provider effects were authorized or performed.
+
+## Runtime-repair addendum
+
+Independent Astra xhigh reviewed `5177322..47b8573450a70b5863ea9bb2c29c388b9b0c0aa7` and explicitly extended static approval to the latter SHA. The record rename removes a SQL alias collision without changing pricing logic; added tests preserve refund denial and strengthen webhook/quarantine coverage. No new blocking findings. Runtime execution remains a separate gate.

@@ -1,6 +1,6 @@
 import { createHmac, randomUUID } from 'node:crypto'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test'
+import { expect, test, type APIRequestContext, type Browser, type Page } from '@playwright/test'
 
 const venueId = '13000000-0000-4000-8000-000000000001'
 const driverId = '11000000-0000-4000-8000-000000000005'
@@ -11,7 +11,8 @@ let workerSecret: string
 
 // Real disposable-stack tests, not route mocks. Credentials remain in the Node
 // runner: the browser receives only ordinary fixture login/session credentials.
-test.describe.configure({ mode: 'serial' })
+// Independent tests: a failed journey must not skip webhook or simulator coverage.
+test.use({ actionTimeout: 20_000, navigationTimeout: 30_000 })
 test.beforeAll(() => {
   for (const name of [
     'NEXT_PUBLIC_SUPABASE_URL',
@@ -48,7 +49,21 @@ test.beforeAll(() => {
   )
 })
 
+function stage(name: string) {
+  // Fixed labels only: never print credentials, tokens, payloads or response bodies.
+  console.info('[delivery-journey] ' + name)
+}
+
+async function journeyContext(browser: Browser, baseURL?: string) {
+  const context = await browser.newContext({ baseURL })
+  // Manually created staff contexts do not inherit the page fixture's use options.
+  context.setDefaultTimeout(20_000)
+  context.setDefaultNavigationTimeout(30_000)
+  return context
+}
+
 async function login(page: Page, email: string) {
+  stage('Staff sign-in and authorized queue navigation')
   await page.goto('/login')
   await page.getByLabel('Email', { exact: true }).fill(email)
   await page.locator('#password').fill(password)
@@ -59,6 +74,7 @@ async function login(page: Page, email: string) {
 }
 
 async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
+  stage('Guest menu and cart')
   await page.goto(`/shop/${slug}/menu`)
   await page.getByRole('button', { name: /Synthetic croissant/ }).click()
   await page
@@ -67,6 +83,7 @@ async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
     .click()
   await page.getByRole('button', { name: 'Increase Synthetic croissant', exact: true }).click()
   await page.getByRole('link', { name: 'Continue to checkout' }).click()
+  stage('Guest checkout delivery details')
   await page.getByRole('button', { name: 'Delivery', exact: true }).click()
   await page.getByLabel('Name', { exact: true }).fill('Synthetic Delivery Guest')
   await page.getByLabel('Delivery service', { exact: true }).selectOption(mode)
@@ -74,6 +91,7 @@ async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
   await page.getByLabel('Postal code', { exact: true }).fill('TST 123')
   await page.getByLabel('City', { exact: true }).fill('Fixture City')
   await page.getByLabel('Country code', { exact: true }).fill('CA')
+  stage('Guest quote and changed-input invalidation')
   const pay = page.getByRole('button', { name: 'Continue to secure payment', exact: true })
   await expect(pay).toBeDisabled()
   await page.getByRole('button', { name: 'Get delivery quote', exact: true }).click()
@@ -83,6 +101,7 @@ async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
   await expect(pay).toBeDisabled()
   await page.getByRole('button', { name: 'Get delivery quote', exact: true }).click()
   await expect(pay).toBeEnabled()
+  stage('Guest order submission and synthetic payment')
   const responsePromise = page.waitForResponse(
     response =>
       new URL(response.url()).pathname === '/api/orders' && response.request().method() === 'POST'
@@ -95,6 +114,7 @@ async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
   expect(checkout.order.order_id).toMatch(/^[a-f0-9-]{36}$/)
   await expect(page).toHaveURL(new RegExp(`/order-confirmation/${checkout.order.order_id}`))
   await expect(page.getByRole('heading', { name: 'Payment received', exact: true })).toBeVisible()
+  stage('Database payment assertions')
   const orderId = checkout.order.order_id as string
   const payment = await database
     .from('payments')
@@ -120,6 +140,7 @@ async function guestCheckout(page: Page, mode: 'own_driver' | 'simulator') {
 }
 
 async function prepare(request: APIRequestContext, orderId: string) {
+  stage('Kitchen acceptance, preparation and ready transitions')
   const login = await request.post('/api/counter/login', {
     data: { venue_slug: slug, pin: '4242', device: 'spec03-browser-fixture' },
   })
@@ -163,6 +184,7 @@ async function assertDelivered(
   trackingToken: string,
   guestCharge: number
 ) {
+  stage('Guest delivered view and final database assertions')
   await page.reload()
   const tracking = page.getByRole('region', { name: 'Delivery tracking' })
   await expect(tracking.getByText('Delivered', { exact: true })).toBeVisible()
@@ -219,14 +241,17 @@ test('SPEC-03-AC-03/04/07/08/09 guest payment → kitchen → staff dispatch →
   baseURL,
 }) => {
   test.setTimeout(150_000)
-  const ownerContext = await browser.newContext({ baseURL })
-  const driverContext = await browser.newContext({ baseURL })
+  const ownerContext = await journeyContext(browser, baseURL)
+  const driverContext = await journeyContext(browser, baseURL)
   try {
     const owner = await ownerContext.newPage()
     const driver = await driverContext.newPage()
-    const order = await guestCheckout(page, 'own_driver')
-    await prepare(owner.request, order.orderId)
+    const order = await test.step('Guest own-driver checkout and payment', () =>
+      guestCheckout(page, 'own_driver'))
+    await test.step('Authenticated kitchen preparation', () =>
+      prepare(owner.request, order.orderId))
     await login(owner, 'spec01-owner@test.local')
+    stage('Owner cost approval and dispatch')
     const awaiting = owner.getByRole('article', { name: `Order ${order.orderId}`, exact: true })
     await awaiting.getByRole('button', { name: 'Approve cost and dispatch', exact: true }).click()
     await expect(owner.getByRole('status')).toContainText('Dispatch requested')
@@ -235,6 +260,7 @@ test('SPEC-03-AC-03/04/07/08/09 guest payment → kitchen → staff dispatch →
     expect(job.state).toBe('booked')
     await owner.getByRole('button', { name: 'Refresh deliveries', exact: true }).click()
     const card = owner.getByRole('article', { name: `Delivery ${job.id}`, exact: true })
+    stage('Owner assigns restaurant driver')
     await card.getByLabel('Assign restaurant driver').selectOption(driverId)
     await card.getByRole('button', { name: 'Assign driver', exact: true }).click()
     await expect(card.getByRole('heading', { name: 'Driver assigned', exact: true })).toBeVisible()
@@ -244,14 +270,19 @@ test('SPEC-03-AC-03/04/07/08/09 guest payment → kitchen → staff dispatch →
       '1 Synthetic Fixture Street'
     )
     await expect(assigned.getByRole('button', { name: 'Request cancellation' })).toHaveCount(0)
+    stage('Assigned driver confirms pickup and delivery')
     await assigned.getByRole('button', { name: 'Confirm pickup', exact: true }).click()
     await expect(assigned.getByRole('heading', { name: 'Picked up', exact: true })).toBeVisible()
     await assigned.getByRole('button', { name: 'Confirm delivery', exact: true }).click()
     await expect(assigned.getByRole('heading', { name: 'Delivered', exact: true })).toBeVisible()
     await assertDelivered(page, order.orderId, order.trackingToken, order.guestCharge)
   } finally {
-    await ownerContext.close()
-    await driverContext.close()
+    await ownerContext.close().catch(() => {
+      /* Preserve the original test failure after browser teardown. */
+    })
+    await driverContext.close().catch(() => {
+      /* Preserve the original test failure after browser teardown. */
+    })
   }
 })
 
@@ -261,11 +292,13 @@ test('SPEC-03-AC-04/05/06 concurrent dispatch books once and durable simulator r
   baseURL,
 }) => {
   test.setTimeout(240_000)
-  const ownerContext = await browser.newContext({ baseURL })
+  const ownerContext = await journeyContext(browser, baseURL)
   try {
     const owner = await ownerContext.newPage()
-    const order = await guestCheckout(page, 'simulator')
-    await prepare(owner.request, order.orderId)
+    const order = await test.step('Guest simulator checkout and payment', () =>
+      guestCheckout(page, 'simulator'))
+    await test.step('Authenticated kitchen preparation', () =>
+      prepare(owner.request, order.orderId))
     await login(owner, 'spec01-owner@test.local')
     await expect(
       owner.getByRole('article', { name: `Order ${order.orderId}`, exact: true })
@@ -276,6 +309,7 @@ test('SPEC-03-AC-04/05/06 concurrent dispatch books once and durable simulator r
       (row: { order_id: string }) => row.order_id === order.orderId
     )
     expect(pending).toBeTruthy()
+    stage('Concurrent dispatch and persisted simulator progress')
     // Independent keys race on the same order: DB order uniqueness must arbitrate.
     const responses = await Promise.all(
       Array.from({ length: 2 }, () =>
@@ -322,7 +356,9 @@ test('SPEC-03-AC-04/05/06 concurrent dispatch books once and durable simulator r
       page.getByText('Simulated delivery. No real courier is travelling.', { exact: true })
     ).toBeVisible()
   } finally {
-    await ownerContext.close()
+    await ownerContext.close().catch(() => {
+      /* Preserve the original test failure after browser teardown. */
+    })
   }
 })
 
@@ -363,6 +399,7 @@ test('SPEC-03-AC-01/07 authenticated webhook quarantine is durable, deduplicated
       data: raw,
     })
 
+  stage('Webhook signature rejection and empty inbox assertions')
   const rejected = await send(invalidSignature)
   expect(rejected.status()).toBe(401)
   expect((await inbox()).data).toEqual([])
@@ -375,6 +412,7 @@ test('SPEC-03-AC-01/07 authenticated webhook quarantine is durable, deduplicated
   expect(changedBytes.status()).toBe(401)
   expect((await inbox()).data).toEqual([])
 
+  stage('Authenticated webhook durable inbox and duplicate replay')
   const accepted = await send(signature)
   expect(accepted.status()).toBe(200)
   expect(await accepted.json()).toEqual({ received: true })
@@ -399,12 +437,13 @@ test('SPEC-03-AC-01/07 authenticated webhook quarantine is durable, deduplicated
   }
   expect((await inbox()).data).toEqual(afterAcknowledgement.data)
 
-  const ownerContext = await browser.newContext({ baseURL })
-  const driverContext = await browser.newContext({ baseURL })
+  const ownerContext = await journeyContext(browser, baseURL)
+  const driverContext = await journeyContext(browser, baseURL)
   try {
     const owner = await ownerContext.newPage()
     const driver = await driverContext.newPage()
     await login(owner, 'spec01-owner@test.local')
+    stage('Owner and driver quarantine visibility boundaries')
     const ownerQueue = await owner.request.get(`/api/deliveries?venue_id=${venueId}`)
     expect(ownerQueue.status()).toBe(200)
     const ownerBody = await ownerQueue.json()
@@ -435,7 +474,11 @@ test('SPEC-03-AC-01/07 authenticated webhook quarantine is durable, deduplicated
     expect(JSON.stringify(driverBody)).not.toContain(externalRef)
     await expect(driver.getByRole('region', { name: 'Unmatched courier events' })).toHaveCount(0)
   } finally {
-    await ownerContext.close()
-    await driverContext.close()
+    await ownerContext.close().catch(() => {
+      /* Preserve the original test failure after browser teardown. */
+    })
+    await driverContext.close().catch(() => {
+      /* Preserve the original test failure after browser teardown. */
+    })
   }
 })

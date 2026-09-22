@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process'
-import { readdirSync } from 'node:fs'
+import { readdirSync, existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
 import { randomBytes } from 'node:crypto'
 import { stripVTControlCharacters } from 'node:util'
 
@@ -99,6 +100,7 @@ Object.assign(env, {
   CAFFI_SYNTHETIC_VENUE_ID: '13000000-0000-4000-8000-000000000001',
   CAFFI_LOCAL_FIXTURE_PASSWORD: randomBytes(24).toString('base64url'),
 })
+for (const name of ['CAFFI_LOCAL_FIXTURE_PASSWORD', 'CAFFI_DELIVERY_WORKER_SECRET', 'CAFFI_DELIVERY_WEBHOOK_SECRET']) diagnosticSecrets.add(env[name])
 // Mask ephemeral local keys as defense in depth; no hosted/provider keys enter the job.
 if (process.env.GITHUB_ACTIONS === 'true') {
   for (const secret of diagnosticSecrets) {
@@ -114,6 +116,21 @@ const failures = []
 try { run('node', ['scripts/test-local-db.mjs']) } catch (error) { failures.push(error) }
 run('node', ['scripts/ci-local-auth-fixtures.mjs'])
 // Playwright exits nonzero if no tests exist. Never use --pass-with-no-tests.
-try { run('npm', ['run', 'test:browser', '--', '--workers=1']) } catch (error) { failures.push(error) }
+try { run('npm', ['run', 'test:browser', '--', '--workers=1']) } catch (error) {
+  failures.push(error)
+  // Only synthetic DOM snapshots, never traces/cookies/network archives. Redact
+  // every ephemeral secret before publishing bounded diagnostic text.
+  function reportContexts(directory) {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const file = path.join(directory, entry.name)
+      if (entry.isDirectory()) reportContexts(file)
+      else if (entry.name === 'error-context.md') {
+        console.error('[browser-context] ' + file)
+        for (const line of sanitizeDiagnostic(readFileSync(file, 'utf8')).slice(0, 16000).split(/\r?\n/)) console.error('[browser-context] ' + line)
+      }
+    }
+  }
+  if (existsSync('test-results')) reportContexts('test-results')
+}
 if (failures.length) throw new AggregateError(failures, 'Required isolated verification failed.')
 console.log('Disposable local SQL/RLS and browser checks passed. No provider sandbox or live evidence.')

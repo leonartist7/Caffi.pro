@@ -59,3 +59,7 @@ Astra xhigh approved `51773223293e049b258b8d4f545e0e1770d6146a` after all ten fi
 ## Runtime failure checkpoint
 
 CI `35774596919` passed disposable migration replay and six of eight SQL suites (RLS, ordering, reservations, costing, 86-ing and SPEC-02). The depletion suite attempted a refund that SPEC-02 deliberately denies; its regression must assert that denial and exercise reversal with an explicit synthetic database fixture. SPEC-03 exposed a PL/pgSQL record/table-alias collision in cart pricing. The local Auth preparation also exposed the installed Supabase client requiring native WebSocket, unavailable under the prior Node 20 CI runtime; quality jobs now select Node 22. Browser tests did not execute in this failed run. These observed failures are preserved rather than described as passing from static review.
+
+## Isolated database acceptance checkpoint
+
+CI `35775213367` at `47b8573450a70b5863ea9bb2c29c388b9b0c0aa7` passed all eight required SQL suites, including SPEC-03 address/quote invariants, dispatch uniqueness, fenced worker recovery, event reconciliation, cancellation and driver safeguards. Six synthetic Auth identities sign in. The existing local Auth browser test passed; the first full delivery journey timed out and its cleanup error obscured the failing action, causing two serial tests not to run. The aggregate correctly failed. Next revision uses independent journeys and bounded action timeouts with redacted synthetic DOM diagnostics. Full browser acceptance remains incomplete.
