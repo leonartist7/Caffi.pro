@@ -37,6 +37,9 @@ Import creates deterministic mappings without duplicate items; availability chan
 | SPEC-05-AC-06 | First real adapter requires named client/vendor, documented write/read scope and authorized sandbox. Without F-04, only simulator/offline fixtures are accepted. | Vendor dossier plus sandbox result, or exact blocker |
 
 The initial implementation owns lib/pos, POS routes, additive POS migration and tests. Shared order/delivery changes are limited to the acknowledged-order guard. Operations must resolve tenant from stored resources before service-role writes; user-provided venue IDs never authorize themselves. The POS event inbox must authenticate vendor messages by the vendor's documented protocol before state mutation. A simulator has no network or live effects. Migration rollback disables connections/workers and retains tickets, attempts and event history for reconciliation.
+### 2026-09-24 verification checkpoint
+
+The scoped draft [PR #88](https://github.com/leonartist7/Caffi.pro/pull/88) has a local simulator and disposable migration/SQL suite. [Acceptance evidence](../evidence/SPEC-05-ACCEPTANCE-2026-09-24.md) records the nine passing SQL suites, four pre-existing ordering/delivery browser regressions and the remaining dedicated POS API/browser/concurrency cases. Square/Clover are candidates only; F-04 and vendor sandbox remain open.
 ## Dependencies, risk and release gate
 **Dependencies:** SPEC-01 and SPEC-02 order contract; SPEC-03 shared acceptance semantics. First client POS and vendor API rights not yet selected.
 
