@@ -47,3 +47,7 @@ Every adapter dossier must name vendor, purpose, account owner, service geograph
 ## 2026-09-22 verification boundary
 
 SPEC-03 simulator and restaurant-driver browser/API/database lifecycles pass in [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123) at `3b07268`: eight SQL suites and four genuine browser tests. This changes only the isolated simulator verification status. Uber Direct remains research/offline fixtures in separate PR #86, with no authorized sandbox credentials or execution. No external adapter or live courier readiness is claimed.
+
+## 2026-09-24 POS candidate update
+
+The founder identified Square and Clover as common candidate POS systems, with other systems possible. No first client, merchant authorization, API scope or sandbox credential was confirmed, so F-04 remains open. SPEC-05 implements only a local simulator and separate adapter boundary; no Square/Clover integration or vendor verification is claimed.

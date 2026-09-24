@@ -39,3 +39,7 @@ Credentials stay in server secret storage, referenced by connection records. The
 Add schema before deploying dependent code; tolerate old rows with disabled/unconfigured capabilities. Feature flags are per venue with a global kill switch. Run migrations in local/staging only until production approval. Disable new effects to roll back; never erase delivery/payment history to undo a release. Observe dispatch lag, unknown outcomes, POS rejections and payment mismatches.
 
 Related: [quality](QUALITY-STRATEGY.md), [security](SECURITY-AND-COMPLIANCE.md), [registry](INTEGRATION-REGISTRY.md).
+
+## 2026-09-24 POS boundary checkpoint
+
+SPEC-05 adds one scoped connection per venue, complete versioned menu snapshots, tenant-bound external IDs, an atomic paid-order submission and a fenced outbox. Once an external send is possible, retry performs lookup with the original operation key. Imported menu fields remain POS-owned; ARO owns presentation and direct delivery. This is simulator code pending disposable SQL/browser evidence and independent security approval. Vendor-specific adapters remain behind F-04.
