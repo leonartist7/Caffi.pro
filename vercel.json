@@ -2,7 +2,8 @@
   "git": {
     "deploymentEnabled": {
       "codex/spec-03-delivery-foundation": false,
-      "codex/spec-04-first-courier": false
+      "codex/spec-04-first-courier": false,
+      "codex/spec-06-growth-creative": false
     }
   },
   "crons": [

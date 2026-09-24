@@ -33,6 +33,8 @@ Back to [Product OS](README.md). “Present” is code evidence at the baseline,
 | Wallet passes | Explicit stubs [wallet](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/app/api/wallet) | Certificates/vendor setup and device verification | Later |
 | Campaign email/SMS | Owner module coming soon; invite email stub | Vendor, sender, consent/suppression | High compliance; SPEC-06 gated send |
 | Creative Studio | Caption/digest types present [AI boundary](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/ai/provider.ts) | Gateway, budgets, actual generation verification | Medium/high; SPEC-06 |
+
+The 2026-09-24 SPEC-06 branch adds an opt-in Gateway boundary, venue facts and budget audit, plus replay-safe redemption and durable paid-offer work. Types, lint and mocked unit tests pass. Database/concurrency, browser, paid Gateway and live results remain pending; baseline rows above are historical.
 | Guest/reservation AI | Not present as a qualified assistant | Knowledge, permissions, availability integration | Later bounded read-only assistant |
 | Voice AI | Not present | Telephony/voice vendor and consent | Blocked founder/vendor |
 | Staff/shifts/tips/export | Merged #72–75; [tips](https://github.com/leonartist7/Caffi.pro/blob/05022ffd797bea8149a44bcac3959c648158b594/lib/tips) | Role/device/timezone/CSV regression | High compensation data; SPEC-06 |

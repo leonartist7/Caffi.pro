@@ -33,6 +33,10 @@ Columns are independent: code/document presence, local verification, provider sa
 | SPEC-06 | Growth/creative qualification | Spec ready | Not implemented | Not run | Not run | Depends SPEC-01/02; sends F-06; Terra high |
 | SPEC-07 | Onboarding/release | Spec ready | Not implemented | Not run | Not run | Runbook work ready; launch F-01–07; Astra xhigh |
 
+## 2026-09-24 SPEC-06 review checkpoint
+
+SPEC-06 starts from unmerged PR #87 at b0c3052936ed78d02ada5fcb6d5a7494b11378c1, with #83–#86 also open drafts. Branch codex/spec-06-growth-creative adds server-only Gateway choice, venue-scoped grounding/output checks, disabled-by-default AI budgets, a replay-safe counter redemption RPC, refund earn reversal and durable paid-offer follow-up. Local TypeScript, strict lint and 53 unit tests pass, including five new mocked AI tests. SQL, concurrent sessions, API/browser/mobile and provider sandbox/live checks are not run locally; the host lacks Supabase CLI/Docker/psql. Independent Astra xhigh review remains open. F-06 and paid model authorization are absent. [Handoff](handoffs/HANDOFF-2026-09-24-spec-06.md). Next owner: CI and independent reviewer, then Phase 5 owner.
+
 ## Update protocol
 Each PR updates its row, links its implementation commit and test results, records exact environment and unresolved limitations, and names the next owner. Schema/provider/auth/payment changes require Astra xhigh independent review. Do not overwrite historical failed results; append a dated resolution.
 

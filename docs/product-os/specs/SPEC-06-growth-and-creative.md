@@ -2,7 +2,7 @@
 id: SPEC-06
 title: Loyalty qualification and grounded creative growth
 status: ready-spec
-updated: 2026-09-20
+updated: 2026-09-24
 tags: [product-os, execution-packet]
 ---
 
@@ -25,6 +25,18 @@ Concurrent redemption/referral has one intended value effect; interrupted issuan
 
 **Tests:** Concurrent redemption and first visit; scheduler timezone and duplicate run; retry after paid event; injection attempts through venue content; cross-tenant retrieval; quota exhaustion/fallback; unsubscribe race; real Android/iOS PWA loop when approved.
 
+### Phase 4 acceptance contract (2026-09-24)
+
+| ID | Contract, ownership and failure behavior | Required evidence |
+|---|---|---|
+| SPEC-06-AC-01 | A guest's order/reservation/delivery history is linked only by an explicit venue-scoped member identifier or verified account binding. Name, phone and email resemblance never merge identities across venues. | SQL/API two-tenant and identity-boundary tests |
+| SPEC-06-AC-02 | Points earn, redeem and reverse through append-only tenant-scoped transactions. An operation key is unique; concurrent redemption cannot overspend; cancellation/refund reverses an earlier earn once, including replay and integer rounding. | SQL concurrency and replay tests |
+| SPEC-06-AC-03 | Offers, referrals, review prompts and scheduled issuance are idempotent and truthful. Failed paid-event follow-up persists recoverable work. Consent withdrawal suppresses future promotional sends. | SQL/API and scheduler tests |
+| SPEC-06-AC-04 | Creative drafts and owner summaries use bounded, sourced facts from the same venue's menu, brand, offers and operations. Untrusted text cannot become an instruction or cross-tenant lookup. Output is validated before storage. | Prompt/provider/route tests |
+| SPEC-06-AC-05 | Server-only Gateway configuration uses a currently listed model and explicit paid-call budget reservation/settlement with sanitized audit. Missing configuration or quota fails closed. AI cannot publish, send, book, discount or perform money actions. | Mocked provider, budget and permission tests; sandbox separate |
+| SPEC-06-AC-06 | Owner and guest mobile/keyboard flows show loading/errors and draft approval clearly; no outbound send or live push claim without F-06 and device evidence. | Browser accessibility and device checks |
+
+The initial implementation owns lib/loyalty, lib/ai, consent and owner growth surfaces, with additive audit data. Shared order identity remains explicit: no inferred contact matching. Rollback disables new generation/issuance, preserves financial and generation audit rows, and reconciles reserved work before schema removal.
 ## Dependencies, risk and release gate
 **Dependencies:** SPEC-01/02; Gateway contract review and safe model configuration; optional push device/account access.
 

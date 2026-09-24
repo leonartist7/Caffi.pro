@@ -40,10 +40,12 @@ export function draftModel(): string {
 
 interface ChatCompletionResponse {
   choices?: { message?: { content?: string | null } }[]
+  usage?: { total_tokens?: number }
 }
 
 export class OpenAiDraftProvider implements AiProvider {
-  readonly key = 'openai'
+  readonly key = 'openai' as const
+  get model() { return draftModel() }
 
   async generateDraft(req: DraftRequest): Promise<DraftResult> {
     const apiKey = requiredEnv('OPENAI_API_KEY')
@@ -103,6 +105,6 @@ export class OpenAiDraftProvider implements AiProvider {
       return { ok: false, error: 'The drafting service came back empty.' }
     }
 
-    return { ok: true, output, model }
+    return { ok: true, output, model, usageTokens: payload.usage?.total_tokens }
   }
 }

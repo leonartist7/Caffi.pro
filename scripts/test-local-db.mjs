@@ -25,6 +25,7 @@ const suites = [
   'eighty_six_tests.sql',
   'spec02_connected_journey_tests.sql',
   'spec03_delivery_tests.sql',
+  'spec06_growth_tests.sql',
 ]
 
 const failures = []

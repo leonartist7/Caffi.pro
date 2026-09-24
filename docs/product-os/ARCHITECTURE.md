@@ -39,3 +39,7 @@ Credentials stay in server secret storage, referenced by connection records. The
 Add schema before deploying dependent code; tolerate old rows with disabled/unconfigured capabilities. Feature flags are per venue with a global kill switch. Run migrations in local/staging only until production approval. Disable new effects to roll back; never erase delivery/payment history to undo a release. Observe dispatch lag, unknown outcomes, POS rejections and payment mismatches.
 
 Related: [quality](QUALITY-STRATEGY.md), [security](SECURITY-AND-COMPLIANCE.md), [registry](INTEGRATION-REGISTRY.md).
+
+## 2026-09-24 growth boundary checkpoint
+
+SPEC-06 keeps loyalty redemption and refund reversal in append-only venue-scoped transactions. A paid-order trigger creates recoverable offer work, consumed by the signed webhook or authenticated daily cron with period-key deduplication. Creative generation uses one server-only provider choice, scoped factual context, explicit per-venue token reservations and validated drafts. Budget rows are disabled by default. Publication and messaging remain separate permission and consent gates.

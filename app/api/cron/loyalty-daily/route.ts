@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { runBirthdayAnniversaryForAllVenues } from '@/lib/loyalty/birthday-anniversary-issue'
+import { processPaidOfferFollowup } from '@/lib/loyalty/offer-outbox'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -34,10 +35,20 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = getSupabaseAdmin()
+  let paidFollowupsProcessed = 0
+  try {
+    for (; paidFollowupsProcessed < 20; paidFollowupsProcessed++) {
+      if (!(await processPaidOfferFollowup(admin))) break
+    }
+  } catch (error) {
+    console.error('[loyalty-daily] paid offer outbox failed:', error)
+    return NextResponse.json({ error: 'Paid offer recovery failed' }, { status: 500 })
+  }
   const results = await runBirthdayAnniversaryForAllVenues(admin)
 
   return NextResponse.json({
     ok: true,
+    paidFollowupsProcessed,
     venuesProcessed: results.length,
     birthdayIssued: results.reduce((sum, r) => sum + r.birthdayIssued, 0),
     anniversaryIssued: results.reduce((sum, r) => sum + r.anniversaryIssued, 0),

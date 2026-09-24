@@ -21,37 +21,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
-  let body: { member_id?: string; reward_id?: string }
+  let body: { member_id?: string; reward_id?: string; operation_key?: string }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
-  if (!body.member_id || !body.reward_id) {
-    return NextResponse.json({ error: 'member_id and reward_id required' }, { status: 400 })
+  if (!body.member_id || !body.reward_id || !body.operation_key ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.operation_key)) {
+    return NextResponse.json({ error: 'member_id, reward_id and operation_key required' }, { status: 400 })
   }
 
   const admin = getSupabaseAdmin()
-
-  const { data: member } = await admin
-    .from('members')
-    .select('member_id')
-    .eq('member_id', body.member_id)
-    .eq('tenant_id', session.venueId)
-    .maybeSingle()
-  if (!member) {
-    return NextResponse.json({ error: 'Member not found' }, { status: 404 })
-  }
 
   const { data, error } = await admin.rpc('redeem_reward', {
     p_member_id: body.member_id,
     p_reward_id: body.reward_id,
     p_venue_id: session.venueId,
     p_staff_membership_id: session.membershipId,
+    p_operation_key: body.operation_key,
   })
 
   if (error) {
-    if (error.code === 'P0001') {
+    if (error.message.includes('STAFF_ACCESS_REVOKED')) {
+      return NextResponse.json({ error: 'Access revoked' }, { status: 403 })
+    }
+    if (error.message.includes('MEMBER_NOT_FOUND')) {
+      return NextResponse.json({ error: 'Member not found' }, { status: 404 })
+    }
+    if (error.message.includes('INSUFFICIENT_BALANCE')) {
       // insufficient_balance — calm 409, not an error toast
       const { data: reward } = await admin
         .from('rewards')
@@ -69,7 +67,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       )
     }
-    if (error.code === 'P0002') {
+    if (error.message.includes('REWARD_NOT_FOUND')) {
       return NextResponse.json({ error: 'Reward not found' }, { status: 404 })
     }
     if (error.code === 'P0003') {

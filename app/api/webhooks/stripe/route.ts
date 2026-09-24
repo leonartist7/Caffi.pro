@@ -232,15 +232,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true, reconciliation_required: true }, { status: 202 })
     }
 
-    // Bounce-back issuance rides the same "newly applied" boundary
-    // record_order_payment_success already uses to guard points/depletion
-    // — a replayed webhook (applied: false) must not re-issue, so this
-    // only runs on a genuine first application. A failure here logs and
-    // moves on rather than turning a real payment into a 5xx Stripe would
-    // retry forever.
-    if (result.applied) {
+    // The paid transition created durable follow-up work in the same DB
+    // transaction. A replay can finish it after a process interruption;
+    // per-program period keys prevent duplicate offers.
+    const followup = await admin.from('growth_offer_outbox')
+      .select('order_id,done,lease_token')
+      .eq('venue_id', result.venue_id).eq('order_id', result.order_id)
+      .maybeSingle()
+    if (followup.error) {
+      return NextResponse.json({ error: 'Paid offer recovery unavailable' }, { status: 500 })
+    }
+    if (followup.data && !followup.data.done && !followup.data.lease_token) {
       try {
         await issueBounceBackOffersForOrder(admin, result.venue_id, result.order_id)
+        const completed = await admin.from('growth_offer_outbox')
+          .update({ done: true, safe_error: null })
+          .eq('venue_id', result.venue_id).eq('order_id', result.order_id)
+          .is('lease_token', null)
+        if (completed.error) throw new Error('OFFER_OUTBOX_FINISH_FAILED')
       } catch (err) {
         console.error('[stripe-webhook] bounce-back issuance failed:', err)
       }
