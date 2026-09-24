@@ -12,7 +12,7 @@ Draft [PR #89](https://github.com/leonartist7/Caffi.pro/pull/89) is stacked on u
 
 | Acceptance | Direct evidence | Open verification |
 |---|---|---|
-| SPEC-06-AC-01 | Owner member view now reads only explicit same-venue member-linked orders, reservations and delivery jobs after profile authorization; no contact matching | New view build/browser, two-tenant and revoked-owner route tests |
+| SPEC-06-AC-01 | Owner member view now reads only explicit same-venue member-linked orders, reservations and delivery jobs after profile authorization; new disposable browser test seeds same-name members in two venues | New view build/browser CI and revoked-owner route test |
 | SPEC-06-AC-02 | SQL replay, distinct-key overspend refusal, revoked counter and single refund reversal; append-only ledger RLS | Genuine simultaneous redemption/refund sessions and rounding boundary |
 | SPEC-06-AC-03 | SQL paid-offer outbox enqueue/claim/finish; webhook/cron retry and period-key code | Interrupted issue, replay after crash, referral/review-prompt and consent journeys |
 | SPEC-06-AC-04 | Five mocked AI tests cover grounding and output validation; prompt uses same-venue facts | Route/provider spies, untrusted-content and cross-tenant browser/API tests |
