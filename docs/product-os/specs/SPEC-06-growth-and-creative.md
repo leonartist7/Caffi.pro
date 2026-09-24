@@ -41,10 +41,12 @@ The initial implementation owns lib/loyalty, lib/ai, consent and owner growth su
 ### 2026-09-24 verification checkpoint
 
 The owner member view now retrieves only same-venue orders and reservations bearing the verified member ID, then reads delivery jobs through those order IDs. A matching name, phone or email never creates a link. The regulars directory uses a display name appended to the invoker-scoped member_status view; the profile independently proves the stored member's tenant before showing history. [Acceptance evidence](../evidence/SPEC-06-ACCEPTANCE-2026-09-24.md) records a passing disposable browser owner-history journey and separates it from still-unverified concurrent requests, revoked-owner/API/keyboard paths and paid Gateway sandbox.
+
+AC-03 now also persists first-visit referral work in the visit transaction, captures the eligible program and reward configuration, and uses a leased retry worker with a unique referred-member credit. A tenant-coherent visit/member FK rejects new cross-tenant visits; existing rows require a separate audit before FK validation. Review analytics require the order's guest tracking token, settled payment and matching venue path. The disposable browser tests exercise interrupted referral replay and review-prompt denial/success; real concurrent workers, offer-value crash recovery and consent withdrawal remain open. [Independent review](../evidence/SPEC-06-SECURITY-REVIEW-2026-09-24.md) approved the exact `0e8eecc` code head statically.
 ## Dependencies, risk and release gate
 **Dependencies:** SPEC-01/02; Gateway contract review and safe model configuration; optional push device/account access.
 
-**Risks:** Existing best-effort bounce-back call can log failure without durable retry; PII in prompts/logs; duplicate incentives; stale marketing consent.
+**Risks:** Existing legacy visit rows may violate the new unvalidated tenant FK; genuine simultaneous referral/offer issuance still needs a race rehearsal; PII in prompts/logs; duplicate incentives; stale marketing consent.
 
 **Release gate:** SPEC-01/02 tests plus independent Astra xhigh review for identity/AI boundaries. F-06 gates sends, approved budget gates paid model calls. Mock tests never imply provider verification.
 
