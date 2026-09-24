@@ -2,7 +2,7 @@
 id: SPEC-05
 title: Existing POS connection and reconciliation
 status: ready-spec
-updated: 2026-09-20
+updated: 2026-09-24
 tags: [product-os, execution-packet]
 ---
 
@@ -25,6 +25,18 @@ Import creates deterministic mappings without duplicate items; availability chan
 
 **Tests:** Modifier mapping, removed items, invalid currency, partial import rollback, duplicate events, rejected submission, timeout-after-accept, two-tenant IDs, availability race at checkout and connection disconnect/reconnect.
 
+### Phase 4 acceptance contract (2026-09-24)
+
+| ID | Contract, ownership and failure behavior | Required evidence |
+|---|---|---|
+| SPEC-05-AC-01 | A venue owns one explicit POS connection per provider/environment. Service-only records contain no credentials; disconnected means no new submission. A revoked member or foreign tenant cannot view or operate it. | SQL/RLS and API authorization tests |
+| SPEC-05-AC-02 | A versioned menu import binds external category/item/modifier IDs to one connection and venue. POS owns imported names, prices and availability; ARO presentation is separate. Missing mappings, invalid currency or partial import leaves the last committed version intact. | Simulator import and transactional SQL tests |
+| SPEC-05-AC-03 | A paid direct order has one durable submission key and one POS ticket. Unknown outcome is reconciled by lookup with the same key; no second create or failover. Restart, concurrent worker and duplicate event preserve this invariant. | SQL concurrency and simulator tests |
+| SPEC-05-AC-04 | Acknowledged, rejected and unknown are distinct states. Only acknowledged connected orders may satisfy delivery's restaurant-acceptance prerequisite. Delayed acknowledgements and cancellation races do not silently advance orders. | API/database journey and SQL tests |
+| SPEC-05-AC-05 | Owner/manager staff queue shows connection health, sync/rejection/unknown exceptions and reasoned recovery; revoked/cross-tenant access is denied. | Browser/keyboard and API tests |
+| SPEC-05-AC-06 | First real adapter requires named client/vendor, documented write/read scope and authorized sandbox. Without F-04, only simulator/offline fixtures are accepted. | Vendor dossier plus sandbox result, or exact blocker |
+
+The initial implementation owns lib/pos, POS routes, additive POS migration and tests. Shared order/delivery changes are limited to the acknowledged-order guard. Operations must resolve tenant from stored resources before service-role writes; user-provided venue IDs never authorize themselves. The POS event inbox must authenticate vendor messages by the vendor's documented protocol before state mutation. A simulator has no network or live effects. Migration rollback disables connections/workers and retains tickets, attempts and event history for reconciliation.
 ## Dependencies, risk and release gate
 **Dependencies:** SPEC-01 and SPEC-02 order contract; SPEC-03 shared acceptance semantics. First client POS and vendor API rights not yet selected.
 
