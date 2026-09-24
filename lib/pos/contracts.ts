@@ -23,6 +23,7 @@ export interface PosMenuItem {
 }
 
 export interface PosMenuSnapshot {
+  complete: true
   currency: string
   version: string
   categories: { externalId: string; name: string }[]

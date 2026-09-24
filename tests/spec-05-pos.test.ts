@@ -3,6 +3,7 @@ import { DeterministicPosSimulator, validateMenu } from '@/lib/pos/simulator'
 import type { PosMenuSnapshot, PosOrderInput } from '@/lib/pos/contracts'
 
 const menu: PosMenuSnapshot = {
+  complete: true,
   currency: 'CAD',
   version: 'v1',
   categories: [{ externalId: 'cat-1', name: 'Lunch' }],
@@ -20,6 +21,7 @@ const order: PosOrderInput = {
 describe('SPEC-05-AC-02/03/04 deterministic POS contract', () => {
   it('rejects invalid/partial menu imports before exposing a version', () => {
     expect(() => validateMenu({ ...menu, currency: 'usd' })).toThrow('INVALID_MENU')
+    expect(() => validateMenu({ ...menu, complete: false } as unknown as PosMenuSnapshot)).toThrow('INVALID_MENU')
     expect(() => validateMenu({ ...menu, items: [{ ...menu.items[0], externalCategoryId: 'missing' }] })).toThrow('MISSING_CATEGORY')
     expect(() => validateMenu({ ...menu, items: [menu.items[0], menu.items[0]] })).toThrow('DUPLICATE_ITEM')
   })

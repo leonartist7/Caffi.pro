@@ -35,11 +35,14 @@ export function PosQueue({ venueId }: { venueId: string }) {
         method:'POST', headers:{ 'Content-Type':'application/json' },
         body:JSON.stringify({ reason: reasons[id]?.trim() }),
       })
-      if (!response.ok) throw new Error('Lookup request was not accepted.')
-      setNotice('Lookup queued with the original POS operation key.')
+      if (!response.ok) throw new Error('Recovery request was not accepted.')
+      const outcome = await response.json() as { action: 'lookup' | 'create' }
+      setNotice(outcome.action === 'create'
+        ? 'Never-sent POS order queued with its original operation key.'
+        : 'POS lookup queued with its original operation key.')
       await load()
     } catch {
-      setError('Lookup request was not accepted. Check access and connection health.')
+      setError('Recovery request was not accepted. Check access and connection health.')
     } finally { setBusy('') }
   }
   return (
@@ -68,14 +71,14 @@ export function PosQueue({ venueId }: { venueId: string }) {
               {s.safe_error && <p role="status">Exception: {s.safe_error}</p>}
               {s.external_ref && <p>POS reference: {s.external_ref}</p>}
               {['unknown','attention','rejected'].includes(s.state) && <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                <label className="flex-1">Reason for lookup
+                <label className="flex-1">Reason for recovery
                   <input className="mt-1 min-h-[44px] w-full rounded-lg border px-3" maxLength={120}
                     value={reasons[s.id] ?? ''} onChange={e => setReasons(v => ({...v,[s.id]:e.target.value}))} />
                 </label>
                 <button type="button" disabled={!reasons[s.id]?.trim() || busy===s.id}
                   onClick={() => void reconcile(s.id)}
                   className="min-h-[44px] rounded-xl border px-4 disabled:opacity-40">
-                  {busy===s.id ? 'Queuing…' : 'Look up POS order'}
+                  {busy===s.id ? 'Queuing…' : 'Recover POS order'}
                 </button>
               </div>}
             </li>)}

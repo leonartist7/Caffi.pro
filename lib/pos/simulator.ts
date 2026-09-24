@@ -66,7 +66,7 @@ export class DeterministicPosSimulator implements PosProvider {
 }
 
 export function validateMenu(menu: PosMenuSnapshot): void {
-  if (!/^[A-Z]{3}$/.test(menu.currency) || !menu.version) throw new Error('INVALID_MENU')
+  if (menu.complete !== true || !/^[A-Z]{3}$/.test(menu.currency) || !menu.version) throw new Error('INVALID_MENU')
   const categoryIds = new Set(menu.categories.map(x => x.externalId))
   if (categoryIds.size !== menu.categories.length) throw new Error('DUPLICATE_CATEGORY')
   const itemIds = new Set<string>()
