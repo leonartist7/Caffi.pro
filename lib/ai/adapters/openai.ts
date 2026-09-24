@@ -74,18 +74,15 @@ export class OpenAiDraftProvider implements AiProvider {
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         cache: 'no-store',
       })
-    } catch (err) {
+    } catch {
       // Network failure or timeout — transient by nature, so the UI retries.
-      const reason = err instanceof Error ? err.message : 'unknown error'
-      console.error('[ai] openai request failed:', reason)
+      console.error('[ai] openai request failed')
       return { ok: false, error: 'The drafting service did not respond in time.' }
     }
 
     if (!response.ok) {
-      // Body may carry the real reason but can also be huge or HTML; log a
-      // bounded slice and never surface upstream text to the owner verbatim.
-      const detail = (await response.text().catch(() => '')).slice(0, 500)
-      console.error('[ai] openai returned', response.status, detail)
+      // Upstream bodies can echo venue content; only the status is safe to log.
+      console.error('[ai] openai returned status', response.status)
       return { ok: false, error: 'The drafting service refused that request.' }
     }
 
