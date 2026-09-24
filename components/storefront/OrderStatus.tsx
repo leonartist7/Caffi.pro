@@ -18,12 +18,12 @@ function reviewShownKey(orderId: string): string {
   return `aro-review-shown:${orderId}`
 }
 
-async function postReviewEvent(orderId: string, type: 'prompted' | 'clicked') {
+async function postReviewEvent(orderId: string, trackingToken: string, type: 'prompted' | 'clicked') {
   try {
     await fetch(`/api/orders/${encodeURIComponent(orderId)}/review-event`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type }),
+      body: JSON.stringify({ type, tracking: trackingToken }),
     })
   } catch {
     // Fire-and-forget: a lost analytics event must never block the guest.
@@ -188,8 +188,8 @@ export function OrderStatus({
       // Storage disabled/blocked — the prompt still renders this once; we
       // accept a possible re-show on reload rather than crashing the page.
     }
-    void postReviewEvent(orderId, 'prompted')
-  }, [showReviewPrompt, orderId])
+    void postReviewEvent(orderId, trackingToken, 'prompted')
+  }, [showReviewPrompt, orderId, trackingToken])
 
   if (missing)
     return <div className="py-20 text-center text-aro-muted">This order link is not available.</div>
@@ -300,7 +300,7 @@ export function OrderStatus({
               href={reviewUrl ?? undefined}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={() => void postReviewEvent(orderId, 'clicked')}
+              onClick={() => void postReviewEvent(orderId, trackingToken, 'clicked')}
               className="inline-flex min-h-[44px] items-center rounded-full bg-aro-terra px-4 text-sm font-bold text-white"
             >
               {REVIEW_STRINGS.cta}

@@ -8,26 +8,25 @@ const EVENT_TYPES = {
 } as const
 
 export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
-  const body = (await request.json().catch(() => null)) as { type?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { type?: unknown; tracking?: unknown } | null
   const type = body && (body.type === 'prompted' || body.type === 'clicked') ? body.type : null
   if (!type) {
     return NextResponse.json({ error: 'type must be "prompted" or "clicked"' }, { status: 400 })
   }
 
-  // Same trust model as GET /api/orders/[id]/status: the order UUID itself
-  // is the guest's capability token, no separate auth on this order-scoped
-  // confirmation-page endpoint. Two guards keep that permissive model from
-  // being abused: the order must actually be settled (a guest can't spam
-  // this before paying), and the insert is deduplicated at the DB level
-  // (idx_events_review_once) so retries/duplicate tabs can't inflate the
-  // count past one row per order per event type.
+  // Match the order-status capability boundary: the tracking token, not the
+  // public order ID alone, authorizes guest review analytics. DB uniqueness
+  // still collapses duplicate tabs and retries to one event per type.
+  const tracking = typeof body?.tracking === 'string' ? body.tracking : null
+  if (!tracking) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   const admin = getSupabaseAdmin()
-  const { data: order } = await admin
+  const { data: order, error: orderError } = await admin
     .from('orders')
     .select('order_id, venue_id, status')
     .eq('order_id', params.id)
+    .eq('guest_tracking_token', tracking)
     .maybeSingle()
-  if (!order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
+  if (orderError || !order) return NextResponse.json({ error: 'Order not found' }, { status: 404 })
   if (!isSettledOrderStatus(order.status)) {
     return NextResponse.json({ error: 'Order is not settled' }, { status: 409 })
   }
