@@ -48,6 +48,32 @@ BEGIN
      AND venue_id='13000000-0000-4000-8000-000000000003')
  THEN RAISE EXCEPTION 'Foreign venue can address member'; END IF;
 END $$;
+DO $$
+DECLARE own_count integer; foreign_count integer; denied boolean := false;
+BEGIN
+ PERFORM set_config('role','authenticated',true);
+ PERFORM set_config('request.jwt.claim.sub','11000000-0000-4000-8000-000000000001',true);
+ PERFORM set_config('request.jwt.claims',
+   '{"sub":"11000000-0000-4000-8000-000000000001","role":"authenticated"}',true);
+ SELECT count(*) INTO own_count FROM public.member_status
+  WHERE member_id='18000000-0000-4000-8000-000000000001'
+    AND venue_id='13000000-0000-4000-8000-000000000001'
+    AND full_name='SPEC-06 synthetic';
+ SELECT count(*) INTO foreign_count FROM public.member_status
+  WHERE venue_id='13000000-0000-4000-8000-000000000003';
+ IF own_count<>1 OR foreign_count<>0 THEN
+  RAISE EXCEPTION 'Member status RLS mismatch: %, %',own_count,foreign_count;
+ END IF;
+ PERFORM set_config('role','anon',true);
+ BEGIN
+  PERFORM full_name FROM public.member_status LIMIT 1;
+ EXCEPTION WHEN insufficient_privilege THEN denied:=true;
+ END;
+ IF NOT denied THEN RAISE EXCEPTION 'Anonymous member name access'; END IF;
+ PERFORM set_config('role','postgres',true);
+ PERFORM set_config('request.jwt.claim.sub','',true);
+ PERFORM set_config('request.jwt.claims','',true);
+END $$;
 INSERT INTO public.orders(order_id,venue_id,member_id,client_uuid,order_type,status,subtotal_cents,total_cents)
 VALUES('18000000-0000-4000-8000-000000000002','13000000-0000-4000-8000-000000000001',
 '18000000-0000-4000-8000-000000000001','18000000-0000-4000-8000-000000000003',
