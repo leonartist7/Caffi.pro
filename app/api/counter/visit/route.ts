@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCounterToken, COUNTER_COOKIE } from '@/lib/counter-session'
 import { emitEvent } from '@/lib/events'
-import { creditReferralOnFirstVisit } from '@/lib/loyalty/referral-credit'
+import { processReferralFollowup } from '@/lib/loyalty/referral-outbox'
 import { issueMysteryPrizeOnVisit } from '@/lib/loyalty/mystery-issue'
 
 /**
@@ -87,13 +87,15 @@ export async function POST(request: NextRequest) {
     .select('visit_id', { count: 'exact', head: true })
     .eq('member_id', body.member_id)
 
-  // PLAN-15 — "first visit" is defined here and only here: a genuinely
-  // new row (not a replay) that is also this member's first ever visit.
-  // Fire-and-forget: a referral-credit failure must never fail the visit
-  // itself, which is why creditReferralOnFirstVisit isn't awaited into
-  // the response.
+  // The insert trigger durably records eligible first-visit referral work in
+  // the same transaction. Try one award now; the authenticated daily worker
+  // retries if this process stops or the award fails.
   if (wasNew && count === 1) {
-    void creditReferralOnFirstVisit(admin, session.venueId, body.member_id, session.membershipId)
+    try {
+      await processReferralFollowup(admin)
+    } catch {
+      console.error('[counter/visit] referral recovery deferred')
+    }
   }
 
   // PLAN-17 — recurring, not first-visit-only: every genuinely new visit

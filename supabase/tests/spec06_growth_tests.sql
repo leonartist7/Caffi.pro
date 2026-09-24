@@ -160,4 +160,65 @@ BEGIN
  WHERE order_id='18000000-0000-4000-8000-000000000020' AND done;
  IF n<>1 THEN RAISE EXCEPTION 'Paid offer follow-up not settled'; END IF;
 END $$;
+-- AC-03: first visit and its referral intent commit together; leases are
+-- fenced and retryable without a second credit operation key.
+INSERT INTO public.members(member_id,tenant_id,full_name)
+VALUES('18000000-0000-4000-8000-000000000030',
+       '13000000-0000-4000-8000-000000000001','Synthetic referrer');
+INSERT INTO public.members(member_id,tenant_id,full_name,referred_by_member_id)
+VALUES('18000000-0000-4000-8000-000000000031',
+       '13000000-0000-4000-8000-000000000001','Synthetic referred',
+       '18000000-0000-4000-8000-000000000030'),
+      ('18000000-0000-4000-8000-000000000032',
+       '13000000-0000-4000-8000-000000000003','Synthetic foreign referral',
+       '18000000-0000-4000-8000-000000000030');
+INSERT INTO public.loyalty_programs(program_id,venue_id,type,name,status,config)
+VALUES('18000000-0000-4000-8000-000000000033',
+       '13000000-0000-4000-8000-000000000001',
+       'referral','Synthetic first-visit referral','active',
+       '{"referral_points":7}'::jsonb);
+INSERT INTO public.visits(visit_id,member_id,venue_id,source)
+VALUES('18000000-0000-4000-8000-000000000034',
+       '18000000-0000-4000-8000-000000000031',
+       '13000000-0000-4000-8000-000000000001','manual'),
+      ('18000000-0000-4000-8000-000000000035',
+       '18000000-0000-4000-8000-000000000032',
+       '13000000-0000-4000-8000-000000000003','manual');
+INSERT INTO public.visits(visit_id,member_id,venue_id,source)
+VALUES('18000000-0000-4000-8000-000000000036',
+       '18000000-0000-4000-8000-000000000031',
+       '13000000-0000-4000-8000-000000000001','manual');
+DO $$
+DECLARE work jsonb; again jsonb; count_work integer;
+BEGIN
+ SELECT count(*) INTO count_work FROM public.growth_referral_outbox;
+ IF count_work<>1 THEN RAISE EXCEPTION 'Referral intent count %',count_work; END IF;
+ work:=public.claim_referral_followup();
+ IF work->>'referred_member_id'<>'18000000-0000-4000-8000-000000000031'
+ OR work->'program_config'->>'referral_points'<>'7'
+ THEN RAISE EXCEPTION 'Referral snapshot incorrect'; END IF;
+ IF public.claim_referral_followup() IS NOT NULL
+ THEN RAISE EXCEPTION 'Leased referral claimed twice'; END IF;
+ PERFORM public.finish_referral_followup(
+  (work->>'referred_member_id')::uuid,(work->>'lease_token')::uuid,false,'retry');
+ UPDATE public.growth_referral_outbox SET available_at=now()-interval '1 second';
+ again:=public.claim_referral_followup();
+ IF again->>'referred_member_id' IS DISTINCT FROM work->>'referred_member_id'
+ THEN RAISE EXCEPTION 'Interrupted referral not retried'; END IF;
+ BEGIN
+  PERFORM public.finish_referral_followup(
+   (work->>'referred_member_id')::uuid,(work->>'lease_token')::uuid,true,NULL);
+  RAISE EXCEPTION 'Stale referral lease accepted';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM<>'STALE_REFERRAL_LEASE' THEN RAISE; END IF;
+ END;
+ PERFORM public.finish_referral_followup(
+  (again->>'referred_member_id')::uuid,(again->>'lease_token')::uuid,true,NULL);
+ IF NOT EXISTS(SELECT 1 FROM public.growth_referral_outbox
+  WHERE referred_member_id='18000000-0000-4000-8000-000000000031'
+  AND done AND attempts=2) THEN RAISE EXCEPTION 'Referral work not settled'; END IF;
+ IF has_table_privilege('authenticated','public.growth_referral_outbox','SELECT')
+ OR has_function_privilege('authenticated','public.claim_referral_followup()','EXECUTE')
+ THEN RAISE EXCEPTION 'Referral work exposed to clients'; END IF;
+END $$;
 ROLLBACK;

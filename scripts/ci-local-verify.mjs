@@ -97,10 +97,11 @@ Object.assign(env, {
   CAFFI_PAYMENT_MODE: 'test',
   CAFFI_DELIVERY_WEBHOOK_SECRET: randomBytes(32).toString('hex'),
   CAFFI_DELIVERY_WORKER_SECRET: randomBytes(32).toString('hex'),
+  CRON_SECRET: randomBytes(32).toString('hex'),
   CAFFI_SYNTHETIC_VENUE_ID: '13000000-0000-4000-8000-000000000001',
   CAFFI_LOCAL_FIXTURE_PASSWORD: randomBytes(24).toString('base64url'),
 })
-for (const name of ['CAFFI_LOCAL_FIXTURE_PASSWORD', 'CAFFI_DELIVERY_WORKER_SECRET', 'CAFFI_DELIVERY_WEBHOOK_SECRET']) diagnosticSecrets.add(env[name])
+for (const name of ['CAFFI_LOCAL_FIXTURE_PASSWORD', 'CAFFI_DELIVERY_WORKER_SECRET', 'CAFFI_DELIVERY_WEBHOOK_SECRET', 'CRON_SECRET']) diagnosticSecrets.add(env[name])
 // Mask ephemeral local keys as defense in depth; no hosted/provider keys enter the job.
 if (process.env.GITHUB_ACTIONS === 'true') {
   for (const secret of diagnosticSecrets) {

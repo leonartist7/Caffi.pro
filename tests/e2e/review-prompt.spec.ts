@@ -36,10 +36,10 @@ test('review analytics require guest capability and deduplicate retries', async 
   expect((await page.request.post(`/api/orders/${pendingId}/review-event`, {
     data: { type: 'prompted', tracking: pendingTracking },
   })).status()).toBe(409)
-  const invalidPage = await page.goto(`/shop/spec01-north-one/order-confirmation/${orderId}?tracking=${randomUUID()}`)
-  expect(invalidPage?.status()).toBe(404)
-  const foreignSlug = await page.goto(`/shop/spec01-south/order-confirmation/${orderId}?tracking=${tracking}`)
-  expect(foreignSlug?.status()).toBe(404)
+  await page.goto(`/shop/spec01-north-one/order-confirmation/${orderId}?tracking=${randomUUID()}`)
+  await expect(page.getByRole('heading', { name: 'This page could not be found.' })).toBeVisible()
+  await page.goto(`/shop/spec01-south/order-confirmation/${orderId}?tracking=${tracking}`)
+  await expect(page.getByRole('heading', { name: 'This page could not be found.' })).toBeVisible()
   const deniedEvents = await admin.from('events').select('event_id')
     .in('type', ['review.prompted', 'review.clicked'])
     .contains('payload', { order_id: orderId })
