@@ -40,7 +40,7 @@ The initial implementation owns lib/loyalty, lib/ai, consent and owner growth su
 
 ### 2026-09-24 verification checkpoint
 
-The owner member view now retrieves only same-venue orders and reservations bearing the verified member ID, then reads delivery jobs through those order IDs. A matching name, phone or email never creates a link. [Acceptance evidence](../evidence/SPEC-06-ACCEPTANCE-2026-09-24.md) separates CI-tested ledger/budget SQL and previous ordering/delivery browser regressions from the still-unverified new member view, concurrent requests, dedicated API/keyboard paths and paid Gateway sandbox.
+The owner member view now retrieves only same-venue orders and reservations bearing the verified member ID, then reads delivery jobs through those order IDs. A matching name, phone or email never creates a link. The regulars directory uses a display name appended to the invoker-scoped member_status view; the profile independently proves the stored member's tenant before showing history. [Acceptance evidence](../evidence/SPEC-06-ACCEPTANCE-2026-09-24.md) records a passing disposable browser owner-history journey and separates it from still-unverified concurrent requests, revoked-owner/API/keyboard paths and paid Gateway sandbox.
 ## Dependencies, risk and release gate
 **Dependencies:** SPEC-01/02; Gateway contract review and safe model configuration; optional push device/account access.
 

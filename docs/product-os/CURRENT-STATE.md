@@ -2,7 +2,7 @@
 id: current-state
 title: Executive diagnosis
 status: accepted-strategy
-updated: 2026-09-22
+updated: 2026-09-24
 baseline: 05022ffd797bea8149a44bcac3959c648158b594
 tags: [product-os]
 ---
@@ -59,4 +59,4 @@ The baseline delivery gaps above now have implementation in draft [PR #87](https
 
 ## 2026-09-24 SPEC-06 checkpoint
 
-The scoped growth branch adds replay-safe counter redemption, refunded-earn reversal, recoverable paid-offer work, an explicitly linked owner member history and grounded Creative Studio generation with disabled-by-default venue budgets. [CI 35996037621](https://github.com/leonartist7/Caffi.pro/actions/runs/35996037621) passes isolated build, nine SQL suites and four existing ordering/delivery browser tests before the new history view; dedicated growth browser/API and concurrent-session proof remain pending. No contact inference or outbound campaign action was added. Paid Gateway and live proof remain absent. See the [SPEC-06 handoff](handoffs/HANDOFF-2026-09-24-spec-06.md).
+The scoped growth branch adds replay-safe counter redemption, refunded-earn reversal, recoverable paid-offer work, an explicitly linked owner member history and grounded Creative Studio generation with disabled-by-default venue budgets. [CI 35998659815](https://github.com/leonartist7/Caffi.pro/actions/runs/35998659815) passes isolated build, nine SQL suites and five browser tests including the owner member directory/history after repair of a PostgREST view embed. Dedicated revoked-owner/API, mobile and concurrent-session proof remain pending. No contact inference or outbound campaign action was added. Paid Gateway and live proof remain absent. See the [SPEC-06 handoff](handoffs/HANDOFF-2026-09-24-spec-06.md).
