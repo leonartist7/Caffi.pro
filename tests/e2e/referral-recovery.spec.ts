@@ -31,7 +31,12 @@ test('first-visit referral retries after worker interruption without duplicate c
     status: 'active', config: { referral_points: 7 },
   })
   expect(configured.error).toBeNull()
+  const foreignVenueVisit = await admin.from('visits').insert({
+    visit_id: randomUUID(), venue_id: north, member_id: foreign, source: 'manual',
+  })
+  expect(foreignVenueVisit.error?.code).toBe('23503')
   const visits = await admin.from('visits').insert([
+    { visit_id: randomUUID(), venue_id: north, member_id: referred, source: 'manual' },
     { visit_id: randomUUID(), venue_id: north, member_id: referred, source: 'manual' },
     { visit_id: randomUUID(), venue_id: south, member_id: foreign, source: 'manual' },
   ])
@@ -50,6 +55,9 @@ test('first-visit referral retries after worker interruption without duplicate c
   const interrupted = await admin.rpc('claim_referral_followup')
   expect(interrupted.error).toBeNull()
   expect(interrupted.data?.referred_member_id).toBe(referred)
+  const changedProgram = await admin.from('loyalty_programs')
+    .update({ config: { referral_points: 999 } }).eq('program_id', program)
+  expect(changedProgram.error).toBeNull()
   const expired = await admin.from('growth_referral_outbox')
     .update({ lease_until: new Date(Date.now() - 1000).toISOString() })
     .eq('referred_member_id', referred)
@@ -71,4 +79,44 @@ test('first-visit referral retries after worker interruption without duplicate c
   expect(finished.error).toBeNull()
   expect(finished.data?.done).toBe(true)
   expect(finished.data?.attempts).toBe(2)
+
+  // Simulate a crash after the ledger effect but before finishing the work.
+  // The replay must recognize the unique referred-member credit and settle
+  // the outbox without another financial effect.
+  const replayMember = randomUUID()
+  const secondMember = await admin.from('members').insert({
+    member_id: replayMember, tenant_id: north, full_name: 'Synthetic replayed referral',
+    referred_by_member_id: referrer,
+  })
+  expect(secondMember.error).toBeNull()
+  const secondVisit = await admin.from('visits').insert({
+    visit_id: randomUUID(), venue_id: north, member_id: replayMember, source: 'manual',
+  })
+  expect(secondVisit.error).toBeNull()
+  const secondClaim = await admin.rpc('claim_referral_followup')
+  expect(secondClaim.error).toBeNull()
+  expect(secondClaim.data?.referred_member_id).toBe(replayMember)
+  const priorEffect = await admin.from('points_ledger').insert({
+    tenant_id: north, member_id: referrer, referred_member_id: replayMember,
+    points_change: 999, reason: 'referral',
+  })
+  expect(priorEffect.error).toBeNull()
+  const expiredSecond = await admin.from('growth_referral_outbox')
+    .update({ lease_until: new Date(Date.now() - 1000).toISOString() })
+    .eq('referred_member_id', replayMember)
+  expect(expiredSecond.error).toBeNull()
+  const replayed = await page.request.get(endpoint, {
+    headers: { authorization: `Bearer ${secret}` },
+  })
+  expect(replayed.status()).toBe(200)
+  const replayLedger = await admin.from('points_ledger').select('points_change')
+    .eq('tenant_id', north).eq('member_id', referrer)
+    .eq('referred_member_id', replayMember).eq('reason', 'referral')
+  expect(replayLedger.error).toBeNull()
+  expect(replayLedger.data).toEqual([{ points_change: 999 }])
+  const replayWork = await admin.from('growth_referral_outbox')
+    .select('done,attempts').eq('referred_member_id', replayMember).single()
+  expect(replayWork.error).toBeNull()
+  expect(replayWork.data?.done).toBe(true)
+  expect(replayWork.data?.attempts).toBe(2)
 })

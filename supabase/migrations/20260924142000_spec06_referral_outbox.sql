@@ -1,9 +1,14 @@
 -- First-visit referral effects must survive a stopped request worker.
 -- Additive; disable the trigger/worker to roll back, retaining work/history.
+-- NOT VALID preserves legacy rows for audit while enforcing all new visits.
+ALTER TABLE public.visits ADD CONSTRAINT spec06_visits_venue_member_fk
+ FOREIGN KEY(venue_id,member_id) REFERENCES public.members(tenant_id,member_id)
+ NOT VALID;
 CREATE TABLE public.growth_referral_outbox (
  referred_member_id uuid PRIMARY KEY,
  venue_id uuid NOT NULL,
- visit_id uuid NOT NULL UNIQUE REFERENCES public.visits(visit_id) ON DELETE RESTRICT,
+ visit_id uuid NOT NULL UNIQUE REFERENCES public.visits(visit_id)
+   ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED,
  referrer_member_id uuid NOT NULL,
  program_id uuid NOT NULL,
  program_config jsonb NOT NULL,
@@ -29,10 +34,10 @@ CREATE FUNCTION public.enqueue_first_visit_referral() RETURNS trigger
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE referrer uuid; program record;
 BEGIN
- -- A second simultaneous first visit can race this predicate, but the
- -- referred-member primary key serializes both enqueues to one work item.
+ -- BEFORE-row processing sees earlier recorded visits, never caller-supplied
+ -- timestamps. The outbox PK chooses one row across batch/concurrent inserts.
  IF EXISTS(SELECT 1 FROM public.visits v
-   WHERE v.member_id=NEW.member_id AND v.visit_id<>NEW.visit_id) THEN RETURN NEW; END IF;
+   WHERE v.venue_id=NEW.venue_id AND v.member_id=NEW.member_id) THEN RETURN NEW; END IF;
  SELECT m.referred_by_member_id INTO referrer FROM public.members m
  WHERE m.member_id=NEW.member_id AND m.tenant_id=NEW.venue_id;
  IF referrer IS NULL OR referrer=NEW.member_id OR NOT EXISTS(
@@ -51,7 +56,7 @@ BEGIN
  ON CONFLICT(referred_member_id) DO NOTHING;
  RETURN NEW;
 END $$;
-CREATE TRIGGER growth_first_visit_referral AFTER INSERT ON public.visits
+CREATE TRIGGER growth_first_visit_referral BEFORE INSERT ON public.visits
  FOR EACH ROW EXECUTE FUNCTION public.enqueue_first_visit_referral();
 
 CREATE FUNCTION public.claim_referral_followup() RETURNS jsonb
@@ -79,7 +84,8 @@ DECLARE work public.growth_referral_outbox%ROWTYPE;
 BEGIN
  SELECT * INTO work FROM public.growth_referral_outbox
  WHERE referred_member_id=p_referred_member_id FOR UPDATE;
- IF NOT FOUND OR work.done OR work.lease_token IS DISTINCT FROM p_lease_token
+ IF NOT FOUND OR work.done OR p_lease_token IS NULL OR work.lease_token IS NULL
+ OR work.lease_until IS NULL OR work.lease_token IS DISTINCT FROM p_lease_token
  OR work.lease_until<=now() THEN RAISE EXCEPTION 'STALE_REFERRAL_LEASE'; END IF;
  UPDATE public.growth_referral_outbox
  SET done=p_success,lease_token=NULL,lease_until=NULL,

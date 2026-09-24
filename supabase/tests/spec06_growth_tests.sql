@@ -177,22 +177,39 @@ VALUES('18000000-0000-4000-8000-000000000033',
        '13000000-0000-4000-8000-000000000001',
        'referral','Synthetic first-visit referral','active',
        '{"referral_points":7}'::jsonb);
+DO $$
+BEGIN
+ BEGIN
+  INSERT INTO public.visits(visit_id,member_id,venue_id,source)
+  VALUES('18000000-0000-4000-8000-000000000037',
+         '18000000-0000-4000-8000-000000000032',
+         '13000000-0000-4000-8000-000000000001','manual');
+  RAISE EXCEPTION 'Foreign member visit accepted';
+ EXCEPTION WHEN foreign_key_violation THEN NULL;
+ END;
+END $$;
 INSERT INTO public.visits(visit_id,member_id,venue_id,source)
 VALUES('18000000-0000-4000-8000-000000000034',
+       '18000000-0000-4000-8000-000000000031',
+       '13000000-0000-4000-8000-000000000001','manual'),
+      ('18000000-0000-4000-8000-000000000036',
        '18000000-0000-4000-8000-000000000031',
        '13000000-0000-4000-8000-000000000001','manual'),
       ('18000000-0000-4000-8000-000000000035',
        '18000000-0000-4000-8000-000000000032',
        '13000000-0000-4000-8000-000000000003','manual');
-INSERT INTO public.visits(visit_id,member_id,venue_id,source)
-VALUES('18000000-0000-4000-8000-000000000036',
-       '18000000-0000-4000-8000-000000000031',
-       '13000000-0000-4000-8000-000000000001','manual');
 DO $$
 DECLARE work jsonb; again jsonb; count_work integer;
 BEGIN
  SELECT count(*) INTO count_work FROM public.growth_referral_outbox;
  IF count_work<>1 THEN RAISE EXCEPTION 'Referral intent count %',count_work; END IF;
+ BEGIN
+  PERFORM public.finish_referral_followup(
+   '18000000-0000-4000-8000-000000000031',NULL,true,NULL);
+  RAISE EXCEPTION 'Unclaimed NULL referral lease accepted';
+ EXCEPTION WHEN OTHERS THEN
+  IF SQLERRM<>'STALE_REFERRAL_LEASE' THEN RAISE; END IF;
+ END;
  work:=public.claim_referral_followup();
  IF work->>'referred_member_id'<>'18000000-0000-4000-8000-000000000031'
  OR work->'program_config'->>'referral_points'<>'7'

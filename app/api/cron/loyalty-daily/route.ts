@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
   let paidFollowupsProcessed = 0
   let referralFollowupsProcessed = 0
   try {
-    for (; referralFollowupsProcessed < 20; referralFollowupsProcessed++) {
+    for (; referralFollowupsProcessed < 10; referralFollowupsProcessed++) {
       if (!(await processReferralFollowup(admin))) break
     }
-    for (; paidFollowupsProcessed < 20; paidFollowupsProcessed++) {
+    for (; paidFollowupsProcessed < 20 - referralFollowupsProcessed; paidFollowupsProcessed++) {
       if (!(await processPaidOfferFollowup(admin))) break
     }
   } catch (error) {
