@@ -1,0 +1,23 @@
+---
+id: handoff-2026-09-24-spec-05
+title: SPEC-05 POS implementation handoff
+status: active
+updated: 2026-09-24
+tags: [product-os, pos, handoff]
+---
+
+# SPEC-05 POS connection handoff
+
+Back to [spec](../specs/SPEC-05-pos-connection.md), [ledger](../EXECUTION-LEDGER.md), [registry](../INTEGRATION-REGISTRY.md).
+
+Draft [PR #88](https://github.com/leonartist7/Caffi.pro/pull/88) at 9492d534d0f101d93192cd6d644c1d9ac1fcdba1 targets open #87. Branch codex/spec-05-pos-connection starts from b0c3052936ed78d02ada5fcb6d5a7494b11378c1, the verified open draft PR #87 head on 2026-09-24. PRs #83–#87 are open drafts, not merged. The original checkout was preserved. The branch disables Vercel Git deployment. SPEC-05 owns POS boundary, simulator, migration, queue and recovery API/UI. SPEC-06 is a separate branch from the same dependency.
+
+AC-01: service-only tenant-scoped connection, mapping, submission, outbox and event data; stored-resource-first owner/manager route. AC-02: complete versioned import, category/item/modifier mapping and imported-field ownership guard. AC-03: paid-order trigger persists one operation key, worker lease and lookup after possible send. AC-04: acceptance and delivery readiness require POS acknowledgement; rejection/unknown/absent remain visible. AC-05: responsive staff queue and reasoned recovery action. AC-06: no vendor adapter or sandbox claim without F-04.
+
+Local checks on Windows: TypeScript, strict lint and all 53 Vitest tests pass. POS-specific five tests are mocked simulator contracts. The SQL suite is not locally run because Supabase CLI, Docker and psql are unavailable. [CI 35996033354](https://github.com/leonartist7/Caffi.pro/actions/runs/35996033354) passes isolated build, nine SQL suites and four existing ordering/delivery browser tests. Genuine concurrency, revoked/resource-ID API, mobile and recovery browser proof remain open. The local isolated build exhausted disk space before a terminal result. See [acceptance evidence](../evidence/SPEC-05-ACCEPTANCE-2026-09-24.md). Provider sandbox and live checks are not run. Astra xhigh independent review found reconciliation and menu ownership issues; fixes are in this branch, the [exact-head static review](../evidence/SPEC-05-SECURITY-REVIEW-2026-09-24.md) approved 7d2de96. A fifth disposable Chromium test now passes owner queue load, foreign-venue API denial and keyboard refresh at [CI 35998095412](https://github.com/leonartist7/Caffi.pro/actions/runs/35998095412); genuine concurrency, revoked/resource-ID API, mobile and recovery evidence remain open.
+
+The user named Square and Clover as common candidates, but did not identify a first client or grant authorized API/sandbox access. F-04 remains open. No vendor capability, certification or connectivity is claimed. The first approved adapter needs a named merchant, scope, environment, credential custody, webhook protocol and timeout/reconciliation evidence.
+
+Migration is additive. Deploy schema before code only after approval. Rollback disables connection/worker and preserves submission, ticket, attempt and event history. Never drop unresolved work or create a second vendor order as a retry. No production deployment, hosted database mutation, vendor call, payment, message or courier effect occurred.
+
+Next owner: PR reviewer and Astra xhigh security reviewer. Run disposable migration/SQL/browser/API and genuine concurrent-worker tests; resolve findings; then obtain F-04 and a vendor sandbox for a separately reviewable real adapter.
