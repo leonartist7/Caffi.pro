@@ -36,6 +36,18 @@ BEGIN
 END $$;
 INSERT INTO public.members(member_id,tenant_id,full_name)
 VALUES('18000000-0000-4000-8000-000000000001','13000000-0000-4000-8000-000000000001','SPEC-06 synthetic');
+DO $$
+BEGIN
+ IF NOT EXISTS(SELECT 1 FROM public.member_status
+   WHERE member_id='18000000-0000-4000-8000-000000000001'
+     AND venue_id='13000000-0000-4000-8000-000000000001'
+     AND full_name='SPEC-06 synthetic')
+ THEN RAISE EXCEPTION 'Scoped member display name absent'; END IF;
+ IF EXISTS(SELECT 1 FROM public.member_status
+   WHERE member_id='18000000-0000-4000-8000-000000000001'
+     AND venue_id='13000000-0000-4000-8000-000000000003')
+ THEN RAISE EXCEPTION 'Foreign venue can address member'; END IF;
+END $$;
 INSERT INTO public.orders(order_id,venue_id,member_id,client_uuid,order_type,status,subtotal_cents,total_cents)
 VALUES('18000000-0000-4000-8000-000000000002','13000000-0000-4000-8000-000000000001',
 '18000000-0000-4000-8000-000000000001','18000000-0000-4000-8000-000000000003',
