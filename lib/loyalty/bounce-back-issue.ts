@@ -24,15 +24,24 @@ export async function issueBounceBackOffersForOrder(
   venueId: string,
   orderId: string
 ): Promise<void> {
-  const { data: order } = await admin
+  const { data: order, error: orderError } = await admin
     .from('orders')
-    .select('member_id')
+    .select('member_id,status')
     .eq('order_id', orderId)
     .eq('venue_id', venueId)
     .maybeSingle()
+  if (orderError) throw new Error('BOUNCE_BACK_ORDER_LOOKUP_FAILED')
+  if (!order) throw new Error('BOUNCE_BACK_ORDER_MISSING')
+  if (order.status === 'canceled' || order.status === 'refunded') return
+
+  const paidWork = await admin.from('growth_offer_outbox')
+    .select('created_at').eq('venue_id', venueId).eq('order_id', orderId)
+    .maybeSingle()
+  if (paidWork.error || !paidWork.data?.created_at)
+    throw new Error('BOUNCE_BACK_PAID_EVENT_MISSING')
 
   // Guest orders have no member/pass to hold an offer — nothing to issue.
-  const memberId = (order as { member_id: string | null } | null)?.member_id
+  const memberId = (order as { member_id: string | null }).member_id
   if (!memberId) return
 
   const { data: programs, error } = await admin
@@ -44,11 +53,11 @@ export async function issueBounceBackOffersForOrder(
 
   if (error) {
     console.error('[bounce-back] program lookup failed:', error.message)
-    return
+    throw new Error('BOUNCE_BACK_PROGRAM_LOOKUP_FAILED')
   }
   if (!programs || programs.length === 0) return
 
-  const paidAt = new Date()
+  const paidAt = new Date(paidWork.data.created_at)
 
   for (const program of programs as { program_id: string; config: Record<string, unknown> }[]) {
     const config = parseBounceBackConfig(program.config)
@@ -92,6 +101,7 @@ export async function issueBounceBackOffersForOrder(
       })
     } else if (result.reason === 'error') {
       console.error('[bounce-back] issue failed:', result.message)
+      throw new Error('BOUNCE_BACK_ISSUE_FAILED')
     }
     // 'duplicate_period' is expected on a webhook replay — silent no-op.
   }

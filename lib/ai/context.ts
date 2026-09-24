@@ -16,6 +16,8 @@ export interface VenueAiContext {
   businessName: string
   timezone: string
   tagline: string | null
+  menu: { id: string; name: string }[]
+  programs: { id: string; name: string }[]
 }
 
 /** Fallback matches lib/owner-stats.ts's callers — the seed venue's zone. */
@@ -31,11 +33,20 @@ export async function getVenueAiContext(venueId: string): Promise<VenueAiContext
 
   if (error || !venue) return null
 
+  const [menu, programs] = await Promise.all([
+    admin.from('menu_items').select('item_id,name').eq('venue_id', venueId)
+      .eq('is_active', true).eq('is_86ed', false).order('name').limit(20),
+    admin.from('loyalty_programs').select('program_id,name').eq('venue_id', venueId)
+      .eq('status', 'active').order('name').limit(10),
+  ])
+  if (menu.error || programs.error) return null
   return {
     venueId: venue.venue_id,
     businessName: venue.business_name ?? 'this café',
     timezone: venue.timezone ?? DEFAULT_TIMEZONE,
     tagline: readTagline(venue.brand_kit),
+    menu: (menu.data ?? []).map(x => ({ id: x.item_id, name: x.name })),
+    programs: (programs.data ?? []).map(x => ({ id: x.program_id, name: x.name })),
   }
 }
 

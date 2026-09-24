@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
 import { runBirthdayAnniversaryForAllVenues } from '@/lib/loyalty/birthday-anniversary-issue'
+import { processPaidOfferFollowup } from '@/lib/loyalty/offer-outbox'
+import { processReferralFollowup } from '@/lib/loyalty/referral-outbox'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -34,10 +36,25 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = getSupabaseAdmin()
+  let paidFollowupsProcessed = 0
+  let referralFollowupsProcessed = 0
+  try {
+    for (; referralFollowupsProcessed < 10; referralFollowupsProcessed++) {
+      if (!(await processReferralFollowup(admin))) break
+    }
+    for (; paidFollowupsProcessed < 20 - referralFollowupsProcessed; paidFollowupsProcessed++) {
+      if (!(await processPaidOfferFollowup(admin))) break
+    }
+  } catch (error) {
+    console.error('[loyalty-daily] growth outbox failed:', error)
+    return NextResponse.json({ error: 'Growth recovery failed' }, { status: 500 })
+  }
   const results = await runBirthdayAnniversaryForAllVenues(admin)
 
   return NextResponse.json({
     ok: true,
+    referralFollowupsProcessed,
+    paidFollowupsProcessed,
     venuesProcessed: results.length,
     birthdayIssued: results.reduce((sum, r) => sum + r.birthdayIssued, 0),
     anniversaryIssued: results.reduce((sum, r) => sum + r.anniversaryIssued, 0),

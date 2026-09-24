@@ -212,7 +212,7 @@ export async function listMembersPage(
   let query = admin
     .from('member_status')
     .select(
-      'member_id, status, visit_count, last_visit_at, cadence_days, days_since_last, members!inner(full_name)',
+      'member_id, status, visit_count, last_visit_at, cadence_days, days_since_last, full_name',
       { count: 'exact' }
     )
     .eq('venue_id', venueId)
@@ -221,11 +221,7 @@ export async function listMembersPage(
   if (searchMemberIds) query = query.in('member_id', searchMemberIds)
 
   if (sort === 'name_asc') {
-    // NOT `{ referencedTable: 'members' }` — per postgrest-js's own docs,
-    // that option only reorders the nested array *within* each parent row.
-    // Sorting the parent (member_status) rows by an embedded column needs
-    // the dotted `table(column)` form as the order target itself.
-    query = query.order('members(full_name)', { ascending: true })
+    query = query.order('full_name', { ascending: true })
   } else {
     query = query.order('days_since_last', {
       ascending: sort === 'recency_asc',
@@ -248,10 +244,9 @@ export async function listMembersPage(
   const balanceByMember = new Map((balances ?? []).map(b => [b.member_id, b.balance]))
 
   const rows: RegularRow[] = (data ?? []).map(r => {
-    const membersRel = r.members as unknown as { full_name: string | null } | null
     return {
       memberId: r.member_id,
-      fullName: membersRel?.full_name ?? null,
+      fullName: r.full_name ?? null,
       status: r.status as RegularRow['status'],
       visitCount: r.visit_count ?? 0,
       lastVisitAt: r.last_visit_at,
@@ -305,14 +300,26 @@ export async function getMemberProfile(
 ): Promise<MemberProfile | null> {
   const admin = getSupabaseAdmin()
 
-  const { data: statusRow } = await admin
+  // member_status is a view. PostgREST cannot embed members through it;
+  // prove the stored member's venue directly before loading derived status.
+  const { data: member, error: memberError } = await admin
+    .from('members')
+    .select('member_id,full_name')
+    .eq('tenant_id', venueId)
+    .eq('member_id', memberId)
+    .maybeSingle()
+  if (memberError) throw new Error('Member profile unavailable')
+  if (!member) return null
+
+  const { data: statusRow, error: statusError } = await admin
     .from('member_status')
     .select(
-      'member_id, status, visit_count, last_visit_at, cadence_days, days_since_last, members!inner(full_name)'
+      'member_id, status, visit_count, last_visit_at, cadence_days, days_since_last'
     )
     .eq('venue_id', venueId)
     .eq('member_id', memberId)
     .maybeSingle()
+  if (statusError) throw new Error('Member status unavailable')
   if (!statusRow) return null
 
   const [{ data: balRow }, { data: visits }, { data: ledger }] = await Promise.all([
@@ -332,11 +339,9 @@ export async function getMemberProfile(
       .limit(50),
   ])
 
-  const membersRel = statusRow.members as unknown as { full_name: string | null } | null
-
   return {
     memberId: statusRow.member_id,
-    fullName: membersRel?.full_name ?? null,
+    fullName: member.full_name ?? null,
     status: statusRow.status as RegularRow['status'],
     visitCount: statusRow.visit_count ?? 0,
     lastVisitAt: statusRow.last_visit_at,

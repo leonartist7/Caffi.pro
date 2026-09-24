@@ -47,3 +47,9 @@ Every adapter dossier must name vendor, purpose, account owner, service geograph
 ## 2026-09-22 verification boundary
 
 SPEC-03 simulator and restaurant-driver browser/API/database lifecycles pass in [CI 35777014123](https://github.com/leonartist7/Caffi.pro/actions/runs/35777014123) at `3b07268`: eight SQL suites and four genuine browser tests. This changes only the isolated simulator verification status. Uber Direct remains research/offline fixtures in separate PR #86, with no authorized sandbox credentials or execution. No external adapter or live courier readiness is claimed.
+
+## 2026-09-24 AI Gateway boundary
+
+SPEC-06 includes an opt-in server-side OpenAI-compatible Gateway adapter that checks the current model catalogue and requires a configured key/model plus a venue budget before generation. This has only mocked local coverage; no paid call, vendor sandbox or live verification occurred. Gateway model, region, retention and commercial authorization must be checked again before activation. Email/SMS campaign sending and push remain gated by F-06.
+
+Referral follow-up and review analytics remain application/local-database capabilities, not vendor integrations. Their deterministic loopback fixtures and independent static review do not grant messaging, real-device push or AI provider activation. F-06 still controls external sends.

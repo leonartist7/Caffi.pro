@@ -4,6 +4,8 @@ import { emitEvent } from '@/lib/events'
 import { getAiProvider, AiProviderConfigurationError } from '@/lib/ai/provider'
 import type { GeneratableDraftKind } from '@/lib/ai/provider'
 import { getVenueAiContext } from '@/lib/ai/context'
+import { AiBudgetError, reservationTokens, reserveGeneration, settleGeneration } from '@/lib/ai/budget'
+import { validateDraftOutput } from '@/lib/ai/validate-output'
 import {
   buildSocialCaptionPrompt,
   SOCIAL_CAPTION_MAX_TOKENS,
@@ -96,12 +98,16 @@ export async function POST(request: NextRequest) {
     tagline: context.tagline,
     timezone: context.timezone,
     kind,
+    menu_ids: context.menu.map(item => item.id),
+    program_ids: context.programs.map(program => program.id),
   }
 
   if (kind === 'social_caption') {
     const built = buildSocialCaptionPrompt({
       businessName: context.businessName,
       tagline: context.tagline,
+      menu: context.menu,
+      programs: context.programs,
       brief,
     })
     system = built.system
@@ -133,6 +139,8 @@ export async function POST(request: NextRequest) {
     const built = buildDigestPrompt({
       businessName: context.businessName,
       tagline: context.tagline,
+      menu: context.menu,
+      programs: context.programs,
       stats,
     })
     system = built.system
@@ -141,25 +149,56 @@ export async function POST(request: NextRequest) {
     promptCtx.stats = stats
   }
 
+  let provider
+  try {
+    provider = getAiProvider()
+  } catch (err) {
+    if (err instanceof AiProviderConfigurationError)
+      return NextResponse.json({ stubbed: true, message: err.message })
+    return NextResponse.json({ error: 'Drafting is unavailable.' }, { status: 503 })
+  }
+  const reservedTokens = reservationTokens(system, prompt, maxOutputTokens)
+  let reservationId: string
+  try {
+    reservationId = await reserveGeneration({
+      venueId, kind, provider: provider.key, model: provider.model, tokens: reservedTokens,
+    })
+  } catch (err) {
+    const code = err instanceof AiBudgetError ? err.code : 'UNAVAILABLE'
+    return NextResponse.json(
+      { error: code === 'EXHAUSTED' ? 'Monthly drafting budget is exhausted.' : 'Drafting budget is not enabled.' },
+      { status: code === 'EXHAUSTED' ? 429 : 503 }
+    )
+  }
+
   let result
   try {
-    result = await getAiProvider().generateDraft({ kind, system, prompt, maxOutputTokens })
-  } catch (err) {
-    // A missing API key is a deployment fault, not a transient failure: report
-    // it as a visible STUBBED state and write nothing (§7.6).
-    if (err instanceof AiProviderConfigurationError) {
-      return NextResponse.json({ stubbed: true, message: err.message })
-    }
-    console.error('[ai] generation threw:', err)
+    result = await provider.generateDraft({ kind, system, prompt, maxOutputTokens })
+  } catch {
+    await settleGeneration(venueId, reservationId, 'unknown').catch(() => undefined)
     return NextResponse.json({ error: "Couldn't draft that just now." }, { status: 502 })
   }
-
   if (!result.ok) {
+    await settleGeneration(venueId, reservationId, 'unknown').catch(() => undefined)
     return NextResponse.json({ error: result.error }, { status: 502 })
   }
+  const usage = result.usageTokens
+  const settledTokens = Number.isSafeInteger(usage) && usage! >= 0 ? usage! : reservedTokens
+  if (settledTokens > reservedTokens) {
+    await settleGeneration(venueId, reservationId, 'unknown').catch(() => undefined)
+    return NextResponse.json({ error: 'Draft usage exceeded its reservation.' }, { status: 503 })
+  }
+  try {
+    await settleGeneration(venueId, reservationId, 'succeeded', settledTokens)
+  } catch {
+    return NextResponse.json({ error: 'Draft usage could not be recorded.' }, { status: 503 })
+  }
+  if (result.model !== provider.model || !validateDraftOutput(kind, result.output))
+    return NextResponse.json({ error: 'Draft failed validation.' }, { status: 502 })
 
   promptCtx.model = result.model
-
+  promptCtx.generation_id = reservationId
+  delete promptCtx.brief
   const draft = await insertDraft({
     venueId,
     kind,

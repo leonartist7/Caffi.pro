@@ -74,6 +74,7 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
   const [online, setOnline] = useState(true)
   const [storageWarning, setStorageWarning] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const redemptionKeys = useRef(new Map<string, string>())
   const [offerCode, setOfferCode] = useState('')
   const [offerLookup, setOfferLookup] = useState<OfferLookup | null>(null)
   const [offerCodeUsed, setOfferCodeUsed] = useState('')
@@ -290,11 +291,14 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
     if (!selected || busy) return
     setBusy(true)
     setInsufficientMsg(null)
+    const key = `${selected.id}:${reward.reward_id}`
+    const operationKey = redemptionKeys.current.get(key) ?? crypto.randomUUID()
+    redemptionKeys.current.set(key, operationKey)
     try {
       const res = await fetch('/api/counter/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ member_id: selected.id, reward_id: reward.reward_id }),
+        body: JSON.stringify({ member_id: selected.id, reward_id: reward.reward_id, operation_key: operationKey }),
       })
       if (res.status === 401) return onSessionExpired()
       const data = await res.json()
@@ -304,6 +308,7 @@ export function CounterScreen({ onSessionExpired }: { onSessionExpired: () => vo
         return
       }
       if (!res.ok) throw new Error('redeem failed')
+      redemptionKeys.current.delete(key)
       setSuccessMsg(
         `${reward.name} redeemed for ${selected.first_name} — ${data.new_balance} pts left`
       )

@@ -1,7 +1,9 @@
 import 'server-only'
 
 import { OpenAiDraftProvider } from '@/lib/ai/adapters/openai'
+import { GatewayDraftProvider } from '@/lib/ai/adapters/gateway'
 
+import { AiProviderConfigurationError } from '@/lib/ai/errors'
 export { AiProviderConfigurationError, AiProviderRequestError } from '@/lib/ai/errors'
 
 /**
@@ -24,7 +26,7 @@ export interface DraftRequest {
   maxOutputTokens: number
 }
 
-export type DraftResult = { ok: true; output: string; model: string } | { ok: false; error: string }
+export type DraftResult = { ok: true; output: string; model: string; usageTokens?: number } | { ok: false; error: string }
 
 /**
  * Generation boundary. Routes and components only ever know this interface;
@@ -34,7 +36,8 @@ export type DraftResult = { ok: true; output: string; model: string } | { ok: fa
  * (Anthropic → OpenAI, D-4) and the interface absorbed it without a rewrite.
  */
 export interface AiProvider {
-  readonly key: string
+  readonly key: 'openai' | 'gateway'
+  readonly model: string
   generateDraft(req: DraftRequest): Promise<DraftResult>
 }
 
@@ -43,5 +46,7 @@ export interface AiProvider {
  * than leaking vendor conditionals into the generate route.
  */
 export function getAiProvider(): AiProvider {
-  return new OpenAiDraftProvider()
+  if (process.env.AI_DRAFT_PROVIDER === 'gateway') return new GatewayDraftProvider()
+  if (process.env.AI_DRAFT_PROVIDER === 'openai') return new OpenAiDraftProvider()
+  throw new AiProviderConfigurationError('STUBBED — AI provider is not configured')
 }

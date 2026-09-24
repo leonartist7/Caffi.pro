@@ -14,21 +14,16 @@ export default async function ConfirmationPage({
   const tenant = await getTenantBySlug(params.slug)
   if (!tenant) notFound()
 
-  // The order UUID is the guest's capability token (see /api/orders/[id]/status),
-  // but a crafted or mistyped URL could pair a valid order ID with a
-  // *different* venue's slug. Without this check the review link and
-  // currency below would be derived from the wrong venue while the order's
-  // own data (fetched client-side by <OrderStatus>) still belongs to its
-  // real venue — a cross-venue data leak. Reject the mismatch outright;
-  // there's no legitimate case where a confirmation link's slug and order
-  // belong to different venues.
+  // Prove both the order's venue and the separate guest tracking capability
+  // before returning the venue's review destination or confirmation shell.
+  if (!searchParams.tracking) notFound()
   const { data: order } = await getSupabaseAdmin()
     .from('orders')
     .select('venue_id')
     .eq('order_id', params.id)
+    .eq('guest_tracking_token', searchParams.tracking)
     .maybeSingle()
   if (!order || order.venue_id !== tenant.tenant_id) notFound()
-  if (!searchParams.tracking) notFound()
 
   const reviewConfig = await getReviewConfig(params.slug)
   return (

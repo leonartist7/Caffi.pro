@@ -1,6 +1,7 @@
 import { createClient } from '@/utils/supabase/server'
 import { getMemberProfile, resolveOwnerVenueId } from '@/lib/owner-stats'
 import { StatusChip } from '@/components/owner/StatusChip'
+import { getSupabaseAdmin } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
 
@@ -65,6 +66,28 @@ export default async function MemberProfilePage({ params }: { params: { id: stri
     )
   }
 
+  // Profile lookup first proves that this member belongs to the effective
+  // venue. History uses only explicit member IDs within that same venue.
+  const admin = getSupabaseAdmin()
+  const [ordersResult, reservationsResult] = await Promise.all([
+    admin.from('orders')
+      .select('order_id,order_type,status,created_at')
+      .eq('venue_id', venueId).eq('member_id', params.id)
+      .order('created_at', { ascending: false }).limit(10),
+    admin.from('reservations')
+      .select('reservation_id,status,starts_at')
+      .eq('venue_id', venueId).eq('member_id', params.id)
+      .order('starts_at', { ascending: false }).limit(10),
+  ])
+  const orderIds = (ordersResult.data ?? []).map(order => order.order_id)
+  const deliveriesResult = orderIds.length
+    ? await admin.from('delivery_jobs')
+      .select('order_id,state')
+      .eq('venue_id', venueId).in('order_id', orderIds)
+    : { data: [], error: null }
+  const historyError = Boolean(ordersResult.error || reservationsResult.error || deliveriesResult.error)
+  const deliveries = new Map((deliveriesResult.data ?? []).map(job => [job.order_id, job.state]))
+
   return (
     <div className="p-6 md:p-8 max-w-2xl">
       <div className="flex items-center gap-3 mb-1">
@@ -92,6 +115,25 @@ export default async function MemberProfilePage({ params }: { params: { id: stri
       <div className="mb-8">
         <VisitDots visits={profile.visits} />
       </div>
+
+      <section aria-labelledby="member-activity" className="mb-8 space-y-3">
+        <h2 id="member-activity" className="font-display text-sm font-bold text-aro-ink uppercase tracking-wide">
+          Orders and reservations
+        </h2>
+        {historyError ? <p role="alert" className="text-sm text-aro-muted">Activity could not be loaded. Try again later.</p> : <>
+          {(ordersResult.data ?? []).length === 0 && (reservationsResult.data ?? []).length === 0 &&
+            <p className="text-sm text-aro-muted">No explicitly linked orders or reservations.</p>}
+          {(ordersResult.data ?? []).map(order => <div key={order.order_id} className="border-b border-aro-hairline py-2 text-sm">
+            <strong>Order</strong> · {order.order_type.replace('_', ' ')} · {order.status}
+            {deliveries.has(order.order_id) && <span> · delivery {deliveries.get(order.order_id)}</span>}
+            <span className="block text-aro-muted">{new Date(order.created_at).toISOString().slice(0, 10)}</span>
+          </div>)}
+          {(reservationsResult.data ?? []).map(reservation => <div key={reservation.reservation_id} className="border-b border-aro-hairline py-2 text-sm">
+            <strong>Reservation</strong> · {reservation.status}
+            <span className="block text-aro-muted">{new Date(reservation.starts_at).toISOString().slice(0, 10)}</span>
+          </div>)}
+        </>}
+      </section>
 
       <h2 className="font-display text-sm font-bold text-aro-ink mb-2 uppercase tracking-wide">
         Points history
